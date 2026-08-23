@@ -51,7 +51,11 @@ from secondlook.tier1.graph_schema import (
 
 logger = logging.getLogger(__name__)
 
-PATHWAYS_DIR = Path(__file__).parent / "config" / "access_pathways"
+#: Repo-root `access_pathways/`, not under `tier1/config/`. This is curation
+#: data owned by the Access Pathway Registry subsystem, and the build plan gives
+#: each subsystem its own top-level directory precisely so two subsystems'
+#: changes cannot collide in a shared tree.
+PATHWAYS_DIR = Path(__file__).resolve().parents[3] / "access_pathways"
 SOURCE_NAME = "curated"
 
 #: A pathway carrying this has not been checked against the primary source by a
