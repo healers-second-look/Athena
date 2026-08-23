@@ -1,0 +1,48 @@
+{
+  "registry_id": "NCT03358992",
+  "source": "ClinicalTrials.gov v2",
+  "note": "Real registry text. Annotations were read by hand against the source, not taken from extractor output.",
+  "criteria_text": "Inclusion Criteria:\n\n* 1\\) histologically confirmed high-grade osteosarcoma;\n* 2\\) initially treated in Musculoskeletal Tumor Center of Peking University People's Hospital, Xijing Hospital or The Second Hospital affiliated to Zhejiang Hospital;\n* 3\\) imaging evaluation should be available;\n* 4\\) completed neo-adjuvant chemotherapy and at least 8 cycles of adjuvant chemotherapy;\n* 5\\) expected to live longer than 3 months with Eastern Cooperative Oncology Group performance status of 0 or 1;\n* 6\\) acceptable hematologic, hepatic, and renal function.\n\nExclusion Criteria:\n\n* 1\\) Patients who could not complete neo-adjuvant chemotherapy or at least 4-month adjuvant chemotherapy;\n* 2\\) lost to follow-up.",
+  "annotations": [
+    {
+      "line": "1) histologically confirmed high-grade osteosarcoma;",
+      "type": "UNPARSEABLE",
+      "section": "inclusion"
+    },
+    {
+      "line": "2) initially treated in Musculoskeletal Tumor Center of Peking University People's Hospital, Xijing Hospital or The Second Hospital affiliated to Zhejiang Hospital;",
+      "type": "UNPARSEABLE",
+      "section": "inclusion"
+    },
+    {
+      "line": "3) imaging evaluation should be available;",
+      "type": "UNPARSEABLE",
+      "section": "inclusion"
+    },
+    {
+      "line": "4) completed neo-adjuvant chemotherapy and at least 8 cycles of adjuvant chemotherapy;",
+      "type": "PRIOR_THERAPY_EXCLUDES",
+      "section": "inclusion"
+    },
+    {
+      "line": "5) expected to live longer than 3 months with Eastern Cooperative Oncology Group performance status of 0 or 1;",
+      "type": "ECOG_MAX",
+      "section": "inclusion"
+    },
+    {
+      "line": "6) acceptable hematologic, hepatic, and renal function.",
+      "type": "UNPARSEABLE",
+      "section": "inclusion"
+    },
+    {
+      "line": "1) Patients who could not complete neo-adjuvant chemotherapy or at least 4-month adjuvant chemotherapy;",
+      "type": "PRIOR_THERAPY_EXCLUDES",
+      "section": "exclusion"
+    },
+    {
+      "line": "2) lost to follow-up.",
+      "type": "UNPARSEABLE",
+      "section": "exclusion"
+    }
+  ]
+}

@@ -1,0 +1,43 @@
+# ClinicalTrials.gov load scope.
+#
+# The disease list is NOT duplicated here. It is derived from the `diseases`
+# entries in civic_scope.yaml so the two cannot drift: a disease added to the
+# evidence scope and forgotten here would silently mean "we have evidence for
+# this cancer but never look for its trials".
+#
+# A caveat that must be stated rather than hidden. civic_scope.yaml matches on
+# Disease Ontology IDs precisely because name-substring matching is how
+# RareCure produced wrong cohorts. ClinicalTrials.gov exposes no ontology ID --
+# `query.cond` is free text. So this loader is forced into exactly the matching
+# mode the rest of the project avoids.
+#
+# Two consequences, both handled rather than assumed away:
+#   1. Recall is imperfect. `synonyms` below exists to widen a term whose
+#      registry spelling differs from the ontology's.
+#   2. Precision is imperfect. A returned trial's own `conditions` list is
+#      stored verbatim on the node, so a human can audit what actually matched
+#      instead of trusting the query.
+config_version: "2026-08-23.1"
+
+registry: ClinicalTrials.gov
+api_base: "https://clinicaltrials.gov/api/v2/studies"
+
+# Extra query terms per DOID, for registry spellings the ontology name misses.
+# Keyed by DOID so an entry cannot silently attach to the wrong disease.
+synonyms:
+  "3369":            # Ewing Sarcoma
+    - "Ewing's Sarcoma"
+  "3507":            # Dermatofibrosarcoma Protuberans
+    - "DFSP"
+
+# Statuses worth storing. Completed and withdrawn trials are kept: a matcher
+# that cannot see them cannot explain WHY a patient is not eligible for the
+# obvious trial, and "it closed in 2019" is a useful answer.
+# Filtering happens at query time only to bound the page count.
+include_statuses: []   # empty = no server-side status filter
+
+page_size: 100
+# ClinicalTrials.gov is a public API with no key and no published hard rate
+# limit. This is a courtesy pause, not a documented requirement.
+pause_seconds_between_requests: 0.5
+max_pages_per_condition: 20
