@@ -1,0 +1,28 @@
+{
+  "registry_id": "NCT00026780",
+  "source": "ClinicalTrials.gov v2",
+  "note": "Real registry text. Annotations were read by hand against the source, not taken from extractor output.",
+  "criteria_text": "* INCLUSION CRITERIA:\n\nChildren and young adults who are being evaluated for and treated on protocols within the Pediatric Oncology Branch.\n\nAll patients or their legal guardians (if the patient is less than 18 years of age) must sign a document of informed consent indicating their understanding of the research nature and the risks of the procedures that will be performed to assess eligibility for primary research protocols.\n\nPatients or their parents/guardians can refuse to participate in the tissue procurement portion of this protocol and still participate in the screening for eligibility on POB research trials.\n\nEXCLUSION CRITERIA:\n\nNone.",
+  "annotations": [
+    {
+      "line": "Children and young adults who are being evaluated for and treated on protocols within the Pediatric Oncology Branch.",
+      "type": "UNPARSEABLE",
+      "section": "inclusion"
+    },
+    {
+      "line": "All patients or their legal guardians (if the patient is less than 18 years of age) must sign a document of informed consent indicating their understanding of the research nature and the risks of the procedures that will be performed to assess eligibility for primary research protocols.",
+      "type": "UNPARSEABLE",
+      "section": "inclusion"
+    },
+    {
+      "line": "Patients or their parents/guardians can refuse to participate in the tissue procurement portion of this protocol and still participate in the screening for eligibility on POB research trials.",
+      "type": "UNPARSEABLE",
+      "section": "inclusion"
+    },
+    {
+      "line": "None.",
+      "type": "UNPARSEABLE",
+      "section": "exclusion"
+    }
+  ]
+}

@@ -1,0 +1,58 @@
+{
+  "registry_id": "NCT02472392",
+  "source": "ClinicalTrials.gov v2",
+  "note": "Real registry text. Annotations were read by hand against the source, not taken from extractor output.",
+  "criteria_text": "Inclusion Criteria:\n\n1. Patients aged 0-30 years with relapsed or therapy refractory ES, excluding patients with brain metastases. Patients who have received a prior autologous stem cell transplant are eligible.\n2. Related and unrelated marrow and peripheral blood stem donors must be 9/10 or 10/10 (HLA A, B, C, DR, DQ) matched with the recipient\n\nExclusion Criteria:\n\n1. Organ dysfunction: Patients who have the following levels of organ system dysfunction are not eligible:\n\n   * Cardiac: Ejection Fraction \\< 50 %\n   * Renal: Est. Creatinine Clearance \\< 50\\*\n   * Hepatic: Bilirubin \\> 3.0\n   * Pulmonary: DLCO \\< 70 %, or for patient who cannot cooperate with pulmonary function testing, O2 saturation \\< 95 % on room air.\n   * Performance status: Lansky performance \\< 70; ECOG status \\> 2 \\*this is based on the Schwartz formula for children less than 18 years of age, and the Cockcroft - Gault formula, for those \\> 18 years.\\[21, 22\\]\n2. Patients with an isolated local recurrence of their tumor (in the site of the primary tumor) \\> 1 year after completing therapy are excluded, as these patients could be cured with local therapy alone.\n\n3 As a part of the standard of care for pre-transplant evaluation, subjects will be tested for exposure to viral agents such as hepatitis B, C, HTLV-1/2, and HIV. Subjects testing positive for HIV may be rejected as candidates for transplantation, based on the clinical judgment of the stem cell transplant physician",
+  "annotations": [
+    {
+      "line": "Patients aged 0-30 years with relapsed or therapy refractory ES, excluding patients with brain metastases. Patients who have received a prior autologous stem cell transplant are eligible.",
+      "type": "AGE_RANGE",
+      "section": "inclusion"
+    },
+    {
+      "line": "Related and unrelated marrow and peripheral blood stem donors must be 9/10 or 10/10 (HLA A, B, C, DR, DQ) matched with the recipient",
+      "type": "UNPARSEABLE",
+      "section": "inclusion"
+    },
+    {
+      "line": "Organ dysfunction: Patients who have the following levels of organ system dysfunction are not eligible:",
+      "type": "UNPARSEABLE",
+      "section": "exclusion"
+    },
+    {
+      "line": "Cardiac: Ejection Fraction < 50 %",
+      "type": "UNPARSEABLE",
+      "section": "exclusion"
+    },
+    {
+      "line": "Renal: Est. Creatinine Clearance < 50*",
+      "type": "UNPARSEABLE",
+      "section": "exclusion"
+    },
+    {
+      "line": "Hepatic: Bilirubin > 3.0",
+      "type": "UNPARSEABLE",
+      "section": "exclusion"
+    },
+    {
+      "line": "Pulmonary: DLCO < 70 %, or for patient who cannot cooperate with pulmonary function testing, O2 saturation < 95 % on room air.",
+      "type": "UNPARSEABLE",
+      "section": "exclusion"
+    },
+    {
+      "line": "Performance status: Lansky performance < 70; ECOG status > 2 *this is based on the Schwartz formula for children less than 18 years of age, and the Cockcroft - Gault formula, for those > 18 years.[21, 22]",
+      "type": "ECOG_MAX",
+      "section": "exclusion"
+    },
+    {
+      "line": "Patients with an isolated local recurrence of their tumor (in the site of the primary tumor) > 1 year after completing therapy are excluded, as these patients could be cured with local therapy alone.",
+      "type": "UNPARSEABLE",
+      "section": "exclusion"
+    },
+    {
+      "line": "3 As a part of the standard of care for pre-transplant evaluation, subjects will be tested for exposure to viral agents such as hepatitis B, C, HTLV-1/2, and HIV. Subjects testing positive for HIV may be rejected as candidates for transplantation, based on the clinical judgment of the stem cell transplant physician",
+      "type": "UNPARSEABLE",
+      "section": "exclusion"
+    }
+  ]
+}
