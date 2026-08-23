@@ -138,7 +138,7 @@ def fetch_studies(
     studies: list[dict] = []
     token: str | None = None
     try:
-        for page in range(max_pages):
+        for _page in range(max_pages):
             params: dict[str, Any] = {
                 "query.cond": condition,
                 "pageSize": page_size,
@@ -169,7 +169,8 @@ def fetch_studies(
         else:
             logger.warning(
                 "hit max_pages_per_condition=%s for %r; results may be truncated",
-                max_pages, condition,
+                max_pages,
+                condition,
             )
     finally:
         if owns_client:
@@ -216,7 +217,9 @@ def parse_study(study: dict, summary: LoadSummary) -> dict | None:
     locations = locations_mod.get("locations") or []
     countries = sorted({loc.get("country") for loc in locations if loc.get("country")})
     facilities = [
-        ", ".join(part for part in (loc.get("facility"), loc.get("city"), loc.get("country")) if part)
+        ", ".join(
+            part for part in (loc.get("facility"), loc.get("city"), loc.get("country")) if part
+        )
         for loc in locations
     ]
     phases = design.get("phases") or []
