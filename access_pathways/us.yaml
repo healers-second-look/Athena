@@ -1,0 +1,30 @@
+# Access pathways — United States.
+#
+# See india.yaml for the curation rules. Same discipline applies:
+# `review_status: unreviewed` until checked against the primary source by
+# someone with regulatory-affairs familiarity, and `precedent_examples` stays
+# empty until real citable cases are found.
+config_version: "2026-08-23.1"
+country: US
+regulator: FDA
+review_status: unreviewed
+
+pathways:
+  - pathway_type: expanded_access_individual
+    instrument: "FDA Form 3926 — Individual Patient Expanded Access Application"
+    description: >-
+      Individual-patient expanded access ("compassionate use") to an
+      investigational drug outside a clinical trial, requested by the treating
+      physician.
+    precedent_strength: theoretical
+    precedent_examples: []
+    source_url: "https://www.fda.gov/news-events/expanded-access"
+
+  - pathway_type: expanded_access_protocol
+    instrument: "21 CFR 312.315 — Intermediate-size patient populations"
+    description: >-
+      Expanded access for an intermediate-size patient population, under a
+      protocol rather than a single-patient request.
+    precedent_strength: theoretical
+    precedent_examples: []
+    source_url: "https://www.fda.gov/news-events/expanded-access"
