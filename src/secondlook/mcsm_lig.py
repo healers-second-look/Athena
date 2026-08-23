@@ -1,14 +1,14 @@
-"""mCSM-lig submission via Playwright — drives the live HTML form, does not replay a guessed POST."""
+"""mCSM-lig submission via Playwright — drives the live HTML form, does not
+replay a guessed POST."""
 
 from __future__ import annotations
 
 import re
 import tempfile
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Iterator
 
 from secondlook.binding import (
     McsmLigResult,
@@ -89,7 +89,11 @@ class McsmLigPlaywrightClient:
             except Exception as exc:
                 raise McsmPageError(f"Cannot reach mCSM-lig prediction page: {exc}") from exc
             try:
-                _require(page, 'form[action="/mcsm_lig/run_example"] button[type="submit"]', "Run example")
+                _require(
+                    page,
+                    'form[action="/mcsm_lig/run_example"] button[type="submit"]',
+                    "Run example",
+                )
                 page.locator('form[action="/mcsm_lig/run_example"] button[type="submit"]').click()
                 self._wait_for_result(page)
             except (McsmPageError, McsmTimeoutError):
@@ -132,7 +136,9 @@ class McsmLigPlaywrightClient:
         _fill(page, "mutation", mutation)
         _fill(page, "chain", chain)
         _fill(page, "lig_id", lig_id)
-        affinity = DEFAULT_WILDTYPE_AFFINITY_NM if wildtype_affinity_nm is None else wildtype_affinity_nm
+        affinity = (
+            DEFAULT_WILDTYPE_AFFINITY_NM if wildtype_affinity_nm is None else wildtype_affinity_nm
+        )
         if affinity <= 0:
             raise McsmPageError("mCSM-lig wild-type affinity must be greater than zero")
         _fill(page, "affin_wt", str(affinity))

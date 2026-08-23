@@ -4,7 +4,6 @@ from secondlook.binding import (
     BindingScore,
     McsmApoStructureError,
     McsmLigResult,
-    McsmNoHetCodeError,
     McsmPageError,
     McsmTimeoutError,
     chain_for_residue,
@@ -16,7 +15,6 @@ from secondlook.candidates import DrugCandidate
 from secondlook.mutation_validation import MutationValidationResult
 from secondlook.structure import StructureResult
 from secondlook.vina_dock import VinaError
-
 
 EXAMPLE_HTML = """
 <html><body>
@@ -55,7 +53,9 @@ def _validation(*, position: int = 30, ref: str = "D", alt: str = "N") -> Mutati
     )
 
 
-def _structure(*, ligand_bound: bool = True, source: str = "PDB", pdb_id: str = "2Z4O") -> StructureResult:
+def _structure(
+    *, ligand_bound: bool = True, source: str = "PDB", pdb_id: str = "2Z4O"
+) -> StructureResult:
     return StructureResult(
         status="found",
         source=source,  # type: ignore[arg-type]

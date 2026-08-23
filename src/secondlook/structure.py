@@ -140,7 +140,11 @@ def source_structure(
         alphafold_client = alphafold_client or AlphaFoldDbClient()
         esm_client = esm_client or EsmAtlasClient()
 
-    if validation.status != "valid" or validation.uniprot_accession is None or validation.position is None:
+    if (
+        validation.status != "valid"
+        or validation.uniprot_accession is None
+        or validation.position is None
+    ):
         return _unavailable()
 
     position = validation.position
@@ -196,7 +200,9 @@ def source_structure(
         residue_plddt = residue_b_factor_from_pdb(pdb_text, position)
         global_plddt = model.get("global_metric")
         score_for_flag = residue_plddt if residue_plddt is not None else global_plddt
-        flag: ReliabilityFlag | None = plddt_reliability(score_for_flag) if score_for_flag is not None else None
+        flag: ReliabilityFlag | None = (
+            plddt_reliability(score_for_flag) if score_for_flag is not None else None
+        )
         return StructureResult(
             status="found",
             source="AlphaFoldDB",

@@ -119,7 +119,8 @@ class HetCodeResolver(Protocol):
 
 
 _AFFINITY = re.compile(
-    r"Predicted Affinity Change:\s*([+-]?\d+(?:\.\d+)?)\s*log\(affinity fold change\)\s*-\s*(Destabilizing|Stabilizing)",
+    r"Predicted Affinity Change:\s*([+-]?\d+(?:\.\d+)?)\s*log\(affinity fold "
+    r"change\)\s*-\s*(Destabilizing|Stabilizing)",
     re.IGNORECASE,
 )
 _WILD = re.compile(r"Wild-type:\s*([A-Z])", re.IGNORECASE)
@@ -158,11 +159,7 @@ def parse_mcsm_result(html: str) -> McsmLigResult:
 def mutation_shorthand(validation: MutationValidationResult) -> str:
     if validation.position is None or not validation.reference_residue_expected:
         raise ValueError("validated mutation is missing residue/position")
-    alt = (
-        validation.mutant_sequence[validation.position - 1]
-        if validation.mutant_sequence
-        else ""
-    )
+    alt = validation.mutant_sequence[validation.position - 1] if validation.mutant_sequence else ""
     if not alt:
         raise ValueError("validated mutation is missing mutant residue")
     return f"{validation.reference_residue_expected}{validation.position}{alt}"
@@ -338,9 +335,7 @@ def score_binding(
         McsmTimeoutError,
         McsmParseError,
     ):
-        return _vina_or_unavailable(
-            validation, structure, candidate, vina_client, VinaError
-        )
+        return _vina_or_unavailable(validation, structure, candidate, vina_client, VinaError)
 
     return BindingScore(
         status="scored",
@@ -390,9 +385,7 @@ def _vina_or_unavailable(
         return _unavailable(BINDING_UNAVAILABLE_MESSAGE)
 
 
-def _unavailable(
-    message: str, reason_code: BindingReasonCode = "unavailable"
-) -> BindingScore:
+def _unavailable(message: str, reason_code: BindingReasonCode = "unavailable") -> BindingScore:
     return BindingScore(
         status="unavailable",
         method=None,

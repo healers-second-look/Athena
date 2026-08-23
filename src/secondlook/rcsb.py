@@ -27,8 +27,12 @@ class RcsbPdbClient:
         file_url: str | None = None,
     ) -> None:
         self.search_url = search_url or os.environ.get("RCSB_SEARCH_URL") or DEFAULT_SEARCH_URL
-        self.data_url = (data_url or os.environ.get("RCSB_DATA_URL") or DEFAULT_DATA_URL).rstrip("/")
-        self.file_url = (file_url or os.environ.get("RCSB_FILE_URL") or DEFAULT_FILE_URL).rstrip("/")
+        self.data_url = (data_url or os.environ.get("RCSB_DATA_URL") or DEFAULT_DATA_URL).rstrip(
+            "/"
+        )
+        self.file_url = (file_url or os.environ.get("RCSB_FILE_URL") or DEFAULT_FILE_URL).rstrip(
+            "/"
+        )
         self._client = client
 
     #: How many candidate entries to download while looking for one that covers
@@ -157,7 +161,10 @@ class RcsbPdbClient:
                 "type": "terminal",
                 "service": "text",
                 "parameters": {
-                    "attribute": "rcsb_polymer_entity_container_identifiers.reference_sequence_identifiers.database_accession",
+                    "attribute": (
+                        "rcsb_polymer_entity_container_identifiers."
+                        "reference_sequence_identifiers.database_accession"
+                    ),
                     "operator": "exact_match",
                     "value": accession,
                 },
@@ -166,7 +173,10 @@ class RcsbPdbClient:
                 "type": "terminal",
                 "service": "text",
                 "parameters": {
-                    "attribute": "rcsb_polymer_entity_container_identifiers.reference_sequence_identifiers.database_name",
+                    "attribute": (
+                        "rcsb_polymer_entity_container_identifiers."
+                        "reference_sequence_identifiers.database_name"
+                    ),
                     "operator": "exact_match",
                     "value": "UniProt",
                 },

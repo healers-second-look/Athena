@@ -15,7 +15,9 @@ class AlphaFoldError(RuntimeError):
 
 class AlphaFoldDbClient:
     def __init__(self, base_url: str | None = None, client: httpx.Client | None = None) -> None:
-        self.base_url = (base_url or os.environ.get("ALPHAFOLD_API_BASE") or DEFAULT_ALPHAFOLD_API).rstrip("/")
+        self.base_url = (
+            base_url or os.environ.get("ALPHAFOLD_API_BASE") or DEFAULT_ALPHAFOLD_API
+        ).rstrip("/")
         self._client = client
 
     def fetch_models(self, accession: str) -> list[dict]:

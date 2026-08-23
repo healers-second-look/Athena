@@ -24,7 +24,6 @@ from secondlook.tier1_adapter import (
 )
 from secondlook.tier1_contract import ActivationPolicy, GraphSink, Tier1ResultItem
 
-
 # --------------------------------------------------------------------------
 # fakes
 # --------------------------------------------------------------------------
@@ -154,7 +153,9 @@ def test_to_result_item_rejects_a_row_with_no_citation_url():
 
 @pytest.mark.parametrize("level", sorted(STRONG_EVIDENCE_LEVELS))
 def test_exact_match_at_level_a_or_b_is_a_strong_hit_and_does_not_run_tier2(level):
-    decision = StubPolicy(found([civic_row(level=level)])).decide(gene="ABL1", mutation="p.Thr315Ile")
+    decision = StubPolicy(found([civic_row(level=level)])).decide(
+        gene="ABL1", mutation="p.Thr315Ile"
+    )
     assert decision.state == "strong_hit"
     assert decision.should_run_tier2 is False
     assert level in decision.reason
@@ -162,7 +163,9 @@ def test_exact_match_at_level_a_or_b_is_a_strong_hit_and_does_not_run_tier2(leve
 
 @pytest.mark.parametrize("level", ["C", "D", "E"])
 def test_exact_match_at_level_c_to_e_is_a_weak_hit_and_runs_tier2(level):
-    decision = StubPolicy(found([civic_row(level=level)])).decide(gene="ABL1", mutation="p.Thr315Ile")
+    decision = StubPolicy(found([civic_row(level=level)])).decide(
+        gene="ABL1", mutation="p.Thr315Ile"
+    )
     assert decision.state == "weak_hit"
     assert decision.should_run_tier2 is True
 
@@ -204,7 +207,9 @@ def test_strong_and_weak_rationales_disclose_that_trials_were_not_evaluated():
     spec's strong-hit clause cannot be evaluated. Saying so is the difference
     between an unimplemented source and a negative finding."""
     for rows, mode in ([civic_row(level="A")], "exact"), ([civic_row(level="C")], "exact"):
-        reason = StubPolicy(found(rows, mode=mode)).decide(gene="ABL1", mutation="p.Thr315Ile").reason
+        reason = (
+            StubPolicy(found(rows, mode=mode)).decide(gene="ABL1", mutation="p.Thr315Ile").reason
+        )
         assert "not evaluated" in reason
 
 
@@ -298,9 +303,9 @@ def test_emit_attaches_to_an_existing_variant_instead_of_creating_a_duplicate():
     node for a variant the graph already has."""
     graph = VariantGraph(existing_vid=7)
     FalkorDBGraphSink(graph=graph).emit(a_signal())
-    assert not any("CREATE (v:Variant" in q for q, _ in graph.calls), (
-        "a variant already in the graph must not be re-created"
-    )
+    assert not any(
+        "CREATE (v:Variant" in q for q, _ in graph.calls
+    ), "a variant already in the graph must not be re-created"
     _, params = graph.find("MATCH (gn:Gene {symbol: $gene})-[:HAS_VARIANT]")
     assert params["hgvs_suffix"] == ":p.Thr315Ile"
 

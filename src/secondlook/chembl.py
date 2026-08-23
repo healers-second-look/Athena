@@ -16,7 +16,9 @@ class ChemblError(RuntimeError):
 
 class ChemblClient:
     def __init__(self, base_url: str | None = None, client: httpx.Client | None = None) -> None:
-        self.base_url = (base_url or os.environ.get("CHEMBL_API_BASE") or DEFAULT_CHEMBL_API).rstrip("/")
+        self.base_url = (
+            base_url or os.environ.get("CHEMBL_API_BASE") or DEFAULT_CHEMBL_API
+        ).rstrip("/")
         self._client = client
 
     def fetch_drugs(self, gene_symbol: str) -> list[dict]:

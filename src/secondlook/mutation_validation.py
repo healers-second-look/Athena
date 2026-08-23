@@ -20,7 +20,8 @@ _SPLICE = re.compile(
 
 OUT_OF_SCOPE_MESSAGE = (
     "Tier 2 supports single amino-acid substitutions (missense) only. "
-    "This variant type requires evidence-based review; no computational structural signal is available."
+    "This variant type requires evidence-based review; no computational "
+    "structural signal is available."
 )
 
 ValidationStatus = Literal["valid", "reference_mismatch", "unsupported_type"]

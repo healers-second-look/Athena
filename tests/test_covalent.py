@@ -71,25 +71,47 @@ def test_scoring_gates_before_touching_the_structure():
             raise AssertionError("must not reach docking for a covalent drug")
 
     validation = MutationValidationResult(
-        status="valid", gene="EGFR", hgvs_normalized="p.Cys797Ser",
-        uniprot_accession="P00533", isoform_note=None, position=797,
-        reference_residue_expected="C", reference_residue_actual="C",
-        mutation_type="missense", error_message=None,
-        wildtype_sequence="C" * 800, mutant_sequence="C" * 796 + "S" + "C" * 203,
+        status="valid",
+        gene="EGFR",
+        hgvs_normalized="p.Cys797Ser",
+        uniprot_accession="P00533",
+        isoform_note=None,
+        position=797,
+        reference_residue_expected="C",
+        reference_residue_actual="C",
+        mutation_type="missense",
+        error_message=None,
+        wildtype_sequence="C" * 800,
+        mutant_sequence="C" * 796 + "S" + "C" * 203,
     )
     structure = StructureResult(
-        status="found", source="PDB", id="8A27", plddt_at_residue=None,
-        plddt_global=None, reliability_flag="high", ligand_bound=True,
-        annotated_position=797, pdb_text="ATOM      1  CA  CYS A 797       0.0   0.0   0.0\n",
+        status="found",
+        source="PDB",
+        id="8A27",
+        plddt_at_residue=None,
+        plddt_global=None,
+        reliability_flag="high",
+        ligand_bound=True,
+        annotated_position=797,
+        pdb_text="ATOM      1  CA  CYS A 797       0.0   0.0   0.0\n",
     )
     candidate = DrugCandidate(
-        name="OSIMERTINIB", source="DGIdb", target_tier="exact_protein",
-        approved=True, smiles="CCO", smiles_source="PubChem",
+        name="OSIMERTINIB",
+        source="DGIdb",
+        target_tier="exact_protein",
+        approved=True,
+        smiles="CCO",
+        smiles_source="PubChem",
     )
     result = score_binding(
-        validation, structure, candidate,
-        mcsm_client=ExplodingMcsm(), vina_client=ExplodingVina(),
-        het_resolver=None, min_delay_seconds=0.0, sleeper=lambda _s: None,
+        validation,
+        structure,
+        candidate,
+        mcsm_client=ExplodingMcsm(),
+        vina_client=ExplodingVina(),
+        het_resolver=None,
+        min_delay_seconds=0.0,
+        sleeper=lambda _s: None,
     )
     assert result.status == "unavailable"
     assert result.reason_code == "mechanism_invalidated"
@@ -99,11 +121,14 @@ def test_scoring_gates_before_touching_the_structure():
 def test_mechanism_invalidated_is_not_retryable():
     """Retrying will not make a non-covalent method covalent-aware."""
     import sys
+
     sys.path.insert(0, "tests")
     from test_pipeline import FailingMcsm, FakeDrugs, _run
 
-    out = _run(dgidb_client=FakeDrugs([{"name": "Osimertinib", "approved": True, "score": 1.0}]),
-               mcsm_client=FailingMcsm())
+    out = _run(
+        dgidb_client=FakeDrugs([{"name": "Osimertinib", "approved": True, "score": 1.0}]),
+        mcsm_client=FailingMcsm(),
+    )
     failures = [f for f in out.failures if "covalent" in f.reason]
     results = [r for r in out.results if r.drug.upper() == "OSIMERTINIB"]
     assert failures or results, "covalent drug must produce an explicit outcome"

@@ -59,7 +59,10 @@ class TestRunDue:
     def test_runs_a_due_source_and_advances_state(self):
         calls = []
         report, state = run_due(
-            None, schedules=[schedule()], state={}, now=NOW,
+            None,
+            schedules=[schedule()],
+            state={},
+            now=NOW,
             loaders={"civic": lambda g, dry_run: calls.append("civic") or "ok"},
         )
         assert calls == ["civic"]
@@ -69,8 +72,10 @@ class TestRunDue:
     def test_skips_a_source_that_is_not_due(self):
         calls = []
         report, _ = run_due(
-            None, schedules=[schedule(hours=168)],
-            state={"civic": NOW - timedelta(hours=1)}, now=NOW,
+            None,
+            schedules=[schedule(hours=168)],
+            state={"civic": NOW - timedelta(hours=1)},
+            now=NOW,
             loaders={"civic": lambda g, dry_run: calls.append("x")},
         )
         assert calls == []
@@ -79,22 +84,27 @@ class TestRunDue:
     def test_force_overrides_the_interval(self):
         calls = []
         run_due(
-            None, schedules=[schedule(hours=168)],
-            state={"civic": NOW}, now=NOW, force=True,
+            None,
+            schedules=[schedule(hours=168)],
+            state={"civic": NOW},
+            now=NOW,
+            force=True,
             loaders={"civic": lambda g, dry_run: calls.append("x")},
         )
         assert calls == ["x"]
 
     def test_disabled_source_is_skipped_with_a_reason(self):
         report, _ = run_due(
-            None, schedules=[schedule(name="ctri", enabled=False)], state={}, now=NOW,
+            None,
+            schedules=[schedule(name="ctri", enabled=False)],
+            state={},
+            now=NOW,
             loaders={"ctri": lambda g, dry_run: 1 / 0},
         )
         assert report.runs[0].skipped_reason == "disabled in config"
 
     def test_a_source_with_no_registered_loader_is_reported_not_crashed(self):
-        report, _ = run_due(None, schedules=[schedule(name="ctri")], state={}, now=NOW,
-                            loaders={})
+        report, _ = run_due(None, schedules=[schedule(name="ctri")], state={}, now=NOW, loaders={})
         assert "no loader registered" in report.runs[0].skipped_reason
 
     def test_one_source_failing_does_not_stop_the_others(self):
@@ -108,7 +118,8 @@ class TestRunDue:
         report, state = run_due(
             None,
             schedules=[schedule(name="civic"), schedule(name="pubmed")],
-            state={}, now=NOW,
+            state={},
+            now=NOW,
             loaders={"civic": boom, "pubmed": lambda g, dry_run: ran.append("pubmed")},
         )
         assert ran == ["pubmed"]
@@ -121,7 +132,10 @@ class TestRunDue:
 
     def test_the_error_is_recorded_not_swallowed(self):
         report, _ = run_due(
-            None, schedules=[schedule()], state={}, now=NOW,
+            None,
+            schedules=[schedule()],
+            state={},
+            now=NOW,
             loaders={"civic": lambda g, dry_run: (_ for _ in ()).throw(ValueError("bad json"))},
         )
         assert "ValueError" in report.failed[0].error
@@ -130,7 +144,11 @@ class TestRunDue:
     def test_dry_run_does_not_advance_the_clock(self):
         """Otherwise a dry run would suppress the next real run."""
         _, state = run_due(
-            None, schedules=[schedule()], state={}, now=NOW, dry_run=True,
+            None,
+            schedules=[schedule()],
+            state={},
+            now=NOW,
+            dry_run=True,
             loaders={"civic": lambda g, dry_run: None},
         )
         assert state == {}
@@ -138,10 +156,15 @@ class TestRunDue:
     def test_only_limits_to_one_source(self):
         ran = []
         run_due(
-            None, schedules=[schedule("civic"), schedule("pubmed")], state={}, now=NOW,
+            None,
+            schedules=[schedule("civic"), schedule("pubmed")],
+            state={},
+            now=NOW,
             only="pubmed",
-            loaders={"civic": lambda g, dry_run: ran.append("civic"),
-                     "pubmed": lambda g, dry_run: ran.append("pubmed")},
+            loaders={
+                "civic": lambda g, dry_run: ran.append("civic"),
+                "pubmed": lambda g, dry_run: ran.append("pubmed"),
+            },
         )
         assert ran == ["pubmed"]
 
@@ -161,7 +184,9 @@ class TestState:
 
     def test_unparseable_timestamp_is_dropped_not_fatal(self, tmp_path):
         path = tmp_path / "state.json"
-        path.write_text('{"last_success": {"civic": "never", "pubmed": "2026-08-23T12:00:00+00:00"}}')
+        path.write_text(
+            '{"last_success": {"civic": "never",' ' "pubmed": "2026-08-23T12:00:00+00:00"}}'
+        )
         state = load_state(path)
         assert "civic" not in state
         assert state["pubmed"] == NOW

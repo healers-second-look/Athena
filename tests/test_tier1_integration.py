@@ -57,21 +57,31 @@ def graph():
     # Restricted to drugs this test names AND that nothing else references, so
     # a name colliding with a real CIViC drug is never removed.
     g.query(
-        "MATCH (d:Drug) WHERE d.name IN $names AND NOT (d)<-[]-() AND NOT (d)-[]->() "
-        "DELETE d",
+        "MATCH (d:Drug) WHERE d.name IN $names AND NOT (d)<-[]-() AND NOT (d)-[]->() " "DELETE d",
         params={"names": TEST_DRUGS},
     )
 
 
 def a_signal(drug="TESTDRUG", hgvs_p=TEST_HGVS) -> StructuralSignal:
     return StructuralSignal(
-        gene=TEST_GENE, hgvs_p=hgvs_p, drug=drug,
-        alphamissense_score=0.91, alphamissense_class="likely_pathogenic",
-        structure_source="PDB", structure_id="0TST", plddt_at_residue=None,
-        reliability_flag="high", method=None, delta_score=None, label=None,
-        binding_site_distance_angstrom=3.5, confidence="low",
-        calibration_status="provisional", computed_at=utc_now_iso(),
-        pipeline_version="0.2.0", labeling_version="0.1.0-provisional",
+        gene=TEST_GENE,
+        hgvs_p=hgvs_p,
+        drug=drug,
+        alphamissense_score=0.91,
+        alphamissense_class="likely_pathogenic",
+        structure_source="PDB",
+        structure_id="0TST",
+        plddt_at_residue=None,
+        reliability_flag="high",
+        method=None,
+        delta_score=None,
+        label=None,
+        binding_site_distance_angstrom=3.5,
+        confidence="low",
+        calibration_status="provisional",
+        computed_at=utc_now_iso(),
+        pipeline_version="0.2.0",
+        labeling_version="0.1.0-provisional",
     )
 
 
@@ -159,7 +169,7 @@ def test_every_declared_structural_signal_property_is_queryable(graph):
         f"-[:HAS_COMPUTATIONAL_SIGNAL]->(s:StructuralSignal) RETURN {returns}",
         params={"g": TEST_GENE},
     ).result_set[0]
-    named = dict(zip(STRUCTURAL_SIGNAL.properties, row))
+    named = dict(zip(STRUCTURAL_SIGNAL.properties, row, strict=True))
     assert named["binding_site_distance_angstrom"] == pytest.approx(3.5)
     assert named["calibration_status"] == "provisional"
     assert named["structure_id"] == "0TST"

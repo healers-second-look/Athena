@@ -81,7 +81,9 @@ class ActivationDecision:
 class ActivationPolicy(Protocol):
     """Implemented by Tier 1. Tier 2 only ever consumes the decision."""
 
-    def decide(self, *, gene: str, mutation: str, cancer_type: str | None) -> ActivationDecision: ...
+    def decide(
+        self, *, gene: str, mutation: str, cancer_type: str | None
+    ) -> ActivationDecision: ...
 
 
 class AlwaysRunTier2Policy:
@@ -116,7 +118,7 @@ class AlwaysRunTier2Policy:
 class GraphSink(Protocol):
     """Persists graph-ready nodes. Implemented by Tier 1 against FalkorDB."""
 
-    def emit(self, signal: "object") -> None: ...
+    def emit(self, signal: object) -> None: ...
 
 
 class CollectingGraphSink:

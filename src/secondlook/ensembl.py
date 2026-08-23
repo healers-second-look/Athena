@@ -18,7 +18,9 @@ class EnsemblError(RuntimeError):
 
 class EnsemblTranscriptResolver:
     def __init__(self, base_url: str | None = None, client: httpx.Client | None = None) -> None:
-        self.base_url = (base_url or os.environ.get("ENSEMBL_REST_BASE") or DEFAULT_ENSEMBL_REST).rstrip("/")
+        self.base_url = (
+            base_url or os.environ.get("ENSEMBL_REST_BASE") or DEFAULT_ENSEMBL_REST
+        ).rstrip("/")
         self._client = client
 
     def resolve_mane_select(self, gene_symbol: str) -> str:
@@ -52,7 +54,9 @@ class EnsemblTranscriptResolver:
 
 class EnsemblVepClient:
     def __init__(self, base_url: str | None = None, client: httpx.Client | None = None) -> None:
-        self.base_url = (base_url or os.environ.get("ENSEMBL_REST_BASE") or DEFAULT_ENSEMBL_REST).rstrip("/")
+        self.base_url = (
+            base_url or os.environ.get("ENSEMBL_REST_BASE") or DEFAULT_ENSEMBL_REST
+        ).rstrip("/")
         self._client = client
 
     def lookup_hgvs(self, transcript_id: str, hgvs: str) -> list[dict]:
@@ -77,6 +81,7 @@ def _ensembl_get_json(
 ) -> dict | list:
     url = f"{base_url}{path}"
     headers = {"Content-Type": "application/json", "Accept": "application/json"}
+
     # Request and status check both inside `attempt`: transport errors are
     # raised by the request call, so they must be covered to be retried and
     # converted rather than escaping as raw httpx errors.

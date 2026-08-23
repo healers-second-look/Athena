@@ -51,6 +51,8 @@ def is_worth_rerunning(payload: dict) -> bool:
         return False
     failures = payload.get("failures") or []
     return any(f.get("retryable") for f in failures)
+
+
 from secondlook.pipeline import run_tier2  # noqa: E402
 from secondlook.validation import (  # noqa: E402
     GOLD_STANDARD_CASES,
@@ -129,13 +131,16 @@ def main() -> int:
 
             if index > 1 and args.pace_seconds:
                 time.sleep(args.pace_seconds)
-            print(f"[{index}/{len(targets)}] {gene} {mutation}: running for {', '.join(drugs)}…", flush=True)
+            print(
+                f"[{index}/{len(targets)}] {gene} {mutation}: running for {', '.join(drugs)}…",
+                flush=True,
+            )
             try:
                 kwargs = {"restrict_to_drugs": tuple(drugs)}
                 if args.max_candidates is not None:
                     kwargs["max_candidates"] = args.max_candidates
                 output = run_tier2(gene, mutation, **kwargs)
-            except Exception:
+            except Exception:  # noqa: BLE001
                 # A crash on one case must not lose the other eight. The traceback
                 # is printed rather than swallowed — this is a research harness,
                 # and a silent skip here would be the same class of bug the

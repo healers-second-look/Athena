@@ -54,7 +54,9 @@ class PubChemClient:
         client: httpx.Client | None = None,
         limiter: TokenBucket | None = None,
     ) -> None:
-        self.base_url = (base_url or os.environ.get("PUBCHEM_API_BASE") or DEFAULT_PUBCHEM_BASE).rstrip("/")
+        self.base_url = (
+            base_url or os.environ.get("PUBCHEM_API_BASE") or DEFAULT_PUBCHEM_BASE
+        ).rstrip("/")
         self._client = client
         self.limiter = limiter or TokenBucket()
 

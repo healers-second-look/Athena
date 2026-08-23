@@ -58,9 +58,7 @@ def to_payload(output: Tier2Output, *, gene: str, mutation: str) -> dict[str, An
     # Same contract shape the result items use — full-length sequences are large,
     # not part of api-contracts.md, and derivable from the accession.
     validation = (
-        mutation_validated_payload(output.validation)
-        if output.validation is not None
-        else None
+        mutation_validated_payload(output.validation) if output.validation is not None else None
     )
 
     return {
@@ -85,9 +83,7 @@ def to_payload(output: Tier2Output, *, gene: str, mutation: str) -> dict[str, An
     }
 
 
-def save_payload(
-    payload: dict[str, Any], *, cache_dir: Path | str = DEFAULT_CACHE_DIR
-) -> Path:
+def save_payload(payload: dict[str, Any], *, cache_dir: Path | str = DEFAULT_CACHE_DIR) -> Path:
     """Write a payload to `<cache_dir>/<gene>_<mutation>.json`."""
     directory = Path(cache_dir)
     directory.mkdir(parents=True, exist_ok=True)

@@ -2,7 +2,7 @@
 
 import json
 
-import pytest
+from test_pipeline import _run  # reuse the wired fake pipeline
 
 from secondlook.cache import (
     cache_case,
@@ -22,9 +22,6 @@ from secondlook.validation import (
     render_markdown,
     score_case,
 )
-
-from test_pipeline import _run  # reuse the wired fake pipeline
-
 
 # --- Gold-standard case set ---------------------------------------------------
 
@@ -58,7 +55,9 @@ def test_expected_labels_follow_known_direction():
 
 
 def test_the_two_hard_required_controls_are_flagged():
-    flagged = {(c.gene, c.mutation, c.drug) for c in GOLD_STANDARD_CASES if c.is_hard_required_control}
+    flagged = {
+        (c.gene, c.mutation, c.drug) for c in GOLD_STANDARD_CASES if c.is_hard_required_control
+    }
     assert flagged == {("BRAF", "V600E", "vemurafenib"), ("EGFR", "T790M", "osimertinib")}
     assert len(HARD_REQUIRED_CONTROLS) == 2
 
@@ -77,9 +76,7 @@ def _payload(gene, mutation, drug, label, method="mCSM-lig", delta=-2.0):
         "mutation": mutation,
         "status": "complete",
         "pipeline_version": "0.1.0",
-        "results": [
-            {"drug": drug, "label": label, "method": method, "delta_score": delta}
-        ],
+        "results": [{"drug": drug, "label": label, "method": method, "delta_score": delta}],
         "failures": [],
     }
 
@@ -438,4 +435,6 @@ def test_failed_rerun_does_not_overwrite_a_good_cached_result():
     source = open("validation/run_gold_standard.py").read()
     # The guard must sit before the write, not after.
     assert 'if not payload["results"] and existing and existing.get("results")' in source
-    assert source.index("keeping the previous successful result") < source.index("path = save_payload(payload")
+    assert source.index("keeping the previous successful result") < source.index(
+        "path = save_payload(payload"
+    )
