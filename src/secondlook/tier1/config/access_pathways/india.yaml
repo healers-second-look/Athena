@@ -1,0 +1,41 @@
+# Access pathways — India.
+#
+# CURATED DATA, NOT SCRAPED. Every entry is a regulatory claim a clinician may
+# act on, so each one must cite the instrument it rests on and carry a URL a
+# reader can check.
+#
+# REVIEW STATUS: `unreviewed`. The instruments below are transcribed from the
+# Subsystem J specification, NOT independently verified against the primary
+# source by anyone with regulatory-affairs training. The issue is explicit that
+# this feature should be staffed by someone with that background. Until each
+# entry is reviewed, the loader marks it and the UI must not present it as
+# settled guidance.
+#
+# `precedent_examples` is deliberately EMPTY. Populate only with real, citable
+# cases. An invented precedent is the single most damaging thing that could be
+# added to this file: "expanded access has been granted for this agent before"
+# is a claim a clinician would act on.
+config_version: "2026-08-23.1"
+country: IN
+regulator: CDSCO
+review_status: unreviewed
+
+pathways:
+  - pathway_type: compassionate_use
+    instrument: "CDSCO New Drugs and Clinical Trials Rules, 2019 — Rule 36"
+    description: >-
+      Compassionate use / named-patient supply for serious or life-threatening
+      conditions where no satisfactory alternative therapy is available in
+      India.
+    precedent_strength: theoretical
+    precedent_examples: []
+    source_url: "https://cdsco.gov.in/opencms/opencms/en/Home/"
+
+  - pathway_type: named_patient_import
+    instrument: "CDSCO New Drugs and Clinical Trials Rules, 2019 — Rule 36"
+    description: >-
+      Import of an unapproved drug for the treatment of a named individual
+      patient, applied for by the treating institution.
+    precedent_strength: theoretical
+    precedent_examples: []
+    source_url: "https://cdsco.gov.in/opencms/opencms/en/Home/"
