@@ -64,14 +64,13 @@ class TestPrecedentStrength:
         materially different claim from 'a pathway theoretically exists', and
         must not be assertable without evidence."""
         with pytest.raises(AccessPathwayConfigError, match="precedent_examples"):
-            validate_pathway(
-                entry(precedent_strength="granted_before"), country="IN", path=None
-            )
+            validate_pathway(entry(precedent_strength="granted_before"), country="IN", path=None)
 
     def test_granted_before_with_a_precedent_is_accepted(self):
         parsed = validate_pathway(
             entry(precedent_strength="granted_before", precedent_examples=["Case X, 2024"]),
-            country="IN", path=None,
+            country="IN",
+            path=None,
         )
         assert parsed["precedent_strength"] == "granted_before"
         assert parsed["precedent_examples"] == ["Case X, 2024"]
@@ -79,7 +78,8 @@ class TestPrecedentStrength:
     def test_theoretical_is_the_default(self):
         parsed = validate_pathway(
             {k: v for k, v in entry().items() if k != "precedent_strength"},
-            country="IN", path=None,
+            country="IN",
+            path=None,
         )
         assert parsed["precedent_strength"] == "theoretical"
 
@@ -111,12 +111,12 @@ class TestSeedFiles:
 
     def test_a_malformed_file_is_rejected_whole_not_partially_loaded(self, tmp_path):
         """A half-loaded country is worse than an absent one."""
-        good = seed_file(tmp_path, "us.yaml", country="US", regulator="FDA")
+        # Written for its side effect: a valid file alongside the malformed one.
+        seed_file(tmp_path, "us.yaml", country="US", regulator="FDA")
         bad = tmp_path / "bad.yaml"
         bad.write_text(
             yaml.safe_dump(
-                {"country": "XX", "regulator": "R",
-                 "pathways": [entry(), entry(source_url="")]}
+                {"country": "XX", "regulator": "R", "pathways": [entry(), entry(source_url="")]}
             )
         )
         summary = run_load(None, pathways_dir=tmp_path, dry_run=True)
