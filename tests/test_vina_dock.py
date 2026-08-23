@@ -96,7 +96,9 @@ class FakeDock:
         self.error = error
         self.calls: list[dict] = []
 
-    def dock(self, receptor_pdbqt: str, ligand_pdbqt: str, box, timeout_seconds: float, seed: int) -> float:
+    def dock(
+        self, receptor_pdbqt: str, ligand_pdbqt: str, box, timeout_seconds: float, seed: int
+    ) -> float:
         self.calls.append(
             {
                 "receptor": receptor_pdbqt,
@@ -237,10 +239,20 @@ def test_pdbfixer_places_mutant_sidechain_without_moving_backbone():
 
     builder = PdbFixerMutantBuilder()
     mutant = builder.place_sidechain(PEPTIDE_PDB, "D2N", 2)
-    ca_wt = [line[30:54] for line in PEPTIDE_PDB.splitlines() if line.startswith("ATOM") and line[12:16].strip() == "CA" and int(line[22:26]) == 2][0]
-    ca_mut = [line[30:54] for line in mutant.splitlines() if line.startswith("ATOM") and line[12:16].strip() == "CA" and int(line[22:26]) == 2][0]
+    ca_wt = [
+        line[30:54]
+        for line in PEPTIDE_PDB.splitlines()
+        if line.startswith("ATOM") and line[12:16].strip() == "CA" and int(line[22:26]) == 2
+    ][0]
+    ca_mut = [
+        line[30:54]
+        for line in mutant.splitlines()
+        if line.startswith("ATOM") and line[12:16].strip() == "CA" and int(line[22:26]) == 2
+    ][0]
     assert ca_mut == ca_wt
-    res2 = [line for line in mutant.splitlines() if line.startswith("ATOM") and int(line[22:26]) == 2]
+    res2 = [
+        line for line in mutant.splitlines() if line.startswith("ATOM") and int(line[22:26]) == 2
+    ]
     assert any("ASN" in line[17:20] for line in res2)
     assert any(line[12:16].strip() == "ND2" for line in res2)
 
@@ -356,7 +368,11 @@ def test_score_binding_maps_vina_errors_to_binding_unavailable_message():
         validation,
         structure,
         candidate,
-        mcsm_client=type("M", (), {"submit": staticmethod(lambda **k: (_ for _ in ()).throw(Exception("unused")))})(),
+        mcsm_client=type(
+            "M",
+            (),
+            {"submit": staticmethod(lambda **k: (_ for _ in ()).throw(Exception("unused")))},
+        )(),
         vina_client=RaisingVina(),
         het_resolver=type("H", (), {"resolve": staticmethod(lambda *a: None)})(),
         sleeper=lambda _: None,
@@ -372,7 +388,9 @@ def test_9c5s_tp53_r175h_cannot_place_uniprot_residue_on_fragment():
     pdb_text = httpx.get("https://files.rcsb.org/download/9C5S.pdb", timeout=60.0).text
     client = VinaDockClient(timeout_seconds=30.0, seed=1, exhaustiveness=1)
     with pytest.raises((MutantPlacementError, NoBindingSiteError)):
-        client.score(pdb_text=pdb_text, smiles="Fc1c[nH]c(=O)[nH]c1=O", mutation="R175H", position=175)
+        client.score(
+            pdb_text=pdb_text, smiles="Fc1c[nH]c(=O)[nH]c1=O", mutation="R175H", position=175
+        )
 
 
 @pytest.mark.integration
@@ -475,7 +493,9 @@ def test_alternate_conformations_are_dropped():
     assert is_primary_altloc("ATOM      1  CA AVAL A 600") is True
     assert is_primary_altloc("ATOM      2  CA BVAL A 600") is False
     out = protein_atoms_only(ALTLOC_PDB)
-    ca_lines = [l for l in out.splitlines() if l.startswith("ATOM") and l[12:16].strip() == "CA"]
+    ca_lines = [
+        line for line in out.splitlines() if line.startswith("ATOM") and line[12:16].strip() == "CA"
+    ]
     assert len(ca_lines) == 1
 
 
@@ -649,12 +669,8 @@ def test_delta_stays_mutant_minus_wildtype_whichever_form_was_deposited():
             protonator=None,
         )
 
-    from_wt = client().score(
-        pdb_text=WT_FORM_PDB, smiles="CCO", mutation="V600E", position=600
-    )
-    from_mut = client().score(
-        pdb_text=MUT_FORM_PDB, smiles="CCO", mutation="V600E", position=600
-    )
+    from_wt = client().score(pdb_text=WT_FORM_PDB, smiles="CCO", mutation="V600E", position=600)
+    from_mut = client().score(pdb_text=MUT_FORM_PDB, smiles="CCO", mutation="V600E", position=600)
     # mutant (-7.0) minus wild-type (-8.0) = +1.0, from either deposited form.
     assert from_wt.delta_score == pytest.approx(1.0)
     assert from_mut.delta_score == pytest.approx(1.0)
@@ -856,4 +872,3 @@ def test_obabel_preps_wildtype_and_mutant_receptors(pdb_id, mutation, position):
         atoms = sum(1 for line in pdbqt.splitlines() if line.startswith("ATOM"))
         assert atoms > 0, f"{pdb_id} {form} produced no ATOM records"
         assert "ATOM" in pdbqt
-

@@ -28,6 +28,18 @@ structural = [
 semantic = [
     "sentence-transformers>=3.0.0",
 ]
+# Case store, diff engine, API, and synthesis (the R&D loop) — Postgres-backed,
+# per IMPLEMENTATION_PLAN.md §1.1. Kept out of core `dependencies` so a caller
+# that only needs Tier 1/Tier 2 never pays for FastAPI/SQLAlchemy/anthropic.
+api = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.32",
+    "sqlalchemy>=2.0",
+    "psycopg[binary]>=3.2",
+    "alembic>=1.14",
+    "pydantic>=2.9",
+    "anthropic>=0.40",
+]
 dev = [
     "pytest>=8.0",
     "pytest-cov>=5.0",

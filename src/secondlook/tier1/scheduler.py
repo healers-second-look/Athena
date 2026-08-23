@@ -348,8 +348,12 @@ def main(argv: list[str] | None = None) -> int:
 
     graph = connect_graph()
     report, new_state = run_due(
-        graph, schedules=schedules, state=state, only=args.source,
-        force=args.force, dry_run=args.dry_run,
+        graph,
+        schedules=schedules,
+        state=state,
+        only=args.source,
+        force=args.force,
+        dry_run=args.dry_run,
     )
     print("\n" + report.render())
     if not args.dry_run:

@@ -6,7 +6,7 @@ from secondlook.binding import BINDING_UNAVAILABLE_MESSAGE, BindingScore
 from secondlook.candidates import ZERO_CANDIDATES_MESSAGE
 from secondlook.graph import PIPELINE_VERSION
 from secondlook.mutation_validation import OUT_OF_SCOPE_MESSAGE, ProteinSequence
-from secondlook.pipeline import DISCLAIMER, Tier2ResultItem, run_tier2
+from secondlook.pipeline import DISCLAIMER, run_tier2
 from secondlook.tier1_contract import ActivationDecision, AlwaysRunTier2Policy, CollectingGraphSink
 
 # TP53 R175H is the smoke-test case: values verified at each individual step in
@@ -42,7 +42,10 @@ class FakeVep:
                 "transcript_consequences": [
                     {
                         "transcript_id": "ENST00000269305.9",
-                        "alphamissense": {"am_pathogenicity": 0.9999, "am_class": "likely_pathogenic"},
+                        "alphamissense": {
+                            "am_pathogenicity": 0.9999,
+                            "am_class": "likely_pathogenic",
+                        },
                     }
                 ]
             }
@@ -60,8 +63,7 @@ class FakePdb:
 
 
 _TP53_APO_PDB = (
-    "ATOM      1  CA  ARG A 175      11.000  12.000  13.000  1.00 88.00           C  \n"
-    "END\n"
+    "ATOM      1  CA  ARG A 175      11.000  12.000  13.000  1.00 88.00           C  \n" "END\n"
 )
 
 
@@ -295,8 +297,7 @@ def test_binding_failure_uses_the_binding_message_not_the_plddt_one():
     An unscoreable candidate on a perfectly good structure must not claim the
     structure was unreliable.
     """
-    out = _run(pdb_client=FakePdbApo(), mcsm_client=FailingMcsm(),
-               vina_client=FailingVina())
+    out = _run(pdb_client=FakePdbApo(), mcsm_client=FailingMcsm(), vina_client=FailingVina())
     assert out.results == []
     assert len(out.failures) == 1
     assert out.failures[0].reason == BINDING_UNAVAILABLE_MESSAGE
@@ -430,8 +431,12 @@ def test_proximity_only_candidate_still_emits_a_graph_signal():
 def test_no_signal_emitted_when_nothing_could_be_measured():
     """An apo structure yields neither a delta nor proximity — a real failure."""
     sink = CollectingGraphSink()
-    out = _run(pdb_client=FakePdbApo(), mcsm_client=FailingMcsm(),
-               vina_client=FailingVina(), graph_sink=sink)
+    out = _run(
+        pdb_client=FakePdbApo(),
+        mcsm_client=FailingMcsm(),
+        vina_client=FailingVina(),
+        graph_sink=sink,
+    )
     assert sink.signals == []
     assert out.results == []
     assert out.failures
@@ -779,14 +784,12 @@ def test_out_of_pocket_failure_is_not_retryable():
                 reason_code="outside_pocket",
             )
 
-    out = _run(pdb_client=FakePdbApo(), mcsm_client=FailingMcsm(),
-               vina_client=OutsidePocketVina())
+    out = _run(pdb_client=FakePdbApo(), mcsm_client=FailingMcsm(), vina_client=OutsidePocketVina())
     assert out.results == []
     assert len(out.failures) == 1
     assert out.failures[0].retryable is False
 
 
 def test_transient_binding_failure_stays_retryable():
-    out = _run(pdb_client=FakePdbApo(), mcsm_client=FailingMcsm(),
-               vina_client=FailingVina())
+    out = _run(pdb_client=FakePdbApo(), mcsm_client=FailingMcsm(), vina_client=FailingVina())
     assert out.failures[0].retryable is True

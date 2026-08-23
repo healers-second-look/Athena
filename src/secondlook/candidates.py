@@ -12,7 +12,8 @@ from secondlook.opentargets import OpenTargetsError
 from secondlook.pubchem import PubChemError
 
 ZERO_CANDIDATES_MESSAGE = (
-    "No candidate drugs targeting this protein, its family, or its pathway were found in open databases. "
+    "No candidate drugs targeting this protein, its family, or its pathway "
+    "were found in open databases. "
     "Tier 2 cannot generate a signal for this target."
 )
 
@@ -61,7 +62,12 @@ def generate_candidates(
     pubchem_client: SmilesClient | None = None,
     max_candidates: int = SHORTLIST_MAX,
 ) -> CandidateResult:
-    if dgidb_client is None or opentargets_client is None or chembl_client is None or pubchem_client is None:
+    if (
+        dgidb_client is None
+        or opentargets_client is None
+        or chembl_client is None
+        or pubchem_client is None
+    ):
         from secondlook.chembl import ChemblClient
         from secondlook.dgidb import DgidbClient
         from secondlook.opentargets import OpenTargetsClient

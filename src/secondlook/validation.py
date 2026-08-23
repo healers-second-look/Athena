@@ -54,13 +54,23 @@ class GoldStandardCase:
 GOLD_STANDARD_CASES: tuple[GoldStandardCase, ...] = (
     GoldStandardCase("EGFR", "T790M", "gefitinib", "resistance", "Gatekeeper mutation"),
     GoldStandardCase("EGFR", "T790M", "osimertinib", "sensitive", "3rd-gen, designed for T790M"),
-    GoldStandardCase("EGFR", "C797S", "osimertinib", "resistance", "Abolishes covalent binding at C797"),
+    GoldStandardCase(
+        "EGFR", "C797S", "osimertinib", "resistance", "Abolishes covalent binding at C797"
+    ),
     GoldStandardCase("ABL1", "T315I", "imatinib", "resistance", "Classic gatekeeper mutation"),
     GoldStandardCase("KIT", "D816V", "imatinib", "resistance", "Kinase-domain mutation"),
-    GoldStandardCase("KIT", "V560G", "imatinib", "sensitive", "Juxtamembrane; contrast case for D816V"),
-    GoldStandardCase("BRAF", "V600E", "vemurafenib", "sensitive", "Drug designed for this mutation"),
-    GoldStandardCase("ALK", "G1202R", "crizotinib", "resistance", "Sensitive to lorlatinib instead"),
-    GoldStandardCase("ALK", "I1171T", "crizotinib", "resistance", "Sensitive to ceritinib/lorlatinib"),
+    GoldStandardCase(
+        "KIT", "V560G", "imatinib", "sensitive", "Juxtamembrane; contrast case for D816V"
+    ),
+    GoldStandardCase(
+        "BRAF", "V600E", "vemurafenib", "sensitive", "Drug designed for this mutation"
+    ),
+    GoldStandardCase(
+        "ALK", "G1202R", "crizotinib", "resistance", "Sensitive to lorlatinib instead"
+    ),
+    GoldStandardCase(
+        "ALK", "I1171T", "crizotinib", "resistance", "Sensitive to ceritinib/lorlatinib"
+    ),
 )
 
 
@@ -244,11 +254,7 @@ class ValidationReport:
     @property
     def is_demo_ready(self) -> bool:
         """Both pre-committed criteria must hold — and the harness must have run."""
-        return (
-            self.has_been_run
-            and self.meets_pass_threshold
-            and not self.failed_hard_controls
-        )
+        return self.has_been_run and self.meets_pass_threshold and not self.failed_hard_controls
 
     @property
     def method_split(self) -> dict[str, int]:
@@ -320,37 +326,43 @@ def render_markdown(report: ValidationReport) -> str:
     # An unrun harness is not a failed one. Reporting "0/9, NOT MET, FAILED" for
     # a pipeline that was never executed would be a fabricated accuracy claim.
     if not report.has_been_run:
-        return "\n".join(
-            lines[:5]
-            + [
-                "## Status: NOT YET RUN",
-                "",
-                "No case has been executed, so there is **no measured pass rate and no verdict**.",
-                "The criteria below are stated for reference only. Nothing in this file may be",
-                "cited as an accuracy figure until the harness runs.",
-                "",
-                "Run it with:",
-                "",
-                "```bash",
-                "python validation/run_gold_standard.py",
-                "```",
-                "",
-                "## Pre-committed criteria (not yet evaluated)",
-                "",
-                f"- Pass threshold: correct directionality on >= {PASS_THRESHOLD:.0%} of the nine cases.",
-                "- Hard requirement: BRAF V600E/vemurafenib and EGFR T790M/osimertinib must",
-                "  both show retained/increased binding, regardless of overall pass rate.",
-                "",
-                "## Cases awaiting a run",
-                "",
-                "| Gene | Mutation | Drug | Known direction |",
-                "|---|---|---|---|",
-            ]
-            + [
-                f"| {o.case.gene} | {o.case.mutation} | {o.case.drug} | {o.case.known_direction} |"
-                for o in report.outcomes
-            ]
-        ) + "\n"
+        return (
+            "\n".join(
+                lines[:5]
+                + [
+                    "## Status: NOT YET RUN",
+                    "",
+                    "No case has been executed, so there is **no measured pass "
+                    "rate and no verdict**.",
+                    "The criteria below are stated for reference only. Nothing in this file may be",
+                    "cited as an accuracy figure until the harness runs.",
+                    "",
+                    "Run it with:",
+                    "",
+                    "```bash",
+                    "python validation/run_gold_standard.py",
+                    "```",
+                    "",
+                    "## Pre-committed criteria (not yet evaluated)",
+                    "",
+                    f"- Pass threshold: correct directionality on >= "
+                    f"{PASS_THRESHOLD:.0%} of the nine cases.",
+                    "- Hard requirement: BRAF V600E/vemurafenib and EGFR T790M/osimertinib must",
+                    "  both show retained/increased binding, regardless of overall pass rate.",
+                    "",
+                    "## Cases awaiting a run",
+                    "",
+                    "| Gene | Mutation | Drug | Known direction |",
+                    "|---|---|---|---|",
+                ]
+                + [
+                    f"| {o.case.gene} | {o.case.mutation} | {o.case.drug} | "
+                    f"{o.case.known_direction} |"
+                    for o in report.outcomes
+                ]
+            )
+            + "\n"
+        )
 
     for o in report.outcomes:
         delta = "—" if o.delta_score is None else f"{o.delta_score:+.3f}"
@@ -434,7 +446,7 @@ def render_markdown(report: ValidationReport) -> str:
     if not report.is_demo_ready and report.is_complete_run:
         lines += [
             "Per `validation-plan.md`, falling below threshold means falling back to the",
-            "narrower claim — \"mutation is in/near the known binding pocket\" plus the",
+            'narrower claim — "mutation is in/near the known binding pocket" plus the',
             "AlphaMissense flag only — and dropping the binding-affinity delta/label from",
             "the UI. That is a documented, legitimate outcome, not a result to hide or to",
             "fix by moving the threshold.",

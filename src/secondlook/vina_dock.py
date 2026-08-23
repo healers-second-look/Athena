@@ -296,7 +296,7 @@ def grid_box_from_pdb(pdb_text: str, padding: float = DEFAULT_PADDING_ANGSTROM) 
         raise NoBindingSiteError(
             "No co-crystallized ligand coordinates in the structure; cannot center a Vina grid box"
         )
-    xs, ys, zs = zip(*coords)
+    xs, ys, zs = zip(*coords, strict=True)
     center = (
         (min(xs) + max(xs)) / 2.0,
         (min(ys) + max(ys)) / 2.0,
@@ -351,7 +351,9 @@ class PdbFixerMutantBuilder:
         try:
             chain = chain_for_residue(pdb_text, position)
         except McsmPageError as exc:
-            raise MutantPlacementError(f"Cannot resolve chain for residue {position}: {exc}") from exc
+            raise MutantPlacementError(
+                f"Cannot resolve chain for residue {position}: {exc}"
+            ) from exc
         expected = ONE_TO_THREE.get(wt)
         target = ONE_TO_THREE.get(mut)
         if expected is None or target is None:
@@ -401,7 +403,9 @@ def strip_terminal_oxt(pdb_text: str) -> str:
     return "\n".join(kept) + "\n"
 
 
-def largest_ligand_group(pdb_text: str) -> tuple[str | None, tuple[tuple[float, float, float], ...]]:
+def largest_ligand_group(
+    pdb_text: str,
+) -> tuple[str | None, tuple[tuple[float, float, float], ...]]:
     """The biggest non-trivial HET group, with its residue name.
 
     Returning the name matters for honest reporting: the distance is measured to
@@ -426,9 +430,7 @@ def largest_ligand_group(pdb_text: str) -> tuple[str | None, tuple[tuple[float, 
     return key[2], tuple(groups[key])
 
 
-def residue_ligand_distance(
-    pdb_text: str, position: int
-) -> tuple[float | None, str | None]:
+def residue_ligand_distance(pdb_text: str, position: int) -> tuple[float | None, str | None]:
     """Shortest distance from residue `position` to the co-crystallized ligand.
 
     Returns ``(distance, ligand_het_code)``. The ligand code is part of the
@@ -606,9 +608,9 @@ def _largest_fragment(mol):
 class MeekoLigandPreparer:
     def to_pdbqt(self, smiles: str) -> str:
         try:
+            from meeko import MoleculePreparation, PDBQTWriterLegacy
             from rdkit import Chem
             from rdkit.Chem import AllChem
-            from meeko import MoleculePreparation, PDBQTWriterLegacy
         except ImportError as exc:
             raise LigandPrepError("rdkit/meeko is not installed") from exc
         mol = Chem.MolFromSmiles(smiles)
@@ -697,7 +699,7 @@ def pose_rmsd(
     """Symmetry-naive RMSD between two coordinate sets of equal length."""
     if not a or len(a) != len(b):
         return None
-    return (sum(math.dist(p, q) ** 2 for p, q in zip(a, b)) / len(a)) ** 0.5
+    return (sum(math.dist(p, q) ** 2 for p, q in zip(a, b, strict=True)) / len(a)) ** 0.5
 
 
 class NativePoseControl:
@@ -748,7 +750,9 @@ class VinaDockClient:
         self._mutant_builder = mutant_builder or PdbFixerMutantBuilder()
         self._ligand_preparer = ligand_preparer or MeekoLigandPreparer()
         self._dock_engine = dock_engine or VinaEngine(exhaustiveness=exhaustiveness)
-        self._protonator = protonator if protonator is not None else (PdbFixerProtonator() if defaults else None)
+        self._protonator = (
+            protonator if protonator is not None else (PdbFixerProtonator() if defaults else None)
+        )
         self.timeout_seconds = timeout_seconds
         self.seed = seed
 
@@ -881,9 +885,7 @@ def minimize_mutated_sidechain(
 
         # Stiff positional restraints on everything except the mutated residue and
         # its sequence neighbours, so relaxation stays local.
-        restraint = openmm.CustomExternalForce(
-            "k*periodicdistance(x, y, z, x0, y0, z0)^2"
-        )
+        restraint = openmm.CustomExternalForce("k*periodicdistance(x, y, z, x0, y0, z0)^2")
         restraint.addGlobalParameter("k", 100.0 * unit.kilojoules_per_mole / unit.nanometer**2)
         for name in ("x0", "y0", "z0"):
             restraint.addPerParticleParameter(name)
@@ -905,7 +907,9 @@ def minimize_mutated_sidechain(
             300 * unit.kelvin, 1 / unit.picosecond, 0.002 * unit.picoseconds
         )
         simulation = app.Simulation(
-            structure.topology, system, integrator,
+            structure.topology,
+            system,
+            integrator,
             openmm.Platform.getPlatformByName("CPU"),
         )
         simulation.context.setPositions(structure.positions)

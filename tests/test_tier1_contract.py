@@ -9,7 +9,6 @@ from secondlook.tier1_contract import (
     Tier1ResultItem,
 )
 
-
 # --- api-contracts.md's hard rule on evidence items ---------------------------
 
 

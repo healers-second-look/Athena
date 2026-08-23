@@ -99,7 +99,8 @@ def main() -> int:
         else:
             print(
                 f"  {outcome.case.gene:5} {outcome.case.mutation:7} {outcome.case.drug:14} "
-                f"{outcome.delta_score:+.4f} ({outcome.method}, want {outcome.case.known_direction})"
+                f"{outcome.delta_score:+.4f} ({outcome.method}, "
+                f"want {outcome.case.known_direction})"
             )
 
     cuts = []
@@ -114,7 +115,7 @@ def main() -> int:
     print(f"\n{'cutoff':>8} {'correct':>8} {'rate':>7} {'wrong':>6} {'controls':>9}  verdict")
     print("-" * 60)
     best = None
-    for cut, (_cal, report) in zip(cuts, results):
+    for cut, (_cal, report) in zip(cuts, results, strict=True):
         wrong = sum(1 for o in report.outcomes if o.confidently_wrong)
         controls = "pass" if not report.failed_hard_controls else "FAIL"
         verdict = "demo-ready" if report.is_demo_ready else ""
@@ -130,8 +131,10 @@ def main() -> int:
     if best is not None:
         _key, cut, report = best
         print(f"Best cutoff by directional accuracy: {cut:.2f}")
-        print(f"  correct {report.correct_count}/9 ({report.pass_rate:.0%}), "
-              f"pre-committed bar {PASS_THRESHOLD:.0%}")
+        print(
+            f"  correct {report.correct_count}/9 ({report.pass_rate:.0%}), "
+            f"pre-committed bar {PASS_THRESHOLD:.0%}"
+        )
         print(f"  hard controls: {'pass' if not report.failed_hard_controls else 'FAIL'}")
         print()
         print("This is an IN-SAMPLE figure: the cutoff was fitted on these same nine")

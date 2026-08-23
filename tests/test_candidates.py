@@ -68,7 +68,9 @@ class FakeChembl:
 
 
 class FakePubChem:
-    def __init__(self, smiles_by_name: dict[str, str] | None = None, failing: set[str] | None = None) -> None:
+    def __init__(
+        self, smiles_by_name: dict[str, str] | None = None, failing: set[str] | None = None
+    ) -> None:
         self.smiles_by_name = smiles_by_name or {}
         self.failing = failing or set()
         self.calls: list[str] = []
@@ -275,6 +277,8 @@ def test_live_dgidb_tp53_includes_verified_drugs():
 def test_live_pubchem_oxaliplatin_smiles():
     from secondlook.pubchem import PubChemClient, TokenBucket
 
-    smiles = PubChemClient(limiter=TokenBucket(rate_per_sec=5, capacity=5)).fetch_smiles("OXALIPLATIN")
+    smiles = PubChemClient(limiter=TokenBucket(rate_per_sec=5, capacity=5)).fetch_smiles(
+        "OXALIPLATIN"
+    )
     assert smiles
     assert "C" in smiles

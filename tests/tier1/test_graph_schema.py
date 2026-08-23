@@ -239,7 +239,7 @@ class TestNodeTypeProperties:
         )
 
     def test_precedent_strength_has_exactly_two_states(self):
-        """"A pathway theoretically exists" and "a grant has happened before"
+        """ "A pathway theoretically exists" and "a grant has happened before"
         are materially different claims and must never collapse together."""
         assert PRECEDENT_STRENGTHS == frozenset({"theoretical", "granted_before"})
 

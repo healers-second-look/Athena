@@ -31,5 +31,26 @@ services:
       timeout: 3s
       retries: 10
 
+  # Case Memory Store (src/secondlook/case/) — holds the case, not the world.
+  # See IMPLEMENTATION_PLAN.md §1.2 and §2.
+  postgres:
+    image: postgres:16
+    container_name: athena-postgres
+    environment:
+      POSTGRES_DB: athena
+      POSTGRES_USER: athena
+      POSTGRES_PASSWORD: athena
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U athena"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
 volumes:
   falkordb_data:
+  postgres_data:

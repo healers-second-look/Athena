@@ -8,7 +8,6 @@ import re
 import httpx
 
 from secondlook.http_retry import with_retry
-
 from secondlook.mutation_validation import ProteinSequence
 
 DEFAULT_UNIPROT_API_BASE = "https://rest.uniprot.org"
@@ -27,7 +26,9 @@ class UniProtLookupError(RuntimeError):
 
 class UniProtSequenceProvider:
     def __init__(self, base_url: str | None = None, client: httpx.Client | None = None) -> None:
-        self.base_url = (base_url or os.environ.get("UNIPROT_API_BASE") or DEFAULT_UNIPROT_API_BASE).rstrip("/")
+        self.base_url = (
+            base_url or os.environ.get("UNIPROT_API_BASE") or DEFAULT_UNIPROT_API_BASE
+        ).rstrip("/")
         self._client = client
 
     def fetch(self, identifier: str) -> ProteinSequence:
@@ -45,7 +46,9 @@ class UniProtSequenceProvider:
         )
         results = payload.get("results") or []
         if not results:
-            raise UniProtLookupError(f"No reviewed human UniProt entry found for gene symbol {symbol!r}")
+            raise UniProtLookupError(
+                f"No reviewed human UniProt entry found for gene symbol {symbol!r}"
+            )
         return results[0]["primaryAccession"]
 
     def _get(self, path: str) -> str:
@@ -56,8 +59,11 @@ class UniProtSequenceProvider:
         response = self._request("GET", path, params=params)
         return response.json()
 
-    def _request(self, method: str, path: str, params: dict[str, str] | None = None) -> httpx.Response:
+    def _request(
+        self, method: str, path: str, params: dict[str, str] | None = None
+    ) -> httpx.Response:
         url = f"{self.base_url}{path}"
+
         # Both the request and the status check live inside `attempt`, so
         # connection resets and timeouts — which are raised by the request call,
         # not by raise_for_status() — are retried and then converted to

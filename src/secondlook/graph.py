@@ -30,7 +30,7 @@ unreproducible from its own committed artifacts (`rarecure-build-reference.md`
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Literal
 
 #: Bump on any change to what the pipeline computes or how it assembles output.
@@ -52,7 +52,7 @@ PREDICTS_BINDING_CHANGE_EDGE = "PREDICTS_BINDING_CHANGE"
 
 def utc_now_iso() -> str:
     """Timezone-aware ISO-8601 UTC timestamp."""
-    return datetime.now(timezone.utc).isoformat()
+    return datetime.now(UTC).isoformat()
 
 
 @dataclass(frozen=True)

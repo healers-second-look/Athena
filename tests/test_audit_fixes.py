@@ -46,17 +46,21 @@ def test_exact_and_connectivity_matches_are_distinguished():
 
 
 def test_different_drugs_do_not_match():
-    assert compare_inchikeys(
-        inchikey_from_smiles(IMATINIB), inchikey_from_smiles(VEMURAFENIB)
-    ) == "none"
+    assert (
+        compare_inchikeys(inchikey_from_smiles(IMATINIB), inchikey_from_smiles(VEMURAFENIB))
+        == "none"
+    )
 
 
 def test_exact_match_wins_over_a_connectivity_match():
     key = inchikey_from_smiles(IMATINIB)
-    result = match_ligand(IMATINIB, {
-        "AAA": connectivity_layer(key) + "-ZZZZZZZZZZ-N",
-        "STI": key,
-    })
+    result = match_ligand(
+        IMATINIB,
+        {
+            "AAA": connectivity_layer(key) + "-ZZZZZZZZZZ-N",
+            "STI": key,
+        },
+    )
     assert result.kind == "exact"
     assert result.het_code == "STI"
 

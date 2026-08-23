@@ -44,6 +44,7 @@ def test_succeeds_after_a_transient_failure():
 
 def test_gives_up_and_reraises_the_original_error():
     """A real outage must still surface — retry is not suppression."""
+
     def dead():
         raise httpx.ConnectError("reset by peer")
 

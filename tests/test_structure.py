@@ -11,7 +11,6 @@ from secondlook.structure import (
     structure_unavailable_message,
 )
 
-
 MINI_PDB = """\
 ATOM      1  N   ARG A 175      0.000   0.000   0.000  1.00 10.00           N
 ATOM      2  CA  ARG A 175      1.000   0.000   0.000  1.00 96.62           C
@@ -115,7 +114,17 @@ def test_prefers_experimental_pdb_over_alphafold():
             "pdb_text": MINI_PDB,
         }
     )
-    af = FakeAlphaFold([{"entry_id": "AF-P04637-F1", "uniprot_start": 1, "uniprot_end": 393, "global_metric": 75.06, "pdb_text": MINI_PDB}])
+    af = FakeAlphaFold(
+        [
+            {
+                "entry_id": "AF-P04637-F1",
+                "uniprot_start": 1,
+                "uniprot_end": 393,
+                "global_metric": 75.06,
+                "pdb_text": MINI_PDB,
+            }
+        ]
+    )
     esm = FakeEsm()
     result = source_structure(_valid_tp53(), pdb_client=pdb, alphafold_client=af, esm_client=esm)
     assert result.status == "found"
@@ -247,9 +256,19 @@ class FailingAlphaFold:
 
 def test_rcsb_failure_falls_through_to_alphafold_not_a_crash():
     af = FakeAlphaFold(
-        [{"entry_id": "AF-P04637-F1", "uniprot_start": 1, "uniprot_end": 393, "global_metric": 75.06, "pdb_text": MINI_PDB}]
+        [
+            {
+                "entry_id": "AF-P04637-F1",
+                "uniprot_start": 1,
+                "uniprot_end": 393,
+                "global_metric": 75.06,
+                "pdb_text": MINI_PDB,
+            }
+        ]
     )
-    result = source_structure(_valid_tp53(), pdb_client=FailingPdb(), alphafold_client=af, esm_client=FakeEsm())
+    result = source_structure(
+        _valid_tp53(), pdb_client=FailingPdb(), alphafold_client=af, esm_client=FakeEsm()
+    )
     assert result.status == "found"
     assert result.source == "AlphaFoldDB"
 
@@ -309,8 +328,15 @@ def test_live_source_structure_prefers_pdb_for_tp53():
 def test_pdb_hit_without_coordinates_falls_through_to_alphafold():
     pdb = FakePdb({"pdb_id": "8VSO", "ligand_bound": True, "resolution": 2.1, "ligands": ("LIG",)})
     af = FakeAlphaFold(
-        [{"entry_id": "AF-P04637-F1", "uniprot_start": 1, "uniprot_end": 393,
-          "global_metric": 75.06, "pdb_text": MINI_PDB}]
+        [
+            {
+                "entry_id": "AF-P04637-F1",
+                "uniprot_start": 1,
+                "uniprot_end": 393,
+                "global_metric": 75.06,
+                "pdb_text": MINI_PDB,
+            }
+        ]
     )
     result = source_structure(
         _valid_tp53(), pdb_client=pdb, alphafold_client=af, esm_client=FakeEsm()
@@ -322,8 +348,15 @@ def test_pdb_hit_without_coordinates_falls_through_to_alphafold():
 def test_pdb_hit_with_empty_coordinates_falls_through_to_alphafold():
     pdb = FakePdb({"pdb_id": "8VSO", "ligand_bound": True, "pdb_text": "   \n  "})
     af = FakeAlphaFold(
-        [{"entry_id": "AF-P04637-F1", "uniprot_start": 1, "uniprot_end": 393,
-          "global_metric": 75.06, "pdb_text": MINI_PDB}]
+        [
+            {
+                "entry_id": "AF-P04637-F1",
+                "uniprot_start": 1,
+                "uniprot_end": 393,
+                "global_metric": 75.06,
+                "pdb_text": MINI_PDB,
+            }
+        ]
     )
     result = source_structure(
         _valid_tp53(), pdb_client=pdb, alphafold_client=af, esm_client=FakeEsm()
@@ -334,16 +367,23 @@ def test_pdb_hit_with_empty_coordinates_falls_through_to_alphafold():
 def test_any_found_structure_always_carries_coordinates():
     """The invariant the bug violated: found implies scoreable."""
     for pdb_hit in (
-        {"pdb_id": "8VSO", "ligand_bound": True},                    # no coordinates
-        {"pdb_id": "8VSO", "ligand_bound": True, "pdb_text": ""},    # empty
+        {"pdb_id": "8VSO", "ligand_bound": True},  # no coordinates
+        {"pdb_id": "8VSO", "ligand_bound": True, "pdb_text": ""},  # empty
         {"pdb_id": "8VSO", "ligand_bound": True, "pdb_text": MINI_PDB},
     ):
         result = source_structure(
             _valid_tp53(),
             pdb_client=FakePdb(pdb_hit),
             alphafold_client=FakeAlphaFold(
-                [{"entry_id": "AF-P04637-F1", "uniprot_start": 1, "uniprot_end": 393,
-                  "global_metric": 75.06, "pdb_text": MINI_PDB}]
+                [
+                    {
+                        "entry_id": "AF-P04637-F1",
+                        "uniprot_start": 1,
+                        "uniprot_end": 393,
+                        "global_metric": 75.06,
+                        "pdb_text": MINI_PDB,
+                    }
+                ]
             ),
             esm_client=FakeEsm(),
         )
@@ -383,12 +423,17 @@ def test_covers_residue_ignores_hetatm_waters_and_ligands():
 
 def test_pdb_entry_not_covering_the_residue_falls_through_to_alphafold():
     """The BRAF V600E / 8VSO case, reduced to a unit test."""
-    pdb = FakePdb(
-        {"pdb_id": "8VSO", "ligand_bound": True, "pdb_text": PEPTIDE_ONLY_PDB}
-    )
+    pdb = FakePdb({"pdb_id": "8VSO", "ligand_bound": True, "pdb_text": PEPTIDE_ONLY_PDB})
     af = FakeAlphaFold(
-        [{"entry_id": "AF-P04637-F1", "uniprot_start": 1, "uniprot_end": 393,
-          "global_metric": 75.06, "pdb_text": MINI_PDB}]
+        [
+            {
+                "entry_id": "AF-P04637-F1",
+                "uniprot_start": 1,
+                "uniprot_end": 393,
+                "global_metric": 75.06,
+                "pdb_text": MINI_PDB,
+            }
+        ]
     )
     result = source_structure(
         _valid_tp53(), pdb_client=pdb, alphafold_client=af, esm_client=FakeEsm()
@@ -403,12 +448,16 @@ def test_source_structure_asks_the_client_to_cover_the_mutated_residue():
     Otherwise the client returns the first accession match and a covering entry
     further down the candidate list is never considered.
     """
+
     class RecordingPdb:
         def __init__(self):
             self.kwargs = None
 
         def search_by_uniprot(self, accession, preferred_ligands=(), covering_residue=None):
-            self.kwargs = {"preferred_ligands": preferred_ligands, "covering_residue": covering_residue}
+            self.kwargs = {
+                "preferred_ligands": preferred_ligands,
+                "covering_residue": covering_residue,
+            }
             return None
 
     pdb = RecordingPdb()

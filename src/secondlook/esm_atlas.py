@@ -29,7 +29,9 @@ class EsmAtlasClient:
         headers = {"Content-Type": "text/plain"}
         try:
             if self._client is not None:
-                response = self._client.post(self.url, content=sequence.encode(), headers=headers, timeout=self.timeout)
+                response = self._client.post(
+                    self.url, content=sequence.encode(), headers=headers, timeout=self.timeout
+                )
             else:
                 response = httpx.post(
                     self.url,

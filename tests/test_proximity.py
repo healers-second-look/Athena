@@ -15,14 +15,14 @@ from secondlook.proximity import (
     "distance,expected",
     [
         (0.0, "in_contact"),
-        (3.5, "in_contact"),          # EGFR T790M, measured
-        (5.0, "in_contact"),          # boundary is inclusive
+        (3.5, "in_contact"),  # EGFR T790M, measured
+        (5.0, "in_contact"),  # boundary is inclusive
         (5.1, "pocket_adjacent"),
         (8.0, "pocket_adjacent"),
         (8.1, "distant"),
-        (10.1, "distant"),            # EGFR C797S, measured
-        (12.2, "distant"),            # BRAF V600E, measured
-        (16.6, "distant"),            # KIT D816V, measured
+        (10.1, "distant"),  # EGFR C797S, measured
+        (12.2, "distant"),  # BRAF V600E, measured
+        (16.6, "distant"),  # KIT D816V, measured
         (None, "unknown"),
     ],
 )
@@ -37,10 +37,18 @@ def test_bands_are_structural_conventions_not_fitted_cutoffs():
 
 
 def test_contact_mechanism_availability_is_the_actual_claim():
-    assert build_proximity_signal(3.5, structure_id="8A27", structure_source="PDB").contact_mechanism_available
-    assert build_proximity_signal(7.0, structure_id="8A27", structure_source="PDB").contact_mechanism_available
-    assert not build_proximity_signal(16.6, structure_id="8PQD", structure_source="PDB").contact_mechanism_available
-    assert not build_proximity_signal(None, structure_id=None, structure_source=None).contact_mechanism_available
+    assert build_proximity_signal(
+        3.5, structure_id="8A27", structure_source="PDB"
+    ).contact_mechanism_available
+    assert build_proximity_signal(
+        7.0, structure_id="8A27", structure_source="PDB"
+    ).contact_mechanism_available
+    assert not build_proximity_signal(
+        16.6, structure_id="8PQD", structure_source="PDB"
+    ).contact_mechanism_available
+    assert not build_proximity_signal(
+        None, structure_id=None, structure_source=None
+    ).contact_mechanism_available
 
 
 def test_distant_description_names_the_mechanisms_it_cannot_assess():
@@ -61,8 +69,12 @@ def test_distant_description_names_the_mechanisms_it_cannot_assess():
 def test_no_band_claims_resistance_or_sensitivity():
     """Proximity is geometry, not a treatment-response prediction."""
     forbidden = ("resistant", "resistance", "sensitive", "will respond", "recommend")
-    for band, distance in (("in_contact", 3.0), ("pocket_adjacent", 6.0),
-                           ("distant", 20.0), ("unknown", None)):
+    for band, distance in (
+        ("in_contact", 3.0),
+        ("pocket_adjacent", 6.0),
+        ("distant", 20.0),
+        ("unknown", None),
+    ):
         text = describe_proximity(band, distance).lower()
         for word in forbidden:
             assert word not in text, f"{band} description claims {word!r}"
@@ -112,12 +124,18 @@ def test_description_does_not_claim_the_distance_is_to_the_candidate_drug():
 
 def test_ligand_is_flagged_as_the_candidate_only_on_an_exact_match():
     same = build_proximity_signal(
-        3.5, structure_id="8A27", structure_source="PDB",
-        measured_to_ligand="KY9", candidate_drug_het_code="ky9",
+        3.5,
+        structure_id="8A27",
+        structure_source="PDB",
+        measured_to_ligand="KY9",
+        candidate_drug_het_code="ky9",
     )
     different = build_proximity_signal(
-        3.5, structure_id="8A27", structure_source="PDB",
-        measured_to_ligand="KY9", candidate_drug_het_code="IRE",
+        3.5,
+        structure_id="8A27",
+        structure_source="PDB",
+        measured_to_ligand="KY9",
+        candidate_drug_het_code="IRE",
     )
     unknown = build_proximity_signal(
         3.5, structure_id="8A27", structure_source="PDB", measured_to_ligand="KY9"
@@ -136,10 +154,20 @@ def test_unidentified_ligand_is_stated_not_silently_omitted():
 
 def test_two_different_drugs_on_one_structure_share_the_pocket_measurement():
     """The identical numbers are correct — the framing just must not imply otherwise."""
-    a = build_proximity_signal(3.5, structure_id="8A27", structure_source="PDB",
-                               measured_to_ligand="KY9", candidate_drug_het_code="GEF")
-    b = build_proximity_signal(3.5, structure_id="8A27", structure_source="PDB",
-                               measured_to_ligand="KY9", candidate_drug_het_code="OSI")
+    a = build_proximity_signal(
+        3.5,
+        structure_id="8A27",
+        structure_source="PDB",
+        measured_to_ligand="KY9",
+        candidate_drug_het_code="GEF",
+    )
+    b = build_proximity_signal(
+        3.5,
+        structure_id="8A27",
+        structure_source="PDB",
+        measured_to_ligand="KY9",
+        candidate_drug_het_code="OSI",
+    )
     assert a.distance_angstrom == b.distance_angstrom
     assert a.description == b.description
     assert not a.ligand_is_candidate_drug and not b.ligand_is_candidate_drug

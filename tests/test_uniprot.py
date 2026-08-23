@@ -6,7 +6,8 @@ from secondlook.uniprot import parse_uniprot_fasta
 
 def test_parse_uniprot_fasta_records_accession_gene_and_version():
     fasta = (
-        ">sp|P04637|P53_HUMAN Cellular tumor antigen p53 OS=Homo sapiens OX=9606 GN=TP53 PE=1 SV=4\n"
+        ">sp|P04637|P53_HUMAN Cellular tumor antigen p53 OS=Homo sapiens "
+        "OX=9606 GN=TP53 PE=1 SV=4\n"
         "MEEPQSDPSV\n"
         "EPPLSQETFS\n"
     )

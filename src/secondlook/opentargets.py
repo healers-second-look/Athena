@@ -39,7 +39,9 @@ class OpenTargetsClient:
         client: httpx.Client | None = None,
     ) -> None:
         self.url = url or os.environ.get("OPENTARGETS_GRAPHQL_URL") or DEFAULT_OT_URL
-        self.ensembl_url = (ensembl_url or os.environ.get("ENSEMBL_REST_BASE") or DEFAULT_ENSEMBL_REST).rstrip("/")
+        self.ensembl_url = (
+            ensembl_url or os.environ.get("ENSEMBL_REST_BASE") or DEFAULT_ENSEMBL_REST
+        ).rstrip("/")
         self._client = client
 
     def fetch_drugs(self, gene_symbol: str) -> list[dict]:

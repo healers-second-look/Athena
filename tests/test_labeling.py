@@ -11,7 +11,6 @@ from secondlook.labeling import (
     label_binding_delta,
 )
 
-
 # --- The sign-convention trap ------------------------------------------------
 # mCSM-lig and docking report reduced binding with OPPOSITE signs. These are the
 # most important tests in this module: a regression here silently inverts the
@@ -83,8 +82,7 @@ def test_boundary_values_are_inclusive_and_deterministic(method):
     increased_raw = calibration.increased_at_or_above * calibration.orientation
     assert label_binding_delta(reduced_raw, method).label == "likely_reduced_binding"
     assert (
-        label_binding_delta(increased_raw, method).label
-        == "likely_retained_or_increased_binding"
+        label_binding_delta(increased_raw, method).label == "likely_retained_or_increased_binding"
     )
 
 

@@ -46,7 +46,7 @@ STRONG_EVIDENCE_LEVELS = frozenset({"A", "B"})
 TIER1_MISSING_MESSAGE = (
     "Tier 1 (secondlook.tier1) is not installed in this environment. Install the "
     "Athena_Tier_1 package alongside Tier 2 with "
-    '`pip install -e . --config-settings editable_mode=compat` in BOTH repos, or '
+    "`pip install -e . --config-settings editable_mode=compat` in BOTH repos, or "
     "use tier1_contract.AlwaysRunTier2Policy to run Tier 2 standalone."
 )
 
@@ -99,7 +99,9 @@ class Tier1Retrieval:
 
     @property
     def strong_levels(self) -> tuple[str, ...]:
-        return tuple(i.evidence_level for i in self.items if i.evidence_level in STRONG_EVIDENCE_LEVELS)
+        return tuple(
+            i.evidence_level for i in self.items if i.evidence_level in STRONG_EVIDENCE_LEVELS
+        )
 
 
 class Tier1RetrievalPolicy:
@@ -176,9 +178,7 @@ class Tier1RetrievalPolicy:
         (a) excludes the right variant.
         """
         retrieval = _import_retrieval()
-        exact = retrieval.retrieve_exact(
-            gene, hgvs_p, variant_name=variant_name, graph=self._graph
-        )
+        exact = retrieval.retrieve_exact(gene, hgvs_p, variant_name=variant_name, graph=self._graph)
         if exact.items:
             return Tier1Retrieval(
                 items=tuple(to_result_item(r) for r in exact.items),
@@ -236,7 +236,8 @@ class Tier1RetrievalPolicy:
                 state="strong_hit",
                 should_run_tier2=False,
                 reason=(
-                    f"{len(strong)} CIViC evidence item(s) at level {'/'.join(sorted(set(strong)))} "
+                    f"{len(strong)} CIViC evidence item(s) at level "
+                    f"{'/'.join(sorted(set(strong)))} "
                     f"for this exact variant." + trial_caveat
                 ),
                 tier1_results=list(found.items),

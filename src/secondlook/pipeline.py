@@ -61,8 +61,8 @@ from secondlook.mutation_validation import (
 )
 from secondlook.proximity import ProximitySignal, build_proximity_signal
 from secondlook.structure import StructureResult, source_structure
-from secondlook.uniprot import UniProtLookupError
 from secondlook.tier1_contract import ActivationDecision, ActivationPolicy, GraphSink
+from secondlook.uniprot import UniProtLookupError
 
 #: The fixed §10 disclaimer, verbatim from `tier2-structural-prediction.md`.
 #: THE single source of this text — attach it by reference, never by retyping.
@@ -238,9 +238,7 @@ def run_tier2(
 
     activation = None
     if activation_policy is not None:
-        activation = activation_policy.decide(
-            gene=gene, mutation=mutation, cancer_type=cancer_type
-        )
+        activation = activation_policy.decide(gene=gene, mutation=mutation, cancer_type=cancer_type)
         if not activation.should_run_tier2:
             return Tier2Output(
                 status="not_run",
@@ -417,9 +415,7 @@ def run_tier2(
     )
 
 
-def measure_proximity(
-    structure: StructureResult, position: int | None
-) -> ProximitySignal:
+def measure_proximity(structure: StructureResult, position: int | None) -> ProximitySignal:
     """Measure how far the mutated residue sits from the bound drug.
 
     Independent of docking: it needs only experimental coordinates with a
@@ -506,9 +502,7 @@ def _assemble_candidate(
     labeled = None
     if scored:
         calibration = calibrations.get(binding.method) if calibrations else None
-        labeled = label_binding_delta(
-            binding.delta_score, binding.method, calibration=calibration
-        )
+        labeled = label_binding_delta(binding.delta_score, binding.method, calibration=calibration)
 
     item = Tier2ResultItem(
         mutation_validated=mutation_validated_payload(validation),

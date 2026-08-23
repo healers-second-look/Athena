@@ -135,7 +135,8 @@ def protein_sub_to_hgvs_c(cds: str, position: int, ref_aa: str, alt_aa: str) -> 
     actual_aa = CODON_TABLE.get(codon)
     if actual_aa != ref_aa:
         raise ValueError(
-            f"CDS codon {codon} encodes {actual_aa}, not claimed reference residue {ref_aa} at position {position}"
+            f"CDS codon {codon} encodes {actual_aa}, not claimed reference "
+            f"residue {ref_aa} at position {position}"
         )
     target = _closest_codon(codon, alt_aa)
     diffs = [i for i, (a, b) in enumerate(zip(codon, target, strict=True)) if a != b]
