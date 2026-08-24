@@ -15,7 +15,7 @@ import uuid
 from dataclasses import asdict, dataclass, field
 
 from secondlook.chat.knowledge import describe_context, retrieve_evidence_for_turn
-from secondlook.chat.models import CONTEXT_MARKER, DEFAULT_MODEL_ID, build_client
+from secondlook.chat.models import CONTEXT_MARKER, DEFAULT_MODEL_ID, SOURCE_MARKER, build_client
 from secondlook.chat.plugins import Turn, apply_attachments
 
 DEFAULT_SYSTEM = (
@@ -45,9 +45,22 @@ class TurnResult:
         return asdict(self)
 
 
-def build_prompt(question: str, context_lines: list[str]) -> str:
-    """Assemble the prompt the model actually sees."""
+def build_prompt(
+    question: str, context_lines: list[str], source_lines: list[str] | None = None
+) -> str:
+    """Assemble the prompt the model actually sees.
+
+    `context_lines` (plugin annotations, KG-context facts) and
+    `source_lines` (genuinely retrieved evidence, `run_turn`'s numbered
+    citations) render under separate markers -- see `models._split_prompt`
+    for why the distinction is load-bearing, not cosmetic (issue #107).
+    """
     parts = [question]
+    if source_lines:
+        parts.append("")
+        parts.append(SOURCE_MARKER)
+        for line in source_lines:
+            parts.append(f"- {line}")
     if context_lines:
         parts.append("")
         parts.append(CONTEXT_MARKER)
@@ -87,17 +100,17 @@ def run_turn(
     )
     turn.sources = retrieved_sources
 
-    # Inject retrieved sources into context lines with numbered citation markers
-    for src in retrieved_sources:
-        idx = src["citation_index"]
-        level = src.get("evidence_level", "B")
-        pmid = src.get("pmid", "N/A")
-        title = src.get("title", "")
-        summary = src.get("summary", "")
-        url = src.get("citation_url", "")
-        turn.context_lines.append(
-            f"[{idx}] (Level {level}, PMID {pmid}) {title}: {summary} [Ref: {url}]"
-        )
+    # Numbered citation lines for genuinely retrieved sources -- kept out of
+    # turn.context_lines on purpose (issue #107): that list also holds
+    # plugin annotations and KG-context facts, neither of which is evidence,
+    # and a model counting "how many lines were in the prompt" as "how many
+    # sources were retrieved" will confidently cite a plugin's own note.
+    source_lines = [
+        f"[{src['citation_index']}] (Level {src.get('evidence_level', 'B')}, "
+        f"PMID {src.get('pmid', 'N/A')}) {src.get('title', '')}: "
+        f"{src.get('summary', '')} [Ref: {src.get('citation_url', '')}]"
+        for src in retrieved_sources
+    ]
 
     # Re-apply citation-guard if attached now that sources are loaded
     if attachment_ids and "citation-guard" in attachment_ids:
@@ -105,7 +118,7 @@ def run_turn(
             turn.notes.append(f"retrieval attached {len(turn.sources)} live CIViC source(s)")
 
     # Build prompt and call model
-    prompt = build_prompt(turn.message, turn.context_lines)
+    prompt = build_prompt(turn.message, turn.context_lines, source_lines)
     client = build_client(model_id)
     content = client.complete(prompt, system=turn.system_prompt)
 

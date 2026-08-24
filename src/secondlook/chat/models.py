@@ -73,17 +73,23 @@ class MockOutlineClient:
     model = "mock-outline"
 
     def complete(self, prompt: str, *, system: str | None = None) -> str:
-        question, context_lines = _split_prompt(prompt)
+        question, context_lines, source_lines = _split_prompt(prompt)
         parts = [f"## On: {question}", ""]
-        if context_lines:
-            parts.append(f"### What the {len(context_lines)} attached source(s) say")
-            parts.extend(f"- {line}" for line in context_lines)
+        if source_lines:
+            parts.append(f"### What the {len(source_lines)} attached source(s) say")
+            parts.extend(f"- {line}" for line in source_lines)
         else:
             parts.append("### No sources attached")
             parts.append(
                 "- Nothing was retrieved for this turn. Attach a retrieval source "
                 "or a knowledge graph to ground an answer in real evidence."
             )
+        if context_lines:
+            # Plugin/KG-context annotations, not evidence -- kept visibly
+            # separate so they never inflate the source count above.
+            parts.append("")
+            parts.append("### Additional context (not sources)")
+            parts.extend(f"- {line}" for line in context_lines)
         parts += [
             "",
             "### Caveats",
@@ -105,18 +111,18 @@ class MockTerseClient:
     model = "mock-terse"
 
     def complete(self, prompt: str, *, system: str | None = None) -> str:
-        question, context_lines = _split_prompt(prompt)
-        if not context_lines:
+        question, _context_lines, source_lines = _split_prompt(prompt)
+        if not source_lines:
             return (
                 f"No grounded answer available for {question!r}: zero sources were "
                 "attached to this turn. Attach CIViC, literature, or a knowledge "
                 "graph and ask again."
             )
-        head = context_lines[0]
-        rest = len(context_lines) - 1
+        head = source_lines[0]
+        rest = len(source_lines) - 1
         tail = f" {rest} further source(s) were retrieved." if rest else ""
         return textwrap.fill(
-            f"Across {len(context_lines)} retrieved source(s) for {question!r}, the "
+            f"Across {len(source_lines)} retrieved source(s) for {question!r}, the "
             f"strongest is: {head}.{tail} Deterministic offline model -- restated "
             "evidence, not clinical advice.",
             width=100,
@@ -124,23 +130,55 @@ class MockTerseClient:
 
 
 CONTEXT_MARKER = "### Retrieved context"
+SOURCE_MARKER = "### Retrieved sources"
 
 
-def _split_prompt(prompt: str) -> tuple[str, list[str]]:
-    """Pull the question and the retrieved-context bullets back apart.
+def _bullets(text: str) -> list[str]:
+    return [
+        line.strip().lstrip("- ").strip()
+        for line in text.splitlines()
+        if line.strip().startswith("-")
+    ]
+
+
+def _split_prompt(prompt: str) -> tuple[str, list[str], list[str]]:
+    """Pull the question, context bullets, and source bullets back apart.
+
+    Two distinct sections, not one: `SOURCE_MARKER` bullets are genuinely
+    retrieved evidence (`engine.run_turn`'s numbered citations);
+    `CONTEXT_MARKER` bullets are everything else -- a plugin's own
+    annotation, KG-context facts -- explicitly NOT sources (see
+    `plugins.Turn`'s docstring). Conflating the two is exactly how a mock
+    model previously ended up claiming a retrieved source existed when
+    zero were retrieved (issue #107) -- a plugin's own note isn't
+    evidence just because it appears in the prompt.
 
     `engine.build_prompt` is the only writer of this format, so the two
     live or die together; `tests/chat/test_models.py` pins the round trip
     so a change to one that forgets the other fails loudly rather than
     quietly producing sourceless answers.
+
+    Markers are located independently (not via chained `.partition()`) so
+    either can appear, in either order, or be entirely absent -- a prompt
+    with sources but no other context must still find its sources.
     """
-    question, _, remainder = prompt.partition(CONTEXT_MARKER)
-    lines = [
-        line.strip().lstrip("- ").strip()
-        for line in remainder.splitlines()
-        if line.strip().startswith("-")
-    ]
-    return question.strip().splitlines()[-1].strip() if question.strip() else "", lines
+    context_idx = prompt.find(CONTEXT_MARKER)
+    source_idx = prompt.find(SOURCE_MARKER)
+    marker_positions = [i for i in (context_idx, source_idx) if i != -1]
+    question_end = min(marker_positions) if marker_positions else len(prompt)
+    question = prompt[:question_end]
+    question_text = question.strip().splitlines()[-1].strip() if question.strip() else ""
+
+    def _section(start: int, other: int) -> list[str]:
+        if start == -1:
+            return []
+        end = other if other != -1 and other > start else len(prompt)
+        marker_len = len(CONTEXT_MARKER) if start == context_idx else len(SOURCE_MARKER)
+        return _bullets(prompt[start + marker_len : end])
+
+    context_lines = _section(context_idx, source_idx)
+    source_lines = _section(source_idx, context_idx)
+    return question_text, context_lines, source_lines
 
 
 def _anthropic_available() -> tuple[bool, str | None]:

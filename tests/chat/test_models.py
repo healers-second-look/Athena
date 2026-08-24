@@ -2,7 +2,10 @@
 
 import pytest
 
+from secondlook.chat.engine import build_prompt
 from secondlook.chat.models import (
+    CONTEXT_MARKER,
+    SOURCE_MARKER,
     MockOutlineClient,
     MockTerseClient,
     build_client,
@@ -50,6 +53,46 @@ def test_mock_models_produce_visibly_different_output():
 
     # Terse is concise prose
     assert "No grounded answer available" in terse_res
+
+
+def test_mock_models_do_not_count_context_as_sources():
+    """Issue #107: a plugin's own annotation (context) is not evidence.
+
+    Reproduces the exact bug live-testing found: attach only a
+    CONTEXT_MARKER line (e.g. variant-normalizer's own note) with zero
+    SOURCE_MARKER lines, and confirm neither mock model claims a source
+    was retrieved.
+    """
+    prompt = build_prompt(
+        "What is ETV6::NTRK3 fusion?",
+        context_lines=["Normalized entities from the question -- genes: ETV6, NTRK3"],
+        source_lines=[],
+    )
+    assert CONTEXT_MARKER in prompt
+    assert SOURCE_MARKER not in prompt
+
+    outline_res = MockOutlineClient().complete(prompt)
+    terse_res = MockTerseClient().complete(prompt)
+
+    assert "No sources attached" in outline_res
+    assert "0 attached source" not in outline_res
+    assert "No grounded answer available" in terse_res
+    assert "retrieved source" not in terse_res.lower()
+
+
+def test_mock_models_count_only_genuine_sources():
+    """A real source is still reported correctly, and distinctly from context."""
+    prompt = build_prompt(
+        "What is ETV6::NTRK3 fusion?",
+        context_lines=["Normalized entities from the question -- genes: ETV6, NTRK3"],
+        source_lines=["[1] (Level B, PMID 29606586) ETV6::NTRK3 Fusion: responds to Larotrectinib"],
+    )
+    outline_res = MockOutlineClient().complete(prompt)
+    terse_res = MockTerseClient().complete(prompt)
+
+    assert "What the 1 attached source(s) say" in outline_res
+    assert "Larotrectinib" in outline_res
+    assert "Across 1 retrieved source(s)" in terse_res
     assert "##" not in terse_res
 
     # Both are non-empty and visibly distinct
