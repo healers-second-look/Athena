@@ -37,11 +37,30 @@ def test_session_store_crud():
 
 
 def test_build_prompt():
-    prompt = build_prompt("My question", ["Source 1", "Source 2"])
+    prompt = build_prompt("My question", ["Context 1", "Context 2"])
     assert "My question" in prompt
     assert "### Retrieved context" in prompt
-    assert "- Source 1" in prompt
-    assert "- Source 2" in prompt
+    assert "- Context 1" in prompt
+    assert "- Context 2" in prompt
+
+
+def test_build_prompt_separates_context_from_sources():
+    """Issue #107: context and sources render under distinct markers, and
+    a prompt with only context (no sources) must not carry the source
+    marker at all -- that absence is what tells a model zero sources were
+    retrieved.
+    """
+    prompt = build_prompt(
+        "My question", context_lines=["Some context"], source_lines=["[1] A real source"]
+    )
+    assert "### Retrieved sources" in prompt
+    assert "### Retrieved context" in prompt
+    assert "- [1] A real source" in prompt
+    assert "- Some context" in prompt
+
+    context_only = build_prompt("My question", context_lines=["Some context"], source_lines=[])
+    assert "### Retrieved sources" not in context_only
+    assert "### Retrieved context" in context_only
 
 
 def test_run_turn_end_to_end():
