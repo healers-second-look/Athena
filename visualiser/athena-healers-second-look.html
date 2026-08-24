@@ -1,0 +1,1981 @@
+<!DOCTYPE html>
+<html lang="en" class="dark scroll-smooth">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ATHENA — Concept Visualiser</title>
+  <meta name="description"
+    content="Living Cancer Intelligence for Low-Resource Oncology. A self-hostable, open-source research memory for hard cancer cases." />
+
+  <!-- Fonts & Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+    rel="stylesheet" />
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Three.js CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+  <script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            surface: "#01110e",
+            "surface-dim": "#01110e",
+            "surface-bright": "#1f312c",
+            "surface-lowest": "#000a08",
+            "surface-low": "#051612",
+            "surface-container": "#081b17",
+            "surface-high": "#0f231f",
+            "surface-highest": "#172d28",
+            "surface-variant": "#172d28",
+            "on-surface": "#d2e7e0",
+            "on-surface-variant": "#bec9c4",
+            "outline": "#88938f",
+            "outline-variant": "#3f4946",
+            primary: "#87d5c1",
+            "primary-container": "#509e8c",
+            "primary-fixed": "#a3f2dd",
+            secondary: "#e5c182",
+            "secondary-container": "#5e4511",
+            "secondary-fixed": "#ffdea6",
+            tertiary: "#ffb3ac",
+            "tertiary-container": "#ce7a72",
+            error: "#ffb4ab",
+            "error-container": "#93000a",
+            background: "#01110e",
+            "on-background": "#d2e7e0"
+          },
+          fontFamily: {
+            sans: ['"IBM Plex Sans"', "sans-serif"],
+            mono: ['"IBM Plex Mono"', "monospace"],
+            headline: ['"IBM Plex Sans"', "sans-serif"],
+            display: ['"IBM Plex Sans"', "sans-serif"]
+          }
+        }
+      }
+    };
+  </script>
+
+  <style>
+    :root {
+      --surface: #01110e;
+      --surface-lowest: #000a08;
+      --surface-low: #051612;
+      --surface-container: #081b17;
+      --surface-high: #0f231f;
+      --surface-highest: #172d28;
+      --on-surface: #d2e7e0;
+      --on-surface-variant: #bec9c4;
+      --primary: #87d5c1;
+      --primary-container: #509e8c;
+      --secondary: #e5c182;
+      --tertiary: #ffb3ac;
+      --outline: #88938f;
+      --outline-variant: #3f4946;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html,
+    body {
+      background-color: var(--surface);
+      color: var(--on-surface);
+      font-family: 'IBM Plex Sans', sans-serif;
+      overflow-x: hidden;
+      scroll-behavior: smooth;
+    }
+
+    ::selection {
+      background: rgba(135, 213, 193, 0.25);
+      color: #ffffff;
+    }
+
+    ::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: #01110e;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #142723;
+      border-radius: 3px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: #509e8c;
+    }
+
+    .font-mono-data {
+      font-family: 'IBM Plex Mono', monospace;
+    }
+
+    .bg-grid-tech {
+      background-image: linear-gradient(to right, rgba(135, 213, 193, 0.03) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(135, 213, 193, 0.03) 1px, transparent 1px);
+      background-size: 36px 36px;
+    }
+
+    /* Exactly 8 Viewport-Fitted Chapters */
+    .chapter-section {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      position: relative;
+      padding: 4.5rem 1.5rem 3.5rem 1.5rem;
+    }
+
+    @media (min-width: 1024px) {
+      .chapter-section {
+        padding: 4.5rem 5.5rem 3.5rem 4.5rem;
+      }
+    }
+
+    /* Replayable Story Reveal Animations (Forward & Reverse) */
+    .story-reveal {
+      opacity: 0;
+      transform: translateY(20px);
+      transition: opacity 0.65s cubic-bezier(0.16, 1, 0.3, 1), transform 0.65s cubic-bezier(0.16, 1, 0.3, 1);
+      will-change: opacity, transform;
+    }
+
+    .story-reveal.revealed {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* Glass Cards */
+    .glass-card {
+      background: rgba(8, 22, 18, 0.76);
+      backdrop-filter: blur(14px);
+      border: 1px solid rgba(210, 231, 224, 0.07);
+      transition: border-color 0.3s ease, transform 0.3s ease, background 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .glass-card:hover {
+      border-color: rgba(135, 213, 193, 0.35);
+    }
+
+    .glass-card.active {
+      border-color: rgba(135, 213, 193, 0.7);
+      box-shadow: 0 0 24px rgba(135, 213, 193, 0.15);
+      background: rgba(16, 32, 28, 0.9);
+    }
+
+    /* Navigation Rail */
+    .nav-rail-item .nav-tooltip {
+      opacity: 0;
+      transform: translateX(8px);
+      pointer-events: none;
+      transition: all 0.2s ease-out;
+    }
+
+    .nav-rail-item:hover .nav-tooltip {
+      opacity: 1;
+      transform: translateX(0);
+    }
+
+    .nav-rail-item.active .nav-dot {
+      background-color: var(--primary);
+      box-shadow: 0 0 12px rgba(135, 213, 193, 0.9);
+      transform: scale(1.4);
+    }
+
+    .nav-rail-item.active .nav-num {
+      color: var(--primary);
+      font-weight: 600;
+    }
+
+    /* Pulse and flow lines */
+    @keyframes pulse-slow {
+      0%, 100% { opacity: 0.35; transform: scale(1); }
+      50% { opacity: 0.85; transform: scale(1.04); }
+    }
+
+    .animate-pulse-slow {
+      animation: pulse-slow 3.6s ease-in-out infinite;
+    }
+
+    @keyframes flow-pulse {
+      0% { stroke-dashoffset: 120; }
+      100% { stroke-dashoffset: 0; }
+    }
+
+    .flow-active {
+      stroke-dasharray: 6, 4;
+      animation: flow-pulse 2.2s linear infinite;
+    }
+
+    .interactive-node {
+      cursor: pointer;
+      transition: all 0.25s ease;
+    }
+
+    .interactive-node:hover {
+      filter: brightness(1.25);
+    }
+
+    /* Section 04 Reasoning Loop Step Styling */
+    .loop-step-card {
+      transition: border-color 0.4s ease, background-color 0.4s ease, box-shadow 0.4s ease, transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s ease;
+      will-change: transform, box-shadow, border-color;
+    }
+
+    .loop-step-card.loop-step-active {
+      transform: scale(1.035);
+      border-color: rgba(135, 213, 193, 0.7) !important;
+      background-color: rgba(18, 42, 36, 0.94) !important;
+      box-shadow: 0 0 22px rgba(135, 213, 193, 0.25);
+    }
+
+    .loop-step-card.loop-step-active.theme-secondary {
+      border-color: rgba(229, 193, 130, 0.7) !important;
+      background-color: rgba(36, 34, 18, 0.94) !important;
+      box-shadow: 0 0 22px rgba(229, 193, 130, 0.25);
+    }
+
+    .loop-step-card.loop-step-active.theme-tertiary {
+      border-color: rgba(255, 179, 172, 0.7) !important;
+      background-color: rgba(42, 24, 23, 0.94) !important;
+      box-shadow: 0 0 22px rgba(255, 179, 172, 0.25);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .loop-step-card {
+        transition: none !important;
+        transform: none !important;
+      }
+      .loop-step-card.loop-step-active {
+        transform: none !important;
+        box-shadow: none !important;
+      }
+    }
+
+    /* Section 06 Path Button Styling */
+    .path-btn {
+      transition: all 0.25s ease;
+      cursor: pointer;
+    }
+    .path-btn .path-title {
+      color: var(--on-surface);
+      transition: color 0.25s ease;
+    }
+    .path-btn.active {
+      border-color: rgba(229, 193, 130, 0.6) !important;
+      background-color: var(--surface-high) !important;
+      box-shadow: 0 0 14px rgba(229, 193, 130, 0.15);
+    }
+    .path-btn.active .path-title {
+      color: var(--secondary) !important;
+    }
+    .path-btn:not(.active):hover {
+      border-color: rgba(229, 193, 130, 0.35);
+      background-color: var(--surface-lowest);
+    }
+  </style>
+</head>
+
+<body class="bg-surface text-on-surface antialiased bg-grid-tech selection:bg-primary/20">
+
+  <!-- ===================================================================== -->
+  <!-- GLOBAL THREE.JS 3D DNA DOUBLE HELIX & SCATTERED PARTICLES BACKGROUND -->
+  <!-- ===================================================================== -->
+  <div id="global-three-container" class="fixed inset-0 z-0 pointer-events-none overflow-hidden"></div>
+
+  <!-- Global Atmospheric Vignette Overlay -->
+  <div class="fixed inset-0 z-0 pointer-events-none bg-[radial-gradient(ellipse_at_center,transparent_35%,rgba(0,10,8,0.54)_90%)]"></div>
+
+  <!-- ===================================================================== -->
+  <!-- TOP BAR (Minimal Header) -->
+  <!-- ===================================================================== -->
+  <header
+    class="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 py-3 bg-surface-lowest/85 backdrop-blur-md border-b border-outline-variant/20">
+    <div class="flex items-center space-x-3">
+      <div class="w-2.5 h-2.5 rounded-full bg-primary animate-ping"></div>
+      <a href="#sec-01" class="text-sm font-mono-data tracking-wider uppercase font-semibold text-primary">ATHENA</a>
+      <span class="text-xs text-outline font-mono-data hidden sm:inline">|</span>
+      <span class="text-xs text-on-surface-variant hidden sm:inline">Living Cancer Intelligence</span>
+    </div>
+  </header>
+
+  <!-- ===================================================================== -->
+  <!-- RIGHT-SIDE SECTION NAVIGATION RAIL (EXACTLY 8 ITEMS) -->
+  <!-- ===================================================================== -->
+  <nav aria-label="Visualiser Chapters" class="fixed right-3 sm:right-6 top-1/2 -translate-y-1/2 z-40 flex flex-col space-y-2.5">
+    <a href="#sec-01" class="nav-rail-item group flex items-center justify-end space-x-2 py-1 active" data-section="01">
+      <span class="nav-tooltip text-[11px] font-mono-data text-primary bg-surface-highest/90 px-2 py-0.5 rounded shadow border border-primary/20">01 Opening</span>
+      <span class="nav-num text-[10px] font-mono-data text-outline group-hover:text-primary transition-colors">01</span>
+      <div class="nav-dot w-2 h-2 rounded-full bg-outline-variant/60 group-hover:bg-primary transition-all"></div>
+    </a>
+    <a href="#sec-02" class="nav-rail-item group flex items-center justify-end space-x-2 py-1" data-section="02">
+      <span class="nav-tooltip text-[11px] font-mono-data text-primary bg-surface-highest/90 px-2 py-0.5 rounded shadow border border-primary/20">02 The Expertise Gap</span>
+      <span class="nav-num text-[10px] font-mono-data text-outline group-hover:text-primary transition-colors">02</span>
+      <div class="nav-dot w-2 h-2 rounded-full bg-outline-variant/60 group-hover:bg-primary transition-all"></div>
+    </a>
+    <a href="#sec-03" class="nav-rail-item group flex items-center justify-end space-x-2 py-1" data-section="03">
+      <span class="nav-tooltip text-[11px] font-mono-data text-primary bg-surface-highest/90 px-2 py-0.5 rounded shadow border border-primary/20">03 Athena & Three Memories</span>
+      <span class="nav-num text-[10px] font-mono-data text-outline group-hover:text-primary transition-colors">03</span>
+      <div class="nav-dot w-2 h-2 rounded-full bg-outline-variant/60 group-hover:bg-primary transition-all"></div>
+    </a>
+    <a href="#sec-04" class="nav-rail-item group flex items-center justify-end space-x-2 py-1" data-section="04">
+      <span class="nav-tooltip text-[11px] font-mono-data text-primary bg-surface-highest/90 px-2 py-0.5 rounded shadow border border-primary/20">04 The Reasoning Loop</span>
+      <span class="nav-num text-[10px] font-mono-data text-outline group-hover:text-primary transition-colors">04</span>
+      <div class="nav-dot w-2 h-2 rounded-full bg-outline-variant/60 group-hover:bg-primary transition-all"></div>
+    </a>
+    <a href="#sec-05" class="nav-rail-item group flex items-center justify-end space-x-2 py-1" data-section="05">
+      <span class="nav-tooltip text-[11px] font-mono-data text-primary bg-surface-highest/90 px-2 py-0.5 rounded shadow border border-primary/20">05 The Diff Engine</span>
+      <span class="nav-num text-[10px] font-mono-data text-outline group-hover:text-primary transition-colors">05</span>
+      <div class="nav-dot w-2 h-2 rounded-full bg-outline-variant/60 group-hover:bg-primary transition-all"></div>
+    </a>
+    <a href="#sec-06" class="nav-rail-item group flex items-center justify-end space-x-2 py-1" data-section="06">
+      <span class="nav-tooltip text-[11px] font-mono-data text-primary bg-surface-highest/90 px-2 py-0.5 rounded shadow border border-primary/20">06 Access & Trials</span>
+      <span class="nav-num text-[10px] font-mono-data text-outline group-hover:text-primary transition-colors">06</span>
+      <div class="nav-dot w-2 h-2 rounded-full bg-outline-variant/60 group-hover:bg-primary transition-all"></div>
+    </a>
+    <a href="#sec-07" class="nav-rail-item group flex items-center justify-end space-x-2 py-1" data-section="07">
+      <span class="nav-tooltip text-[11px] font-mono-data text-primary bg-surface-highest/90 px-2 py-0.5 rounded shadow border border-primary/20">07 Deployment & Boundaries</span>
+      <span class="nav-num text-[10px] font-mono-data text-outline group-hover:text-primary transition-colors">07</span>
+      <div class="nav-dot w-2 h-2 rounded-full bg-outline-variant/60 group-hover:bg-primary transition-all"></div>
+    </a>
+    <a href="#sec-08" class="nav-rail-item group flex items-center justify-end space-x-2 py-1" data-section="08">
+      <span class="nav-tooltip text-[11px] font-mono-data text-primary bg-surface-highest/90 px-2 py-0.5 rounded shadow border border-primary/20">08 The Outcome</span>
+      <span class="nav-num text-[10px] font-mono-data text-outline group-hover:text-primary transition-colors">08</span>
+      <div class="nav-dot w-2 h-2 rounded-full bg-outline-variant/60 group-hover:bg-primary transition-all"></div>
+    </a>
+  </nav>
+
+  <!-- ===================================================================== -->
+  <!-- SECTION 01 — OPENING -->
+  <!-- ===================================================================== -->
+  <section id="sec-01" class="chapter-section flex items-center justify-center relative overflow-hidden" data-section="01">
+    <!-- Hero Content Overlay -->
+    <div class="relative z-20 max-w-4xl mx-auto text-center px-4 story-reveal flex flex-col items-center">
+      <!-- Main Title: Exact ATHENA Hero Light Display Treatment -->
+      <h1 class="font-display text-[min(14vw,115px)] sm:text-[min(12vw,125px)] leading-none text-on-surface uppercase tracking-[0.2em] font-light mb-7 drop-shadow-2xl select-none">
+        ATHENA
+      </h1>
+
+      <!-- Subtitle -->
+      <h2 class="text-xl sm:text-2xl md:text-3xl font-light text-primary mb-7 max-w-2xl mx-auto leading-snug">
+        Living Cancer Intelligence for Low-Resource Oncology
+      </h2>
+
+      <!-- Description -->
+      <p class="text-base sm:text-lg text-on-surface-variant font-mono-data font-light max-w-xl mx-auto mb-11 opacity-90 leading-relaxed">
+        A self-hostable, open-source research memory for hard cancer cases.
+      </p>
+
+      <!-- Flowing Light Sequence Indicator -->
+      <div class="glass-card max-w-lg w-full mx-auto p-4 rounded-lg border border-primary/30 mb-14 shadow-lg">
+        <div class="flex items-center justify-between text-xs font-mono-data text-outline">
+          <span class="text-primary font-bold">CASE</span>
+          <span class="text-primary animate-pulse">→</span>
+          <span class="text-secondary font-bold">EVIDENCE</span>
+          <span class="text-secondary animate-pulse">→</span>
+          <span class="text-tertiary font-bold">ACCESS</span>
+          <span class="text-tertiary animate-pulse">→</span>
+          <span class="text-primary font-bold">CLINICIAN</span>
+        </div>
+      </div>
+
+      <!-- Explore 8 Chapters (Moved further down with deliberate breathing space) -->
+      <div class="pt-2">
+        <a href="#sec-02" class="inline-flex items-center space-x-2 text-xs font-mono-data text-outline hover:text-primary transition-all duration-300 group cursor-pointer">
+          <span class="tracking-widest uppercase text-[11px]">Explore 8 Chapters</span>
+          <span class="material-symbols-outlined text-sm group-hover:translate-y-1 transition-transform">south</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================================================================== -->
+  <!-- SECTION 02 — THE EXPERTISE GAP -->
+  <!-- ===================================================================== -->
+  <section id="sec-02" class="chapter-section" data-section="02">
+    <div class="max-w-5xl mx-auto w-full">
+      <div class="story-reveal mb-6">
+        <div class="flex items-center space-x-2 text-xs font-mono-data text-secondary uppercase tracking-wider mb-2">
+          <span>02</span>
+          <span>·</span>
+          <span>The Problem</span>
+        </div>
+        <h2 class="text-2xl sm:text-3xl font-bold text-on-surface">
+          The problem is not missing data. It is missing access to specialist reasoning.
+        </h2>
+        <p class="text-xs sm:text-sm font-mono-data text-on-surface-variant mt-1 max-w-3xl">
+          Evidence already exists across open sources (CIViC, PubMed, ClinicalTrials.gov). The true bottleneck is lacking a multi-specialist team to reason across it.
+        </p>
+      </div>
+
+      <!-- Interactive 2.5D Expertise Gap Scene -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+        <div class="lg:col-span-8 glass-card p-5 rounded-lg story-reveal">
+          <div class="flex items-center justify-between mb-3 pb-2 border-b border-outline-variant/20">
+            <span class="text-xs font-mono-data text-outline uppercase">Expertise Distribution Gap</span>
+            <div class="flex space-x-2 text-xs font-mono-data">
+              <button id="btn-gap-district" class="px-2.5 py-1 rounded bg-surface-high text-primary border border-primary/30 font-semibold cursor-pointer">
+                District Reality
+              </button>
+              <button id="btn-gap-mtb" class="px-2.5 py-1 rounded bg-surface-lowest text-outline hover:text-on-surface border border-outline-variant/30 cursor-pointer">
+                Molecular Tumor Board
+              </button>
+            </div>
+          </div>
+
+          <div class="relative h-60 sm:h-64 w-full flex items-center justify-center">
+            <svg id="gap-svg" class="w-full h-full select-none" viewBox="0 0 540 260">
+              <!-- Orbit Track (Visible in District Reality) -->
+              <ellipse id="gap-orbit-track" cx="270" cy="130" rx="180" ry="85" fill="none" stroke="#87d5c1" stroke-width="1" stroke-dasharray="3,5" opacity="0.15"/>
+
+              <!-- Interconnected Reasoning Mesh Cross-Links (Active in MTB mode) -->
+              <g id="gap-cross-links">
+                <line id="link-gen-lit" x1="0" y1="0" x2="0" y2="0" stroke="#87d5c1" stroke-width="1.5" opacity="0"/>
+                <line id="link-lit-tri" x1="0" y1="0" x2="0" y2="0" stroke="#87d5c1" stroke-width="1.5" opacity="0"/>
+                <line id="link-tri-acc" x1="0" y1="0" x2="0" y2="0" stroke="#e5c182" stroke-width="1.5" opacity="0"/>
+                <line id="link-acc-pat" x1="0" y1="0" x2="0" y2="0" stroke="#e5c182" stroke-width="1.5" stroke-dasharray="4,2" opacity="0"/>
+                <line id="link-pat-gen" x1="0" y1="0" x2="0" y2="0" stroke="#87d5c1" stroke-width="1.5" opacity="0"/>
+                <line id="link-gen-tri" x1="0" y1="0" x2="0" y2="0" stroke="#87d5c1" stroke-width="1" stroke-dasharray="3,3" opacity="0"/>
+                <line id="link-lit-pat" x1="0" y1="0" x2="0" y2="0" stroke="#87d5c1" stroke-width="1" stroke-dasharray="3,3" opacity="0"/>
+                <line id="link-lit-acc" x1="0" y1="0" x2="0" y2="0" stroke="#e5c182" stroke-width="1" stroke-dasharray="3,3" opacity="0"/>
+              </g>
+
+              <!-- Central Rays connecting domain nodes to Center -->
+              <g id="gap-rays">
+                <line id="ray-gen" x1="270" y1="130" x2="0" y2="0" stroke="#87d5c1" stroke-width="1.5" stroke-dasharray="3,3" opacity="0.25"/>
+                <line id="ray-lit" x1="270" y1="130" x2="0" y2="0" stroke="#87d5c1" stroke-width="1.5" stroke-dasharray="3,3" opacity="0.25"/>
+                <line id="ray-tri" x1="270" y1="130" x2="0" y2="0" stroke="#87d5c1" stroke-width="1.5" stroke-dasharray="3,3" opacity="0.25"/>
+                <line id="ray-pat" x1="270" y1="130" x2="0" y2="0" stroke="#87d5c1" stroke-width="1.5" stroke-dasharray="3,3" opacity="0.25"/>
+                <line id="ray-acc" x1="270" y1="130" x2="0" y2="0" stroke="#e5c182" stroke-width="1.5" stroke-dasharray="3,3" opacity="0.25"/>
+              </g>
+
+              <!-- 5 Domain Nodes (Orbit in District, Graph Vertices in MTB) -->
+              <g id="gap-node-gen" class="interactive-node" transform="translate(100, 50)">
+                <circle r="24" fill="#0d1f1b" stroke="#87d5c1" stroke-width="1.5"/>
+                <text text-anchor="middle" y="4" fill="#87d5c1" font-size="9" font-family="'IBM Plex Mono', monospace" font-weight="600">GENOMICS</text>
+              </g>
+              <g id="gap-node-lit" class="interactive-node" transform="translate(440, 50)">
+                <circle r="24" fill="#0d1f1b" stroke="#87d5c1" stroke-width="1.5"/>
+                <text text-anchor="middle" y="4" fill="#87d5c1" font-size="9" font-family="'IBM Plex Mono', monospace" font-weight="600">LITERATURE</text>
+              </g>
+              <g id="gap-node-tri" class="interactive-node" transform="translate(450, 190)">
+                <circle r="24" fill="#0d1f1b" stroke="#87d5c1" stroke-width="1.5"/>
+                <text text-anchor="middle" y="4" fill="#87d5c1" font-size="9" font-family="'IBM Plex Mono', monospace" font-weight="600">TRIALS</text>
+              </g>
+              <g id="gap-node-pat" class="interactive-node" transform="translate(90, 190)">
+                <circle r="24" fill="#0d1f1b" stroke="#87d5c1" stroke-width="1.5"/>
+                <text text-anchor="middle" y="4" fill="#87d5c1" font-size="9" font-family="'IBM Plex Mono', monospace" font-weight="600">PATHOLOGY</text>
+              </g>
+              <g id="gap-node-acc" class="interactive-node" transform="translate(270, 215)">
+                <circle r="22" fill="#1b2d29" stroke="#e5c182" stroke-width="1.5"/>
+                <text text-anchor="middle" y="4" fill="#e5c182" font-size="8.5" font-family="'IBM Plex Mono', monospace" font-weight="600">ACCESS</text>
+              </g>
+
+              <!-- Central Hub Core (District Oncologist / Molecular Tumor Board) -->
+              <g id="gap-center-group" transform="translate(270, 130)">
+                <circle id="gap-core-glow" r="42" fill="rgba(135,213,193,0.12)" class="animate-pulse-slow"/>
+                <circle id="gap-core-node" r="32" fill="#01110e" stroke="#87d5c1" stroke-width="2"/>
+                <text id="gap-core-title" text-anchor="middle" y="-2" fill="#ffffff" font-size="9.5" font-weight="700" font-family="'IBM Plex Sans', sans-serif">DISTRICT</text>
+                <text id="gap-core-sub" text-anchor="middle" y="11" fill="#87d5c1" font-size="8.5" font-family="'IBM Plex Mono', monospace" font-weight="600">ONCOLOGIST</text>
+              </g>
+            </svg>
+          </div>
+
+          <div id="gap-caption" class="text-xs font-mono-data text-center text-outline bg-surface-lowest/70 p-2 rounded">
+            Barrier: <span class="text-tertiary">Fragmented Isolation</span> — General oncologist manages rare/exhausted case alone without a specialist team.
+          </div>
+        </div>
+
+        <!-- Target User Callout (4 cols) -->
+        <div class="lg:col-span-4 space-y-3 story-reveal">
+          <div class="text-xs font-mono-data text-outline uppercase tracking-wider">Target User Profile</div>
+          
+          <div class="glass-card p-3.5 rounded border border-primary/30">
+            <div class="text-xs font-mono-data text-primary font-bold mb-1">GENERAL ONCOLOGIST</div>
+            <div class="text-xs text-on-surface-variant">District or Tier-2/3 hospital practitioner with no in-house MTB down the hall.</div>
+          </div>
+
+          <div class="glass-card p-3.5 rounded border border-secondary/30">
+            <div class="text-xs font-mono-data text-secondary font-bold mb-1">RARE / EXHAUSTED CASE</div>
+            <div class="text-xs text-on-surface-variant">Standard first-line protocols exhausted; second-line literature and regulatory access urgently needed.</div>
+          </div>
+
+          <div class="glass-card p-3.5 rounded border border-tertiary/30">
+            <div class="text-xs font-mono-data text-tertiary font-bold mb-1">ZERO CLOUD SUBSCRIPTION BUDGET</div>
+            <div class="text-xs text-on-surface-variant">Cannot absorb per-case US-academic SaaS pricing or expensive data licensing.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================================================================== -->
+  <!-- SECTION 03 — ATHENA + THE THREE MEMORIES -->
+  <!-- ===================================================================== -->
+  <section id="sec-03" class="chapter-section" data-section="03">
+    <div class="max-w-5xl mx-auto w-full">
+      <div class="story-reveal mb-6">
+        <div class="flex items-center space-x-2 text-xs font-mono-data text-primary uppercase tracking-wider mb-2">
+          <span>03</span>
+          <span>·</span>
+          <span>Core Architecture & Differentiators</span>
+        </div>
+        <h2 class="text-2xl sm:text-3xl font-bold text-on-surface">
+          A research memory for a hard cancer case.
+        </h2>
+        <p class="text-xs sm:text-sm font-mono-data text-on-surface-variant mt-1 max-w-3xl">
+          Three memories plus a reasoning layer. Access pathways are a specialized first-class region of Evidence Memory, not a fourth memory.
+        </p>
+      </div>
+
+      <!-- 3D / Spatial Architecture Diagram -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+        <div class="lg:col-span-7 glass-card p-5 rounded-lg story-reveal">
+          <div class="text-xs font-mono-data text-outline uppercase mb-2">Spatial Architecture (Click to Enlarge)</div>
+          
+          <div class="relative h-64 sm:h-72 w-full flex items-center justify-center">
+            <svg class="w-full h-full select-none" viewBox="0 0 560 260">
+              <!-- Central ATHENA Node (Centered at x=280) -->
+              <g transform="translate(215, 12)">
+                <rect width="130" height="38" rx="5" fill="#01110e" stroke="#87d5c1" stroke-width="2"/>
+                <text x="65" y="24" text-anchor="middle" fill="#ffffff" font-weight="700" font-size="13" font-family="'IBM Plex Sans', sans-serif" letter-spacing="0.1em">ATHENA</text>
+              </g>
+
+              <!-- Filament Connectors from ATHENA to 3 Memories -->
+              <path id="conn-sec3-case" d="M 280 50 L 280 72 L 106 72 L 106 95" fill="none" stroke="#87d5c1" stroke-width="2" class="transition-all duration-300"/>
+              <path id="conn-sec3-evidence" d="M 280 50 L 280 95" fill="none" stroke="#e5c182" stroke-width="1.2" stroke-dasharray="2,2" opacity="0.25" class="transition-all duration-300"/>
+              <path id="conn-sec3-index" d="M 280 50 L 280 72 L 454 72 L 454 95" fill="none" stroke="#ffb3ac" stroke-width="1.2" stroke-dasharray="2,2" opacity="0.25" class="transition-all duration-300"/>
+
+              <!-- Branch 1: Case Memory (Left Box, x=30, width=152) -->
+              <g id="sec3-case" class="interactive-node" transform="translate(30, 95)" style="cursor: pointer; transition: all 0.3s ease;">
+                <rect id="rect-sec3-case" width="152" height="105" rx="6" fill="#0c2620" stroke="#87d5c1" stroke-width="2.5" filter="drop-shadow(0 0 10px rgba(135,213,193,0.45))" class="transition-all duration-300"/>
+                <text x="76" y="27" text-anchor="middle" fill="#87d5c1" font-size="11.5" font-weight="700" font-family="'IBM Plex Mono', monospace">CASE MEMORY</text>
+                <text x="76" y="50" text-anchor="middle" fill="#d2e7e0" font-size="11" font-weight="500">"This Patient"</text>
+                <text x="76" y="73" text-anchor="middle" fill="#88938f" font-size="9.5" font-family="'IBM Plex Mono', monospace">Append-Only History</text>
+                <text x="76" y="91" text-anchor="middle" fill="#509e8c" font-size="8.5" font-family="'IBM Plex Mono', monospace">Temporal Lossless</text>
+              </g>
+
+              <!-- Branch 2: Evidence Memory (Center Box, x=204, width=152, 22px clear gap) -->
+              <g id="sec3-evidence" class="interactive-node" transform="translate(204, 95)" style="cursor: pointer; opacity: 0.65; transition: all 0.3s ease;">
+                <rect id="rect-sec3-evidence" width="152" height="142" rx="6" fill="#0d1f1b" stroke="#e5c182" stroke-width="1.5" class="transition-all duration-300"/>
+                <text x="76" y="26" text-anchor="middle" fill="#e5c182" font-size="11.5" font-weight="700" font-family="'IBM Plex Mono', monospace">EVIDENCE MEMORY</text>
+                <text x="76" y="47" text-anchor="middle" fill="#d2e7e0" font-size="10.5" font-weight="500">"Open World Knowledge"</text>
+                <text x="76" y="64" text-anchor="middle" fill="#88938f" font-size="9" font-family="'IBM Plex Mono', monospace">CIViC · PubMed · Trials</text>
+                
+                <!-- Embedded Access Region (Contained inside with 10px lateral and 16px bottom padding) -->
+                <rect id="subbox-sec3-access" x="10" y="78" width="132" height="48" rx="4" fill="#142723" stroke="#e5c182" stroke-width="1.2" stroke-dasharray="3,2" class="transition-all duration-300"/>
+                <text id="text-sec3-access-1" x="76" y="97" text-anchor="middle" fill="#ffdea6" font-size="9" font-weight="600" font-family="'IBM Plex Mono', monospace">ACCESS PATHWAYS</text>
+                <text id="text-sec3-access-2" x="76" y="114" text-anchor="middle" fill="#e5c182" font-size="8" font-family="'IBM Plex Mono', monospace" opacity="0.85">(First-Class Region)</text>
+              </g>
+
+              <!-- Branch 3: Structured Case Index (Right Box, x=378, width=152, 22px clear gap) -->
+              <g id="sec3-index" class="interactive-node" transform="translate(378, 95)" style="cursor: pointer; opacity: 0.65; transition: all 0.3s ease;">
+                <rect id="rect-sec3-index" width="152" height="105" rx="6" fill="#0d1f1b" stroke="#ffb3ac" stroke-width="1.5" class="transition-all duration-300"/>
+                <text x="76" y="27" text-anchor="middle" fill="#ffb3ac" font-size="11.5" font-weight="700" font-family="'IBM Plex Mono', monospace">CASE INDEX</text>
+                <text x="76" y="50" text-anchor="middle" fill="#d2e7e0" font-size="11" font-weight="500">"This Deployment"</text>
+                <text x="76" y="73" text-anchor="middle" fill="#ffb3ac" font-size="9.5" font-family="'IBM Plex Mono', monospace">Local Experience</text>
+                <text x="76" y="91" text-anchor="middle" fill="#ce7a72" font-size="8.5" font-family="'IBM Plex Mono', monospace">Data Never Leaves</text>
+              </g>
+            </svg>
+          </div>
+        </div>
+
+        <!-- Dynamic Inspector & 3 Differentiators (5 cols) -->
+        <div class="lg:col-span-5 space-y-3 story-reveal">
+          <div id="sec3-detail-card" class="glass-card p-4 rounded-lg border border-primary/40">
+            <div class="flex items-center justify-between pb-2 mb-2 border-b border-outline-variant/30 text-xs font-mono-data">
+              <span id="sec3-badge" class="text-primary font-bold">CASE MEMORY</span>
+              <span id="sec3-status" class="px-2 py-0.5 rounded bg-primary/10 text-primary text-[10px]">Append-Only</span>
+            </div>
+            <p id="sec3-statement" class="text-xs text-on-surface-variant leading-relaxed">
+              What do we know about this patient, and when did we learn it? Holds full temporal history without loss of context.
+            </p>
+          </div>
+
+          <!-- Differentiators Strips -->
+          <div class="p-2.5 rounded bg-surface-lowest border border-primary/20 flex items-center justify-between text-xs font-mono-data">
+            <span class="text-on-surface font-semibold">01. REMEMBERS THE CASE</span>
+            <span class="text-primary text-[10px]">MTB Continuity</span>
+          </div>
+          <div class="p-2.5 rounded bg-surface-lowest border border-secondary/20 flex items-center justify-between text-xs font-mono-data">
+            <span class="text-on-surface font-semibold">02. KNOWS ACCESS PATHWAYS</span>
+            <span class="text-secondary text-[10px]">Citable Regulatory Routes</span>
+          </div>
+          <div class="p-2.5 rounded bg-surface-lowest border border-tertiary/20 flex items-center justify-between text-xs font-mono-data">
+            <span class="text-on-surface font-semibold">03. FREE TO RUN</span>
+            <span class="text-tertiary text-[10px]">Open Sources Only</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================================================================== -->
+  <!-- SECTION 04 — THE REASONING LOOP -->
+  <!-- ===================================================================== -->
+  <section id="sec-04" class="chapter-section" data-section="04">
+    <div class="max-w-5xl mx-auto w-full">
+      <div class="story-reveal mb-6">
+        <div class="flex items-center space-x-2 text-xs font-mono-data text-secondary uppercase tracking-wider mb-2">
+          <span>04</span>
+          <span>·</span>
+          <span>Reasoning Loop</span>
+        </div>
+        <h2 class="text-2xl sm:text-3xl font-bold text-on-surface">
+          Memory → Evidence → Review → Decision → Memory
+        </h2>
+        <p class="text-xs sm:text-sm font-mono-data text-on-surface-variant mt-1 max-w-3xl">
+          Deterministic retrieval functions pass through a strict citation gate to clinician review, recording decisions back into Case Memory.
+        </p>
+      </div>
+
+      <!-- Circular Circuit Visual -->
+      <div class="glass-card p-5 rounded-lg story-reveal">
+        <div class="flex items-center justify-between mb-4 pb-2 border-b border-outline-variant/20 text-xs font-mono-data">
+          <span class="text-outline uppercase">Closed Loop Architecture</span>
+          <span class="px-2.5 py-0.5 rounded bg-surface-high text-primary border border-primary/20 text-[10px]">
+            DETERMINISTIC RETRIEVAL · CLINICIAN REVIEW
+          </span>
+        </div>
+
+        <!-- 5 Nodes Circuit Map -->
+        <div class="grid grid-cols-1 sm:grid-cols-5 gap-3 text-center">
+          <div id="loop-n-1" class="loop-step-card p-3.5 rounded bg-surface-lowest border border-outline-variant/30">
+            <span class="material-symbols-outlined text-primary text-lg mb-1">database</span>
+            <div class="text-xs font-mono-data font-bold text-primary">01. MEMORIES</div>
+            <div class="text-[10px] text-outline mt-0.5">Case + Evidence + Index</div>
+          </div>
+
+          <div id="loop-n-2" class="loop-step-card theme-secondary p-3.5 rounded bg-surface-lowest border border-outline-variant/30">
+            <span class="material-symbols-outlined text-secondary text-lg mb-1">sync_alt</span>
+            <div class="text-xs font-mono-data font-bold text-secondary">02. DIFF & SIGNALS</div>
+            <div class="text-[10px] text-outline mt-0.5">Typed Retrieval</div>
+          </div>
+
+          <div id="loop-n-3" class="loop-step-card theme-tertiary p-3.5 rounded bg-surface-lowest border border-outline-variant/30">
+            <span class="material-symbols-outlined text-tertiary text-lg mb-1">verified</span>
+            <div class="text-xs font-mono-data font-bold text-tertiary">03. CITATION GATE</div>
+            <div class="text-[10px] text-outline mt-0.5">Grounded Provenance</div>
+          </div>
+
+          <div id="loop-n-4" class="loop-step-card p-3.5 rounded bg-surface-lowest border border-outline-variant/30">
+            <span class="material-symbols-outlined text-primary text-lg mb-1">stethoscope</span>
+            <div class="text-xs font-mono-data font-bold text-primary">04. CLINICIAN</div>
+            <div class="text-[10px] text-outline mt-0.5">Clinical Authority</div>
+          </div>
+
+          <div id="loop-n-5" class="loop-step-card theme-secondary p-3.5 rounded bg-surface-lowest border border-outline-variant/30">
+            <span class="material-symbols-outlined text-secondary text-lg mb-1">replay</span>
+            <div class="text-xs font-mono-data font-bold text-secondary">05. DECISION WRITTEN</div>
+            <div class="text-[10px] text-outline mt-0.5">Feeds Case Memory</div>
+          </div>
+        </div>
+
+        <div class="mt-4 p-3 rounded bg-surface-lowest border border-outline-variant/20 text-xs font-mono-data text-center text-on-surface-variant">
+          Flow: Typed signals (Genomics / Trials / Lit / Pharma / Access) feed 1–2 synthesis calls. The decision closes the loop back into Case Memory.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================================================================== -->
+  <!-- SECTION 05 — THE DIFF ENGINE -->
+  <!-- ===================================================================== -->
+  <section id="sec-05" class="chapter-section" data-section="05">
+    <div class="max-w-5xl mx-auto w-full">
+      <div class="story-reveal mb-6">
+        <div class="flex items-center space-x-2 text-xs font-mono-data text-primary uppercase tracking-wider mb-2">
+          <span>05</span>
+          <span>·</span>
+          <span>Core Differentiator</span>
+        </div>
+        <h2 class="text-2xl sm:text-3xl font-bold text-on-surface">
+          ATHENA tracks what changed.
+        </h2>
+        <p class="text-xs sm:text-sm font-mono-data text-on-surface-variant mt-1 max-w-3xl">
+          A finding depends on both patient state AND evidence state. Both can break assumptions and invalidate existing findings.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+        <!-- Interactive Mode Controls (4 cols) -->
+        <div class="lg:col-span-4 space-y-3 story-reveal">
+          <div class="text-xs font-mono-data text-outline uppercase tracking-wider">Trigger State Change</div>
+
+          <button id="btn-diff-pat" class="w-full text-left p-3.5 rounded-lg glass-card border border-primary/40 active cursor-pointer">
+            <div class="text-xs font-mono-data text-primary font-bold">1. PATIENT CHANGE</div>
+            <div class="text-[11px] text-on-surface-variant mt-0.5">New sequencing: EGFR alteration detected.</div>
+          </button>
+
+          <button id="btn-diff-evi" class="w-full text-left p-3.5 rounded-lg glass-card border border-outline-variant/30 cursor-pointer">
+            <div class="text-xs font-mono-data text-secondary font-bold">2. EVIDENCE CHANGE</div>
+            <div class="text-[11px] text-on-surface-variant mt-0.5">New CIViC/PubMed paper: Stronger evidence ingested.</div>
+          </button>
+
+          <div class="p-3 rounded bg-surface-lowest border border-primary/20 text-center">
+            <div class="text-xs font-mono-data text-primary font-bold">RE-EVALUATE ONLY WHAT CHANGED</div>
+            <div class="text-[10px] text-outline mt-0.5">Indexed lookup avoids re-running every case.</div>
+          </div>
+        </div>
+
+        <!-- Dependency Graph Simulation (8 cols) -->
+        <div class="lg:col-span-8 glass-card p-5 rounded-lg story-reveal">
+          <div class="flex items-center justify-between mb-3 pb-2 border-b border-outline-variant/20 text-xs font-mono-data">
+            <span class="text-outline uppercase">Dependency Chain</span>
+            <span id="diff-mode-label" class="text-primary font-semibold">Simulating: Patient Change</span>
+          </div>
+
+          <div class="relative h-52 w-full flex items-center justify-center">
+            <svg class="w-full h-full" viewBox="0 0 480 180">
+              <!-- Event Box -->
+              <g transform="translate(15, 65)">
+                <rect width="125" height="48" rx="4" fill="#1b2d29" stroke="#87d5c1" stroke-width="1.5"/>
+                <text id="svg-diff-evt-title" x="62" y="20" text-anchor="middle" fill="#87d5c1" font-size="9" font-family="'IBM Plex Mono', monospace" font-weight="700">NEW SEQUENCING</text>
+                <text id="svg-diff-evt-sub" x="62" y="36" text-anchor="middle" fill="#d2e7e0" font-size="8">EGFR Alteration</text>
+              </g>
+
+              <line x1="140" y1="89" x2="180" y2="89" stroke="#87d5c1" stroke-width="1.5"/>
+
+              <!-- Assumption Box -->
+              <g transform="translate(185, 65)">
+                <rect width="130" height="48" rx="4" fill="#01110e" stroke="#ffb3ac" stroke-width="1.5" stroke-dasharray="3,2"/>
+                <text id="svg-diff-asm-title" x="65" y="20" text-anchor="middle" fill="#ffb3ac" font-size="9" font-family="'IBM Plex Mono', monospace" font-weight="600">ASSUMPTION BROKEN</text>
+                <text id="svg-diff-asm-sub" x="65" y="36" text-anchor="middle" fill="#d2e7e0" font-size="8">NoAlterationIn(EGFR)</text>
+              </g>
+
+              <line x1="315" y1="89" x2="355" y2="89" stroke="#ffb3ac" stroke-width="1.5"/>
+
+              <!-- Invalidation Target -->
+              <g transform="translate(360, 65)">
+                <rect width="105" height="48" rx="4" fill="#0d1f1b" stroke="#ffb4ab" stroke-width="1.5"/>
+                <text x="52" y="20" text-anchor="middle" fill="#ffb4ab" font-size="9" font-family="'IBM Plex Mono', monospace" font-weight="700">RE-EVALUATED</text>
+                <text id="svg-diff-tgt-sub" x="52" y="36" text-anchor="middle" fill="#bec9c4" font-size="8">Finding Updated</text>
+              </g>
+            </svg>
+          </div>
+
+          <div id="diff-detail-desc" class="text-xs font-mono-data text-on-surface-variant bg-surface-lowest p-2.5 rounded border border-outline-variant/20">
+            Mechanism: When EGFR alteration arrives, <span class="text-tertiary">NoAlterationIn(EGFR)</span> fails. Only dependent findings re-evaluate.
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================================================================== -->
+  <!-- SECTION 06 — ACCESS + TRIAL INTELLIGENCE -->
+  <!-- ===================================================================== -->
+  <section id="sec-06" class="chapter-section" data-section="06">
+    <div class="max-w-5xl mx-auto w-full">
+      <div class="story-reveal mb-6">
+        <div class="flex items-center space-x-2 text-xs font-mono-data text-secondary uppercase tracking-wider mb-2">
+          <span>06</span>
+          <span>·</span>
+          <span>Access & Trial Matching</span>
+        </div>
+        <h2 class="text-2xl sm:text-3xl font-bold text-on-surface">
+          Finding a treatment is not enough. ATHENA finds the path to it.
+        </h2>
+        <p class="text-xs sm:text-sm font-mono-data text-on-surface-variant mt-1 max-w-3xl">
+          Tacit specialist knowledge of regulatory pathways and structured trial matching, synchronized through scheduled evidence polling.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <!-- Visual A: Access Pathways (6 cols) -->
+        <div class="lg:col-span-6 glass-card p-5 rounded-lg story-reveal flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-3 pb-2 border-b border-outline-variant/20 text-xs font-mono-data">
+              <span class="text-secondary font-bold uppercase">Access Pathway Intelligence</span>
+              <span class="text-outline text-[10px]">Evidence Memory Region</span>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2 text-xs font-mono-data">
+              <button class="path-btn p-2 rounded bg-surface-lowest border border-outline-variant/30 text-left active" data-path="on-label">
+                <span class="path-title font-bold block">On-Label</span>
+                <span class="text-[10px] text-outline">Standard Indication</span>
+              </button>
+              <button class="path-btn p-2 rounded bg-surface-lowest border border-outline-variant/30 text-left" data-path="off-label">
+                <span class="path-title font-bold block">Off-Label</span>
+                <span class="text-[10px] text-outline">Literature Sourced</span>
+              </button>
+              <button class="path-btn p-2 rounded bg-surface-lowest border border-outline-variant/30 text-left" data-path="compassionate">
+                <span class="path-title font-bold block">Expanded Access</span>
+                <span class="text-[10px] text-outline">FDA 3926 / CDSCO</span>
+              </button>
+              <button class="path-btn p-2 rounded bg-surface-lowest border border-outline-variant/30 text-left" data-path="import">
+                <span class="path-title font-bold block">Named-Patient Import</span>
+                <span class="text-[10px] text-outline">Special License</span>
+              </button>
+            </div>
+          </div>
+
+          <div id="path-desc" class="mt-4 p-4 sm:p-5 rounded-lg bg-surface-lowest border border-secondary/40 shadow-[0_0_20px_rgba(229,193,130,0.12)] min-h-[110px] flex flex-col justify-center transition-all duration-300">
+            <div class="text-[11px] font-mono-data uppercase tracking-wider text-outline mb-1 font-semibold">Pathway</div>
+            <div class="text-base sm:text-lg font-mono-data font-bold text-secondary tracking-tight">ON-LABEL INDICATION</div>
+            <div class="text-xs sm:text-sm text-on-surface-variant mt-1 leading-relaxed">Drug approved in-country for exact biomarker.</div>
+          </div>
+        </div>
+
+        <!-- Visual B & C: Trial Buckets & Continuous Ingestion (6 cols) -->
+        <div class="lg:col-span-6 glass-card p-5 rounded-lg story-reveal flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-3 pb-2 border-b border-outline-variant/20 text-xs font-mono-data">
+              <span class="text-primary font-bold uppercase">Structured Trial Buckets</span>
+              <span class="text-outline text-[10px]">Rule-Based Matching</span>
+            </div>
+
+            <div class="space-y-2">
+              <button class="bucket-btn w-full text-left p-2.5 rounded bg-surface-lowest border border-primary/40 flex justify-between items-center active" data-bucket="comp">
+                <div>
+                  <span class="text-xs font-mono-data font-bold text-primary">HIGHLY COMPATIBLE</span>
+                  <div class="text-[10px] text-outline">All structured criteria satisfied.</div>
+                </div>
+                <span class="material-symbols-outlined text-primary text-sm">check_circle</span>
+              </button>
+
+              <button class="bucket-btn w-full text-left p-2.5 rounded bg-surface-lowest border border-outline-variant/30 flex justify-between items-center" data-bucket="veri">
+                <div>
+                  <span class="text-xs font-mono-data font-bold text-secondary">REQUIRES VERIFICATION</span>
+                  <div class="text-[10px] text-outline">Criteria reference missing case data.</div>
+                </div>
+                <span class="material-symbols-outlined text-secondary text-sm">help</span>
+              </button>
+
+              <button class="bucket-btn w-full text-left p-2.5 rounded bg-surface-lowest border border-outline-variant/30 flex justify-between items-center" data-bucket="incomp">
+                <div>
+                  <span class="text-xs font-mono-data font-bold text-tertiary">PROBABLY INCOMPATIBLE</span>
+                  <div class="text-[10px] text-outline">A structured criterion is violated.</div>
+                </div>
+                <span class="material-symbols-outlined text-tertiary text-sm">cancel</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Continuous Evidence Synchronizer Banner -->
+          <div class="mt-3 p-2.5 rounded bg-surface-lowest border border-outline-variant/30 text-[11px] font-mono-data flex items-center justify-between">
+            <span class="text-outline">Scheduled Polling (CIViC · PubMed · CT.gov)</span>
+            <span class="text-primary font-semibold">Continuous ≠ Streaming</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================================================================== -->
+  <!-- SECTION 07 — DEPLOYMENT + BOUNDARIES -->
+  <!-- ===================================================================== -->
+  <section id="sec-07" class="chapter-section" data-section="07">
+    <div class="max-w-5xl mx-auto w-full">
+      <div class="story-reveal mb-6">
+        <div class="flex items-center space-x-2 text-xs font-mono-data text-primary uppercase tracking-wider mb-2">
+          <span>07</span>
+          <span>·</span>
+          <span>Architecture & Limits</span>
+        </div>
+        <h2 class="text-2xl sm:text-3xl font-bold text-on-surface">
+          Low-Resource Deployment & Explicit Boundaries
+        </h2>
+        <p class="text-xs sm:text-sm font-mono-data text-on-surface-variant mt-1 max-w-3xl">
+          Engineered for commodity public hospital infrastructure with strict, transparent scientific limits.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <!-- Left: Low-Resource Architecture (6 cols) -->
+        <div class="lg:col-span-6 glass-card p-5 rounded-lg story-reveal">
+          <div class="text-xs font-mono-data text-primary font-bold uppercase mb-3 pb-2 border-b border-outline-variant/20">
+            6 Low-Resource Principles
+          </div>
+
+          <div class="grid grid-cols-2 gap-2 text-xs font-mono-data mb-4">
+            <div class="p-2 rounded bg-surface-lowest border border-primary/20">
+              <span class="text-primary font-semibold block">Open Sources Only</span>
+              <span class="text-[10px] text-outline">No licensed data fees</span>
+            </div>
+            <div class="p-2 rounded bg-surface-lowest border border-secondary/20">
+              <span class="text-secondary font-semibold block">Few LLM Calls</span>
+              <span class="text-[10px] text-outline">1–2 per question bound</span>
+            </div>
+            <div class="p-2 rounded bg-surface-lowest border border-primary/20">
+              <span class="text-primary font-semibold block">Self-Hostable</span>
+              <span class="text-[10px] text-outline">FalkorDB + Postgres</span>
+            </div>
+            <div class="p-2 rounded bg-surface-lowest border border-outline-variant/30">
+              <span class="text-on-surface font-semibold block">Model Agnostic</span>
+              <span class="text-[10px] text-outline">Hosted or Open-Weight</span>
+            </div>
+            <div class="p-2 rounded bg-surface-lowest border border-tertiary/20">
+              <span class="text-tertiary font-semibold block">Local Patient Data</span>
+              <span class="text-[10px] text-outline">Never leaves hospital</span>
+            </div>
+            <div class="p-2 rounded bg-surface-lowest border border-secondary/20">
+              <span class="text-secondary font-semibold block">Regional Config</span>
+              <span class="text-[10px] text-outline">India / LMIC YAML scope</span>
+            </div>
+          </div>
+
+          <div class="p-2.5 rounded bg-surface-high border border-primary/30 text-center text-xs font-mono-data">
+            <span class="text-on-surface font-semibold">Signal Generators:</span> Deterministic functions feed 1–2 synthesis calls (never autonomous multi-agent loops).
+          </div>
+        </div>
+
+        <!-- Right: Boundaries Wall (6 cols) -->
+        <div class="lg:col-span-6 glass-card p-5 rounded-lg story-reveal">
+          <div class="text-xs font-mono-data text-tertiary font-bold uppercase mb-3 pb-2 border-b border-outline-variant/20">
+            Explicit Negative Boundaries
+          </div>
+
+          <div class="space-y-2 text-xs font-mono-data mb-4">
+            <div class="p-2 rounded bg-surface-lowest border-l-2 border-l-tertiary flex justify-between">
+              <span>NOT A DIAGNOSTIC TOOL</span>
+              <span class="text-outline">Evidence & Hypotheses</span>
+            </div>
+            <div class="p-2 rounded bg-surface-lowest border-l-2 border-l-tertiary flex justify-between">
+              <span>NOT A TREATMENT RECOMMENDER</span>
+              <span class="text-outline">Clinician Decision</span>
+            </div>
+            <div class="p-2 rounded bg-surface-lowest border-l-2 border-l-tertiary flex justify-between">
+              <span>NOT BINDING-AFFINITY PREDICTOR</span>
+              <span class="text-outline">Excluded Post-Validation</span>
+            </div>
+            <div class="p-2 rounded bg-surface-lowest border-l-2 border-l-tertiary flex justify-between">
+              <span>NOT A MULTI-AGENT SYSTEM</span>
+              <span class="text-outline">Deterministic Retrieval</span>
+            </div>
+            <div class="p-2 rounded bg-surface-lowest border-l-2 border-l-tertiary flex justify-between">
+              <span>NOT CROSS-INSTITUTION AT LAUNCH</span>
+              <span class="text-outline">Local Instance Only</span>
+            </div>
+          </div>
+
+          <div class="text-[11px] font-mono-data text-outline text-center">
+            LLM Cost Reality: <span class="text-secondary">Cost reduced, not eliminated</span> (must be budgeted responsibly).
+          </div>
+        </div>
+      </div>
+
+      <!-- Credible SOTA Position Strip -->
+      <div class="mt-4 p-3 rounded bg-surface-lowest border border-primary/30 text-center text-xs font-mono-data text-on-surface story-reveal">
+        <span class="text-primary font-bold">Credible SOTA Claim:</span> OPEN-SOURCE · SELF-HOSTABLE · CITATION-ENFORCED · CASE-MEMORY-AWARE · FOR INSTITUTIONS WITHOUT AN MTB.
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================================================================== -->
+  <!-- SECTION 08 — THE OUTCOME -->
+  <!-- ===================================================================== -->
+  <section id="sec-08" class="chapter-section flex items-center justify-center text-center relative overflow-hidden" data-section="08">
+    <div class="max-w-4xl mx-auto px-4 story-reveal">
+      <h2 class="text-3xl sm:text-5xl font-bold tracking-tight text-on-surface mb-3 font-headline">
+        Close the expertise gap.
+      </h2>
+
+      <p class="text-xs sm:text-sm text-on-surface-variant font-mono-data mb-7 max-w-xl mx-auto">
+        A district oncologist reaches a documented, cited research direction on a hard case without specialist referral.
+      </p>
+
+      <!-- Four Surrounding Outcomes Grid -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-3xl mx-auto text-left mb-6 font-mono-data text-xs">
+        <div class="glass-card p-3 rounded border border-primary/30">
+          <div class="text-primary font-bold mb-1">01. CITED DIRECTION</div>
+          <div class="text-[11px] text-outline">Documented path in minutes.</div>
+        </div>
+        <div class="glass-card p-3 rounded border border-secondary/30">
+          <div class="text-secondary font-bold mb-1">02. WHAT CHANGED</div>
+          <div class="text-[11px] text-outline">Exact diff on new data.</div>
+        </div>
+        <div class="glass-card p-3 rounded border border-tertiary/30">
+          <div class="text-tertiary font-bold mb-1">03. ACCESS SURFACED</div>
+          <div class="text-[11px] text-outline">Tacit route cited.</div>
+        </div>
+        <div class="glass-card p-3 rounded border border-primary/30">
+          <div class="text-primary font-bold mb-1">04. AFFORDABLE</div>
+          <div class="text-[11px] text-outline">Runs on hospital server.</div>
+        </div>
+      </div>
+
+      <!-- Final Synthesis -->
+      <div class="glass-card p-4 rounded-lg max-w-lg mx-auto mb-7 border border-primary/40">
+        <div class="grid grid-cols-2 gap-2 text-left font-mono-data text-xs">
+          <div class="text-on-surface">✓ Remember the case.</div>
+          <div class="text-on-surface">✓ Track the evidence.</div>
+          <div class="text-on-surface">✓ Surface the path.</div>
+          <div class="text-on-surface">✓ Keep clinician in control.</div>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-center">
+        <a href="#sec-01" class="px-6 py-2.5 rounded bg-primary text-surface-lowest font-mono-data text-xs font-bold hover:bg-primary-fixed transition-colors shadow-[0_0_20px_rgba(135,213,193,0.25)]">
+          Return to Top
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================================================================== -->
+  <!-- INTERACTIVE SCRIPTS -->
+  <!-- ===================================================================== -->
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // 1. REPLAYABLE SCROLL REVEAL OBSERVER (Forward & Reverse)
+      const reveals = document.querySelectorAll('.story-reveal');
+      const revealObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('revealed');
+          } else {
+            entry.target.classList.remove('revealed');
+          }
+        });
+      }, { threshold: 0.15 });
+
+      reveals.forEach(el => revealObserver.observe(el));
+
+      // 2. 8-SECTION NAVIGATION RAIL & INTELLIGENT CHAPTER SCROLL-SNAP CONTROLLER
+      const chapterSections = Array.from(document.querySelectorAll('.chapter-section'));
+      const navItems = document.querySelectorAll('.nav-rail-item');
+      const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+      const sectionObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            const secId = entry.target.getAttribute('data-section');
+            navItems.forEach(item => {
+              if (item.getAttribute('data-section') === secId) {
+                item.classList.add('active');
+              } else {
+                item.classList.remove('active');
+              }
+            });
+          }
+        });
+      }, { threshold: 0.4 });
+
+      chapterSections.forEach(sec => sectionObserver.observe(sec));
+
+      // Intelligent Center-Threshold Chapter Snapping (Fast ~330ms, Cancellable, Fast-Gesture Bypass)
+      let isSnapping = false;
+      let snapAnimId = null;
+      let lastScrollY = window.scrollY;
+      let lastScrollTime = performance.now();
+      let currentSectionIndex = 0;
+
+      function getSectionCenter(el) {
+        return el.offsetTop + el.offsetHeight / 2;
+      }
+
+      function getTargetScrollY(index) {
+        if (index <= 0) return 0;
+        const maxScroll = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+        const sec = chapterSections[index];
+        if (!sec) return 0;
+        const target = sec.offsetTop + sec.offsetHeight / 2 - window.innerHeight / 2;
+        return Math.max(0, Math.min(maxScroll, target));
+      }
+
+      function findClosestSectionIndex() {
+        const viewportCenter = window.scrollY + window.innerHeight / 2;
+        let closestIndex = 0;
+        let minDistance = Infinity;
+
+        chapterSections.forEach((sec, idx) => {
+          const center = getSectionCenter(sec);
+          const dist = Math.abs(viewportCenter - center);
+          if (dist < minDistance) {
+            minDistance = dist;
+            closestIndex = idx;
+          }
+        });
+        return closestIndex;
+      }
+
+      currentSectionIndex = findClosestSectionIndex();
+
+      function cancelSnapAnimation() {
+        if (snapAnimId !== null) {
+          cancelAnimationFrame(snapAnimId);
+          snapAnimId = null;
+        }
+        isSnapping = false;
+      }
+
+      function animateScrollTo(targetY, duration = 330) {
+        if (prefersReducedMotion) {
+          window.scrollTo(0, targetY);
+          return;
+        }
+
+        cancelSnapAnimation();
+        isSnapping = true;
+
+        const startY = window.scrollY;
+        const distance = targetY - startY;
+        if (Math.abs(distance) < 2) {
+          isSnapping = false;
+          return;
+        }
+
+        const startTime = performance.now();
+
+        function step(now) {
+          const elapsed = now - startTime;
+          const progress = Math.min(elapsed / duration, 1);
+          // Ease-out cubic: smooth acceleration, soft deceleration, exact center
+          const ease = 1 - Math.pow(1 - progress, 3);
+          const currentPos = startY + distance * ease;
+
+          window.scrollTo(0, currentPos);
+
+          if (progress < 1) {
+            snapAnimId = requestAnimationFrame(step);
+          } else {
+            window.scrollTo(0, targetY);
+            snapAnimId = null;
+            isSnapping = false;
+            lastScrollY = window.scrollY;
+            lastScrollTime = performance.now();
+          }
+        }
+
+        snapAnimId = requestAnimationFrame(step);
+      }
+
+      // User interaction immediately cancels active snap so page never fights gestures
+      window.addEventListener('wheel', () => {
+        if (isSnapping) {
+          cancelSnapAnimation();
+        }
+      }, { passive: true });
+
+      window.addEventListener('touchstart', () => {
+        if (isSnapping) {
+          cancelSnapAnimation();
+        }
+      }, { passive: true });
+
+      // Scroll Event Listener: Center-threshold detection with fast-gesture bypass
+      window.addEventListener('scroll', () => {
+        const now = performance.now();
+        const currentY = window.scrollY;
+        const delta = currentY - lastScrollY;
+        const dt = Math.max(now - lastScrollTime, 1);
+        const velocity = Math.abs(delta) / dt; // pixels per ms
+        const viewportCenter = currentY + window.innerHeight / 2;
+
+        // Bypass chapter snap during fast multi-finger/momentum swipes to allow natural browsing
+        const isFastGesture = velocity > 1.25 || Math.abs(delta) > 45;
+
+        if (!isSnapping && !isFastGesture && !prefersReducedMotion) {
+          const closest = findClosestSectionIndex();
+
+          if (delta > 3) {
+            // Scrolling DOWN (Controlled): Check if we crossed the next section's center
+            const nextIndex = closest < chapterSections.length - 1 ? closest + 1 : closest;
+            if (nextIndex > currentSectionIndex && nextIndex < chapterSections.length) {
+              const nextCenter = getSectionCenter(chapterSections[nextIndex]);
+              if (viewportCenter >= nextCenter) {
+                currentSectionIndex = nextIndex;
+                animateScrollTo(getTargetScrollY(nextIndex), 330);
+              }
+            }
+          } else if (delta < -3) {
+            // Scrolling UP (Controlled): Check if we crossed the previous section's center
+            const prevIndex = closest > 0 ? closest - 1 : 0;
+            if (prevIndex < currentSectionIndex && prevIndex >= 0) {
+              const prevCenter = getSectionCenter(chapterSections[prevIndex]);
+              if (viewportCenter <= prevCenter) {
+                currentSectionIndex = prevIndex;
+                animateScrollTo(getTargetScrollY(prevIndex), 330);
+              }
+            }
+          }
+        }
+
+        lastScrollY = currentY;
+        lastScrollTime = now;
+      }, { passive: true });
+
+      // Handle anchor links (nav rail, return to top, hero explore)
+      document.querySelectorAll('a[href^="#sec-"]').forEach(link => {
+        link.addEventListener('click', (e) => {
+          const href = link.getAttribute('href');
+          const targetSec = document.querySelector(href);
+          if (targetSec) {
+            const targetIdx = chapterSections.indexOf(targetSec);
+            if (targetIdx !== -1) {
+              e.preventDefault();
+              currentSectionIndex = targetIdx;
+              animateScrollTo(getTargetScrollY(targetIdx), 380);
+            }
+          }
+        });
+      });
+
+      // Recalculate on window resize
+      window.addEventListener('resize', () => {
+        currentSectionIndex = findClosestSectionIndex();
+      });
+
+      // 3. SECTION 02: EXPERTISE GAP (ORBITAL & SYNTHESIZED GRAPH ENGINE)
+      const btnGapDistrict = document.getElementById('btn-gap-district');
+      const btnGapMTB = document.getElementById('btn-gap-mtb');
+      const gapCoreTitle = document.getElementById('gap-core-title');
+      const gapCoreSub = document.getElementById('gap-core-sub');
+      const gapCoreNode = document.getElementById('gap-core-node');
+      const gapCoreGlow = document.getElementById('gap-core-glow');
+      const gapOrbitTrack = document.getElementById('gap-orbit-track');
+      const gapCaption = document.getElementById('gap-caption');
+
+      const gapNodeElements = {
+        gen: document.getElementById('gap-node-gen'),
+        lit: document.getElementById('gap-node-lit'),
+        tri: document.getElementById('gap-node-tri'),
+        pat: document.getElementById('gap-node-pat'),
+        acc: document.getElementById('gap-node-acc')
+      };
+
+      const gapRayElements = {
+        gen: document.getElementById('ray-gen'),
+        lit: document.getElementById('ray-lit'),
+        tri: document.getElementById('ray-tri'),
+        pat: document.getElementById('ray-pat'),
+        acc: document.getElementById('ray-acc')
+      };
+
+      const gapCrossLinkElements = {
+        'gen-lit': document.getElementById('link-gen-lit'),
+        'lit-tri': document.getElementById('link-lit-tri'),
+        'tri-acc': document.getElementById('link-tri-acc'),
+        'acc-pat': document.getElementById('link-acc-pat'),
+        'pat-gen': document.getElementById('link-pat-gen'),
+        'gen-tri': document.getElementById('link-gen-tri'),
+        'lit-pat': document.getElementById('link-lit-pat'),
+        'lit-acc': document.getElementById('link-lit-acc')
+      };
+
+      const gapCenter = { x: 270, y: 130 };
+      const gapOrbitRx = 180;
+      const gapOrbitRy = 85;
+
+      const gapNodesConfig = [
+        { id: 'gen', phase: 0.0, targetX: 125, targetY: 72 },
+        { id: 'lit', phase: (2 * Math.PI / 5) * 1, targetX: 270, targetY: 38 },
+        { id: 'tri', phase: (2 * Math.PI / 5) * 2, targetX: 415, targetY: 72 },
+        { id: 'acc', phase: (2 * Math.PI / 5) * 3, targetX: 410, targetY: 205 },
+        { id: 'pat', phase: (2 * Math.PI / 5) * 4, targetX: 130, targetY: 205 }
+      ];
+
+      const gapCrossLinksConfig = [
+        { key: 'gen-lit', from: 'gen', to: 'lit' },
+        { key: 'lit-tri', from: 'lit', to: 'tri' },
+        { key: 'tri-acc', from: 'tri', to: 'acc' },
+        { key: 'acc-pat', from: 'acc', to: 'pat' },
+        { key: 'pat-gen', from: 'pat', to: 'gen' },
+        { key: 'gen-tri', from: 'gen', to: 'tri' },
+        { key: 'lit-pat', from: 'lit', to: 'pat' },
+        { key: 'lit-acc', from: 'lit', to: 'acc' }
+      ];
+
+      let gapMode = 'district'; // 'district' or 'mtb'
+      let gapTransitionProgress = 0.0; // 0.0 = District (orbit), 1.0 = MTB (graph)
+      let gapOrbitAngle = 0.0;
+      let isSec2Visible = true;
+
+      const sec2Section = document.getElementById('sec-02');
+      if (sec2Section) {
+        const sec2Obs = new IntersectionObserver((entries) => {
+          isSec2Visible = entries[0].isIntersecting;
+        }, { threshold: 0.1 });
+        sec2Obs.observe(sec2Section);
+      }
+
+      function easeInOutCubic(t) {
+        return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+      }
+
+      function updateGapScene() {
+        // Smoothly interpolate transitionProgress toward target (0 for district, 1 for mtb)
+        const targetProgress = gapMode === 'mtb' ? 1.0 : 0.0;
+        gapTransitionProgress += (targetProgress - gapTransitionProgress) * 0.06;
+
+        if (Math.abs(gapTransitionProgress - targetProgress) < 0.001) {
+          gapTransitionProgress = targetProgress;
+        }
+
+        // Orbit rotation speed slows down as it approaches MTB mode
+        const speed = 0.0045 * (1.0 - gapTransitionProgress * 0.9);
+        gapOrbitAngle += speed;
+
+        const ease = easeInOutCubic(gapTransitionProgress);
+
+        // Compute current coordinates of all 5 nodes
+        const currentCoords = {};
+        gapNodesConfig.forEach(node => {
+          const orbitX = gapCenter.x + gapOrbitRx * Math.cos(gapOrbitAngle + node.phase);
+          const orbitY = gapCenter.y + gapOrbitRy * Math.sin(gapOrbitAngle + node.phase);
+
+          const curX = orbitX + (node.targetX - orbitX) * ease;
+          const curY = orbitY + (node.targetY - orbitY) * ease;
+
+          currentCoords[node.id] = { x: curX, y: curY };
+
+          const el = gapNodeElements[node.id];
+          if (el) {
+            el.setAttribute('transform', `translate(${curX.toFixed(2)}, ${curY.toFixed(2)})`);
+          }
+
+          const ray = gapRayElements[node.id];
+          if (ray) {
+            ray.setAttribute('x1', gapCenter.x);
+            ray.setAttribute('y1', gapCenter.y);
+            ray.setAttribute('x2', curX.toFixed(2));
+            ray.setAttribute('y2', curY.toFixed(2));
+            ray.setAttribute('opacity', (0.25 + ease * 0.55).toFixed(3));
+            ray.setAttribute('stroke-dasharray', ease > 0.6 ? 'none' : '3,3');
+          }
+        });
+
+        // Update all cross-links
+        gapCrossLinksConfig.forEach(link => {
+          const lineEl = gapCrossLinkElements[link.key];
+          if (lineEl && currentCoords[link.from] && currentCoords[link.to]) {
+            lineEl.setAttribute('x1', currentCoords[link.from].x.toFixed(2));
+            lineEl.setAttribute('y1', currentCoords[link.from].y.toFixed(2));
+            lineEl.setAttribute('x2', currentCoords[link.to].x.toFixed(2));
+            lineEl.setAttribute('y2', currentCoords[link.to].y.toFixed(2));
+            lineEl.setAttribute('opacity', (ease * 0.85).toFixed(3));
+          }
+        });
+
+        // Orbit track ellipse opacity
+        if (gapOrbitTrack) {
+          gapOrbitTrack.setAttribute('opacity', ((1.0 - ease) * 0.16).toFixed(3));
+        }
+
+        // Center Node Styling & Text
+        if (gapCoreTitle && gapCoreSub && gapCoreNode && gapCoreGlow) {
+          if (gapTransitionProgress >= 0.5) {
+            gapCoreTitle.textContent = 'MOLECULAR';
+            gapCoreSub.textContent = 'TUMOR BOARD';
+            gapCoreSub.setAttribute('fill', '#e5c182');
+            gapCoreNode.setAttribute('stroke', '#e5c182');
+            gapCoreNode.setAttribute('r', '33');
+            gapCoreGlow.setAttribute('fill', 'rgba(229,193,130,0.20)');
+          } else {
+            gapCoreTitle.textContent = 'DISTRICT';
+            gapCoreSub.textContent = 'ONCOLOGIST';
+            gapCoreSub.setAttribute('fill', '#87d5c1');
+            gapCoreNode.setAttribute('stroke', '#87d5c1');
+            gapCoreNode.setAttribute('r', '30');
+            gapCoreGlow.setAttribute('fill', 'rgba(135,213,193,0.12)');
+          }
+        }
+      }
+
+      function animateGapLoop() {
+        if (isSec2Visible) {
+          updateGapScene();
+        }
+        requestAnimationFrame(animateGapLoop);
+      }
+      animateGapLoop();
+
+      if (btnGapDistrict && btnGapMTB) {
+        btnGapDistrict.addEventListener('click', () => {
+          gapMode = 'district';
+          btnGapDistrict.className = 'px-2.5 py-1 rounded bg-surface-high text-primary border border-primary/30 font-semibold cursor-pointer';
+          btnGapMTB.className = 'px-2.5 py-1 rounded bg-surface-lowest text-outline hover:text-on-surface border border-outline-variant/30 cursor-pointer';
+          if (gapCaption) {
+            gapCaption.innerHTML = 'Barrier: <span class="text-tertiary">Fragmented Isolation</span> — General oncologist manages rare/exhausted case alone without a specialist team.';
+          }
+        });
+
+        btnGapMTB.addEventListener('click', () => {
+          gapMode = 'mtb';
+          btnGapMTB.className = 'px-2.5 py-1 rounded bg-surface-high text-secondary border border-secondary/30 font-semibold cursor-pointer';
+          btnGapDistrict.className = 'px-2.5 py-1 rounded bg-surface-lowest text-outline hover:text-on-surface border border-outline-variant/30 cursor-pointer';
+          if (gapCaption) {
+            gapCaption.innerHTML = 'Convergence: <span class="text-secondary">Specialist Reasoning</span> — Joint multi-specialist analysis (exists at only a few dozen major centers).';
+          }
+        });
+      }
+
+      // 4. SECTION 03: THREE MEMORIES INTERACTIVE INSPECTOR
+      const nodeSec3Case = document.getElementById('sec3-case');
+      const nodeSec3Evidence = document.getElementById('sec3-evidence');
+      const nodeSec3Index = document.getElementById('sec3-index');
+
+      const rectSec3Case = document.getElementById('rect-sec3-case');
+      const rectSec3Evidence = document.getElementById('rect-sec3-evidence');
+      const rectSec3Index = document.getElementById('rect-sec3-index');
+      const subboxSec3Access = document.getElementById('subbox-sec3-access');
+      const textSec3Access1 = document.getElementById('text-sec3-access-1');
+      const textSec3Access2 = document.getElementById('text-sec3-access-2');
+
+      const connSec3Case = document.getElementById('conn-sec3-case');
+      const connSec3Evidence = document.getElementById('conn-sec3-evidence');
+      const connSec3Index = document.getElementById('conn-sec3-index');
+
+      const sec3DetailCard = document.getElementById('sec3-detail-card');
+      const sec3Badge = document.getElementById('sec3-badge');
+      const sec3Status = document.getElementById('sec3-status');
+      const sec3Statement = document.getElementById('sec3-statement');
+
+      const sec3Data = {
+        case: {
+          badge: 'CASE MEMORY',
+          badgeClass: 'text-primary',
+          status: 'Append-Only',
+          statusClass: 'bg-primary/10 text-primary',
+          statement: 'What do we know about this patient, and when did we learn it? Holds full temporal history without loss of context.',
+          cardBorder: 'border-primary/50'
+        },
+        evidence: {
+          badge: 'EVIDENCE MEMORY',
+          badgeClass: 'text-secondary',
+          status: 'Continuously Updated Graph',
+          statusClass: 'bg-secondary/10 text-secondary',
+          statement: 'What does the open world know? Sourced CIViC, PubMed, and ClinicalTrials.gov graph + Access Pathways as an embedded first-class region.',
+          cardBorder: 'border-secondary/50'
+        },
+        index: {
+          badge: 'STRUCTURED CASE INDEX',
+          badgeClass: 'text-tertiary',
+          status: 'Local & Deferred',
+          statusClass: 'bg-tertiary/10 text-tertiary',
+          statement: 'What has this specific deployment seen? Accumulates local experience locally; patient data never leaves the hospital.',
+          cardBorder: 'border-tertiary/50'
+        }
+      };
+
+      function positionSec3Node(node, baseX, baseY, isSelected) {
+        if (node) {
+          node.style.transform = ''; // clear any style-level transform override
+          node.setAttribute('transform', `translate(${baseX}, ${baseY + (isSelected ? -2 : 0)})`);
+        }
+      }
+
+      function selectSec3Memory(key) {
+        const item = sec3Data[key];
+        if (!item) return;
+
+        // Update Right detail card
+        if (sec3Badge) {
+          sec3Badge.textContent = item.badge;
+          sec3Badge.className = `${item.badgeClass} font-bold`;
+        }
+        if (sec3Status) {
+          sec3Status.textContent = item.status;
+          sec3Status.className = `px-2 py-0.5 rounded ${item.statusClass} text-[10px]`;
+        }
+        if (sec3Statement) {
+          sec3Statement.textContent = item.statement;
+        }
+        if (sec3DetailCard) {
+          sec3DetailCard.className = `glass-card p-4 rounded-lg border ${item.cardBorder} transition-all duration-300`;
+        }
+
+        // Explicitly preserve base X and apply Y lift without CSS transform collision
+        positionSec3Node(nodeSec3Case, 30, 95, key === 'case');
+        positionSec3Node(nodeSec3Evidence, 204, 95, key === 'evidence');
+        positionSec3Node(nodeSec3Index, 378, 95, key === 'index');
+
+        // Highlight Case Memory
+        if (nodeSec3Case && rectSec3Case) {
+          const isCase = (key === 'case');
+          nodeSec3Case.style.opacity = isCase ? '1' : '0.65';
+          rectSec3Case.setAttribute('stroke-width', isCase ? '2.5' : '1.5');
+          rectSec3Case.setAttribute('fill', isCase ? '#0c2620' : '#0d1f1b');
+          rectSec3Case.setAttribute('filter', isCase ? 'drop-shadow(0 0 10px rgba(135,213,193,0.45))' : 'none');
+        }
+
+        // Highlight Evidence Memory + embedded Access Pathways region
+        if (nodeSec3Evidence && rectSec3Evidence) {
+          const isEvi = (key === 'evidence');
+          nodeSec3Evidence.style.opacity = isEvi ? '1' : '0.65';
+          rectSec3Evidence.setAttribute('stroke-width', isEvi ? '2.5' : '1.5');
+          rectSec3Evidence.setAttribute('fill', isEvi ? '#212213' : '#0d1f1b');
+          rectSec3Evidence.setAttribute('filter', isEvi ? 'drop-shadow(0 0 10px rgba(229,193,130,0.45))' : 'none');
+
+          if (subboxSec3Access) {
+            if (isEvi) {
+              subboxSec3Access.setAttribute('stroke', '#ffdea6');
+              subboxSec3Access.setAttribute('stroke-width', '1.5');
+              subboxSec3Access.setAttribute('fill', '#2a2c16');
+              subboxSec3Access.setAttribute('filter', 'drop-shadow(0 0 6px rgba(229,193,130,0.35))');
+              if (textSec3Access1) textSec3Access1.setAttribute('fill', '#ffffff');
+              if (textSec3Access2) textSec3Access2.setAttribute('opacity', '1');
+            } else {
+              subboxSec3Access.setAttribute('stroke', '#e5c182');
+              subboxSec3Access.setAttribute('stroke-width', '1.2');
+              subboxSec3Access.setAttribute('fill', '#142723');
+              subboxSec3Access.setAttribute('filter', 'none');
+              if (textSec3Access1) textSec3Access1.setAttribute('fill', '#ffdea6');
+              if (textSec3Access2) textSec3Access2.setAttribute('opacity', '0.85');
+            }
+          }
+        }
+
+        // Highlight Case Index
+        if (nodeSec3Index && rectSec3Index) {
+          const isIdx = (key === 'index');
+          nodeSec3Index.style.opacity = isIdx ? '1' : '0.65';
+          rectSec3Index.setAttribute('stroke-width', isIdx ? '2.5' : '1.5');
+          rectSec3Index.setAttribute('fill', isIdx ? '#281717' : '#0d1f1b');
+          rectSec3Index.setAttribute('filter', isIdx ? 'drop-shadow(0 0 10px rgba(255,179,172,0.45))' : 'none');
+        }
+
+        // Update Connectors from ATHENA
+        if (connSec3Case) {
+          connSec3Case.setAttribute('stroke-width', (key === 'case') ? '2.5' : '1.2');
+          connSec3Case.setAttribute('opacity', (key === 'case') ? '1' : '0.25');
+          connSec3Case.setAttribute('stroke-dasharray', (key === 'case') ? 'none' : '2,2');
+          connSec3Case.setAttribute('filter', (key === 'case') ? 'drop-shadow(0 0 4px rgba(135,213,193,0.6))' : 'none');
+        }
+        if (connSec3Evidence) {
+          connSec3Evidence.setAttribute('stroke-width', (key === 'evidence') ? '2.5' : '1.2');
+          connSec3Evidence.setAttribute('opacity', (key === 'evidence') ? '1' : '0.25');
+          connSec3Evidence.setAttribute('stroke-dasharray', (key === 'evidence') ? 'none' : '2,2');
+          connSec3Evidence.setAttribute('filter', (key === 'evidence') ? 'drop-shadow(0 0 4px rgba(229,193,130,0.6))' : 'none');
+        }
+        if (connSec3Index) {
+          connSec3Index.setAttribute('stroke-width', (key === 'index') ? '2.5' : '1.2');
+          connSec3Index.setAttribute('opacity', (key === 'index') ? '1' : '0.25');
+          connSec3Index.setAttribute('stroke-dasharray', (key === 'index') ? 'none' : '2,2');
+          connSec3Index.setAttribute('filter', (key === 'index') ? 'drop-shadow(0 0 4px rgba(255,179,172,0.6))' : 'none');
+        }
+      }
+
+      if (nodeSec3Case) nodeSec3Case.addEventListener('click', () => selectSec3Memory('case'));
+      if (nodeSec3Evidence) nodeSec3Evidence.addEventListener('click', () => selectSec3Memory('evidence'));
+      if (nodeSec3Index) nodeSec3Index.addEventListener('click', () => selectSec3Memory('index'));
+
+      // Initialize default selection
+      selectSec3Memory('case');
+
+      // 5. SECTION 04: AUTOMATIC 1.5S REASONING LOOP SEQUENCE
+      const loopSteps = [
+        document.getElementById('loop-n-1'),
+        document.getElementById('loop-n-2'),
+        document.getElementById('loop-n-3'),
+        document.getElementById('loop-n-4'),
+        document.getElementById('loop-n-5')
+      ];
+
+      let currentLoopStep = 0;
+      const prefersReducedMotionLoop = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+      function activateLoopStep(index) {
+        loopSteps.forEach((step, i) => {
+          if (step) {
+            step.classList.toggle('loop-step-active', i === index);
+          }
+        });
+      }
+
+      // Initialize default step 0 (01. MEMORIES)
+      activateLoopStep(0);
+
+      // Single managed continuous infinite timer running every 1500ms
+      if (!prefersReducedMotionLoop) {
+        setInterval(() => {
+          currentLoopStep = (currentLoopStep + 1) % loopSteps.length;
+          activateLoopStep(currentLoopStep);
+        }, 1500);
+      }
+
+      // 6. SECTION 05: DIFF ENGINE TOGGLE
+      const btnDiffPat = document.getElementById('btn-diff-pat');
+      const btnDiffEvi = document.getElementById('btn-diff-evi');
+      const diffModeLabel = document.getElementById('diff-mode-label');
+      const diffEvtTitle = document.getElementById('svg-diff-evt-title');
+      const diffEvtSub = document.getElementById('svg-diff-evt-sub');
+      const diffAsmTitle = document.getElementById('svg-diff-asm-title');
+      const diffAsmSub = document.getElementById('svg-diff-asm-sub');
+      const diffTgtSub = document.getElementById('svg-diff-tgt-sub');
+      const diffDetailDesc = document.getElementById('diff-detail-desc');
+
+      if (btnDiffPat && btnDiffEvi) {
+        btnDiffPat.addEventListener('click', () => {
+          btnDiffPat.classList.add('active', 'border-primary/40');
+          btnDiffEvi.classList.remove('active', 'border-secondary/40');
+          diffModeLabel.textContent = 'Simulating: Patient Change';
+          diffModeLabel.className = 'text-primary font-semibold';
+          diffEvtTitle.textContent = 'NEW SEQUENCING';
+          diffEvtSub.textContent = 'EGFR Alteration';
+          diffAsmTitle.textContent = 'ASSUMPTION BROKEN';
+          diffAsmSub.textContent = 'NoAlterationIn(EGFR)';
+          diffTgtSub.textContent = 'Finding Updated';
+          diffDetailDesc.innerHTML = 'Mechanism: When EGFR alteration arrives, <span class="text-tertiary font-mono">NoAlterationIn("EGFR")</span> fails. Only dependent findings re-evaluate.';
+        });
+
+        btnDiffEvi.addEventListener('click', () => {
+          btnDiffEvi.classList.add('active', 'border-secondary/40');
+          btnDiffPat.classList.remove('active', 'border-primary/40');
+          diffModeLabel.textContent = 'Simulating: Evidence Change';
+          diffModeLabel.className = 'text-secondary font-semibold';
+          diffEvtTitle.textContent = 'NEW CIVIC/PUBMED';
+          diffEvtSub.textContent = 'EID-HigherEvidence';
+          diffAsmTitle.textContent = 'ASSUMPTION BROKEN';
+          diffAsmSub.textContent = 'NoStrongerEvidenceThan';
+          diffTgtSub.textContent = 'Active Cases Alerted';
+          diffDetailDesc.innerHTML = 'Mechanism: New paper ingested. ATHENA performs an indexed lookup on the altered gene/drug and updates active cases without rescanning the whole hospital.';
+        });
+      }
+
+      // 7. SECTION 06: ACCESS PATHWAYS & TRIAL BUCKETS
+      const pathBtns = document.querySelectorAll('.path-btn');
+      const pathDesc = document.getElementById('path-desc');
+      const pathDescs = {
+        'on-label': {
+          title: 'ON-LABEL INDICATION',
+          desc: 'Drug approved in-country for exact biomarker.'
+        },
+        'off-label': {
+          title: 'OFF-LABEL USE',
+          desc: 'Sourced literature supports efficacy outside approved label.'
+        },
+        'compassionate': {
+          title: 'EXPANDED ACCESS / COMPASSIONATE USE',
+          desc: 'Regulatory routes (US FDA Form 3926; India CDSCO).'
+        },
+        'import': {
+          title: 'NAMED-PATIENT IMPORT',
+          desc: 'Legal import routes for unapproved in-country therapies.'
+        }
+      };
+
+      function selectPathway(pathKey) {
+        // 1. Remove active state from ALL pathway buttons
+        pathBtns.forEach(btn => {
+          btn.classList.remove('active');
+        });
+
+        // 2. Add active state ONLY to the matching button
+        const targetBtn = Array.from(pathBtns).find(btn => btn.getAttribute('data-path') === pathKey);
+        if (targetBtn) {
+          targetBtn.classList.add('active');
+        }
+
+        // 3. Update the detail panel with matching content
+        const item = pathDescs[pathKey] || pathDescs['on-label'];
+        if (pathDesc) {
+          pathDesc.innerHTML = `
+            <div class="text-[11px] font-mono-data uppercase tracking-wider text-outline mb-1 font-semibold">Pathway</div>
+            <div class="text-base sm:text-lg font-mono-data font-bold text-secondary tracking-tight">${item.title}</div>
+            <div class="text-xs sm:text-sm text-on-surface-variant mt-1 leading-relaxed">${item.desc}</div>
+          `;
+        }
+      }
+
+      pathBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+          const p = btn.getAttribute('data-path');
+          selectPathway(p);
+        });
+      });
+
+      // Explicitly initialize with On-Label on page load
+      selectPathway('on-label');
+
+      const bucketBtns = document.querySelectorAll('.bucket-btn');
+      bucketBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+          bucketBtns.forEach(b => b.classList.remove('active', 'bg-surface-high'));
+          btn.classList.add('active', 'bg-surface-high');
+        });
+      });
+
+      // 7. THREE.JS 3D DNA DOUBLE HELIX & SCATTERED PARTICLES (GLOBAL BACKGROUND ACROSS ALL 8 SECTIONS)
+      const threeGlobalContainer = document.getElementById('global-three-container');
+      if (threeGlobalContainer && typeof THREE !== 'undefined') {
+        const width = window.innerWidth;
+        const height = window.innerHeight;
+
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
+        camera.position.set(0, 0, 20);
+
+        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, powerPreference: 'high-performance' });
+        renderer.setSize(width, height);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.domElement.style.opacity = '0';
+        renderer.domElement.style.transition = 'opacity 1.4s cubic-bezier(0.16, 1, 0.3, 1)';
+        threeGlobalContainer.appendChild(renderer.domElement);
+
+        // Lighting
+        scene.add(new THREE.AmbientLight(0xd2e7e0, 0.5));
+
+        const dirLight = new THREE.DirectionalLight(0x87d5c1, 0.85);
+        dirLight.position.set(6, 12, 10);
+        scene.add(dirLight);
+
+        const amberLight = new THREE.PointLight(0xe5c182, 0.65, 35);
+        amberLight.position.set(-8, -5, 6);
+        scene.add(amberLight);
+
+        const rimLight = new THREE.DirectionalLight(0x509e8c, 0.35);
+        rimLight.position.set(0, -6, -8);
+        scene.add(rimLight);
+
+        // Master Group for spatial tilt & offset, Inner Group for axial spin
+        const dnaMasterGroup = new THREE.Group();
+        const dnaSpinGroup = new THREE.Group();
+        dnaMasterGroup.add(dnaSpinGroup);
+        scene.add(dnaMasterGroup);
+
+        // Helical Geometry Construction
+        const strand1Pts = [];
+        const strand2Pts = [];
+        const samples = 140;
+        const turns = 3.4;
+        const helixHeight = 24.0;
+        const helixRadius = 2.35;
+
+        for (let i = 0; i <= samples; i++) {
+          const frac = i / samples;
+          const y = (frac - 0.5) * helixHeight;
+          const theta = frac * turns * Math.PI * 2;
+          strand1Pts.push(new THREE.Vector3(helixRadius * Math.cos(theta), y, helixRadius * Math.sin(theta)));
+          strand2Pts.push(new THREE.Vector3(helixRadius * Math.cos(theta + Math.PI), y, helixRadius * Math.sin(theta + Math.PI)));
+        }
+
+        const curve1 = new THREE.CatmullRomCurve3(strand1Pts);
+        const curve2 = new THREE.CatmullRomCurve3(strand2Pts);
+
+        const tubeGeom1 = new THREE.TubeGeometry(curve1, 180, 0.085, 8, false);
+        const tubeGeom2 = new THREE.TubeGeometry(curve2, 180, 0.085, 8, false);
+
+        // Atmospheric Translucent strand material
+        const strandMat = new THREE.MeshStandardMaterial({
+          color: 0x87D5C1,
+          roughness: 0.35,
+          metalness: 0.15,
+          transparent: true,
+          opacity: 0.22,
+          depthWrite: true
+        });
+
+        dnaSpinGroup.add(new THREE.Mesh(tubeGeom1, strandMat));
+        dnaSpinGroup.add(new THREE.Mesh(tubeGeom2, strandMat));
+
+        // Terminal End Caps
+        const capGeom = new THREE.SphereGeometry(0.1, 12, 12);
+        [strand1Pts[0], strand1Pts[samples], strand2Pts[0], strand2Pts[samples]].forEach(pt => {
+          const cap = new THREE.Mesh(capGeom, strandMat);
+          cap.position.copy(pt);
+          dnaSpinGroup.add(cap);
+        });
+
+        // Base Pairs & Nucleotide Junctions with Translucent Material Opacities
+        const rungCount = 42;
+        const rungTealMat = new THREE.MeshStandardMaterial({
+          color: 0x87D5C1,
+          roughness: 0.4,
+          metalness: 0.2,
+          transparent: true,
+          opacity: 0.14,
+          depthWrite: true
+        });
+        const rungAmberMat = new THREE.MeshStandardMaterial({
+          color: 0xE5C182,
+          roughness: 0.35,
+          metalness: 0.25,
+          transparent: true,
+          opacity: 0.28,
+          depthWrite: true
+        });
+
+        for (let r = 0; r < rungCount; r++) {
+          const frac = (r + 0.5) / rungCount;
+          const y = (frac - 0.5) * (helixHeight - 1.0);
+          const theta = frac * turns * Math.PI * 2;
+          const p1 = new THREE.Vector3(helixRadius * Math.cos(theta), y, helixRadius * Math.sin(theta));
+          const p2 = new THREE.Vector3(helixRadius * Math.cos(theta + Math.PI), y, helixRadius * Math.sin(theta + Math.PI));
+
+          const isAmber = (r % 7 === 2 || r % 7 === 5);
+          const activeMat = isAmber ? rungAmberMat : rungTealMat;
+
+          const dir = new THREE.Vector3().subVectors(p2, p1);
+          const len = dir.length();
+          const rungGeom = new THREE.CylinderGeometry(0.032, 0.032, len, 6);
+          const rungMesh = new THREE.Mesh(rungGeom, activeMat);
+          const midpoint = new THREE.Vector3().addVectors(p1, p2).multiplyScalar(0.5);
+          rungMesh.position.copy(midpoint);
+          rungMesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.clone().normalize());
+          dnaSpinGroup.add(rungMesh);
+
+          const nodeGeom = new THREE.SphereGeometry(0.075, 10, 10);
+          const n1 = new THREE.Mesh(nodeGeom, activeMat);
+          n1.position.copy(p1);
+          dnaSpinGroup.add(n1);
+
+          const n2 = new THREE.Mesh(nodeGeom, activeMat);
+          n2.position.copy(p2);
+          dnaSpinGroup.add(n2);
+
+          const midNodeGeom = new THREE.SphereGeometry(isAmber ? 0.07 : 0.045, 8, 8);
+          const nMid = new THREE.Mesh(midNodeGeom, activeMat);
+          nMid.position.copy(midpoint);
+          dnaSpinGroup.add(nMid);
+        }
+
+        // Spatial Orientation (diagonal tilt across viewport behind title)
+        dnaMasterGroup.rotation.z = -0.32;
+        dnaMasterGroup.rotation.x = 0.12;
+
+        function updateDnaLayout() {
+          const isDesktop = window.innerWidth > 768;
+          if (isDesktop) {
+            dnaMasterGroup.scale.set(0.92, 0.92, 0.92);
+            strandMat.opacity = 0.22;
+          } else {
+            dnaMasterGroup.scale.set(0.64, 0.64, 0.64);
+            strandMat.opacity = 0.15;
+          }
+        }
+        updateDnaLayout();
+
+        // Scattered Background Dots (Atmospheric Particles)
+        const dotCount = 120;
+        const dotGeom = new THREE.BufferGeometry();
+        const dotPositions = [];
+        const dotBasePositions = [];
+        for (let i = 0; i < dotCount; i++) {
+          const x = (Math.random() - 0.5) * 36;
+          const y = (Math.random() - 0.5) * 26;
+          const z = (Math.random() - 0.5) * 18 - 2;
+          dotPositions.push(x, y, z);
+          dotBasePositions.push({ x, y, z, vx: (Math.random() - 0.5) * 0.005, vy: (Math.random() - 0.5) * 0.005 });
+        }
+        dotGeom.setAttribute('position', new THREE.Float32BufferAttribute(dotPositions, 3));
+        const dotMat = new THREE.PointsMaterial({
+          size: 0.12,
+          color: 0x87D5C1,
+          transparent: true,
+          opacity: 0.35
+        });
+        const dotPoints = new THREE.Points(dotGeom, dotMat);
+        scene.add(dotPoints);
+
+        // Reveal smoothly on load
+        setTimeout(() => {
+          renderer.domElement.style.opacity = '1';
+        }, 80);
+
+        // Global Mouse & Pointer Parallax with damped interpolation
+        let targetRotY = 0;
+        let targetRotX = 0;
+        let targetOffsetX = 0;
+        let targetOffsetY = 0;
+
+        let currentRotY = 0;
+        let currentRotX = 0;
+        let currentOffsetX = 0;
+        let currentOffsetY = 0;
+
+        const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+        if (!prefersReducedMotion) {
+          window.addEventListener('mousemove', (e) => {
+            const nx = (e.clientX / window.innerWidth) * 2 - 1;
+            const ny = -(e.clientY / window.innerHeight) * 2 + 1;
+            targetRotY = nx * 0.28;
+            targetRotX = -ny * 0.18;
+            targetOffsetX = nx * 0.45;
+            targetOffsetY = -ny * 0.35;
+          }, { passive: true });
+        }
+
+        // Global Scroll Progress Tracking across all 8 chapters
+        let scrollProgress = 0;
+        function updateScrollProgress() {
+          const maxScroll = (document.documentElement.scrollHeight - window.innerHeight) || 1;
+          scrollProgress = Math.max(0, Math.min(1, window.scrollY / maxScroll));
+        }
+        window.addEventListener('scroll', updateScrollProgress, { passive: true });
+        updateScrollProgress();
+
+        let spinAngle = 0;
+        let baseTime = 0;
+
+        function animateGlobal() {
+          requestAnimationFrame(animateGlobal);
+
+          if (!prefersReducedMotion) {
+            spinAngle += 0.0022;
+            baseTime += 0.016;
+
+            // Damped mouse interpolation
+            currentRotY += (targetRotY - currentRotY) * 0.04;
+            currentRotX += (targetRotX - currentRotX) * 0.04;
+            currentOffsetX += (targetOffsetX - currentOffsetX) * 0.04;
+            currentOffsetY += (targetOffsetY - currentOffsetY) * 0.04;
+
+            dnaSpinGroup.rotation.y = spinAngle;
+
+            const breath = Math.sin(baseTime * 0.45) * 0.15;
+            const isDesktop = window.innerWidth > 768;
+
+            // Continuous, section-aware background drift across sections 01 to 08
+            const baseX = isDesktop ? (1.5 - scrollProgress * 3.0) : 0.0;
+            const baseY = breath - (scrollProgress - 0.5) * 3.0;
+            const baseZ = isDesktop ? -1.5 : -4.0;
+
+            dnaMasterGroup.position.x = baseX + currentOffsetX;
+            dnaMasterGroup.position.y = baseY + currentOffsetY;
+            dnaMasterGroup.position.z = baseZ;
+            dnaMasterGroup.rotation.y = currentRotY;
+            dnaMasterGroup.rotation.x = 0.12 + currentRotX;
+            dnaMasterGroup.rotation.z = -0.32 + Math.sin(scrollProgress * Math.PI) * 0.15;
+
+            // Animate scattered dots across full atmospheric field
+            const posAttr = dotGeom.attributes.position;
+            for (let i = 0; i < dotCount; i++) {
+              let px = posAttr.getX(i) + dotBasePositions[i].vx;
+              let py = posAttr.getY(i) + dotBasePositions[i].vy;
+              let pz = posAttr.getZ(i);
+
+              if (px > 18) px = -18;
+              if (px < -18) px = 18;
+              if (py > 13) py = -13;
+              if (py < -13) py = 13;
+
+              posAttr.setXYZ(i, px + currentOffsetX * 0.15, py + currentOffsetY * 0.15, pz);
+            }
+            posAttr.needsUpdate = true;
+          }
+
+          renderer.render(scene, camera);
+        }
+        animateGlobal();
+
+        window.addEventListener('resize', () => {
+          const w = window.innerWidth;
+          const h = window.innerHeight;
+          camera.aspect = w / h;
+          camera.updateProjectionMatrix();
+          renderer.setSize(w, h);
+          updateDnaLayout();
+          updateScrollProgress();
+        });
+      }
+    });
+  </script>
+</body>
+
+</html>
