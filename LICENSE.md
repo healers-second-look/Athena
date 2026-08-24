@@ -5,6 +5,11 @@ Athena is licensed under the **GNU Affero General Public License v3.0
 in this repository — that file is the actual legal document; this page is
 a plain-language explanation of what it means and why we chose it.
 
+**Copyright holder:** the [`healers-second-look`](https://github.com/healers-second-look)
+organization — not an individual contributor. This is the name that
+belongs in source-file headers and any formal copyright notice for this
+project.
+
 ## The short version
 
 **Athena is free — for everyone, including large hospitals — as long as
@@ -74,8 +79,8 @@ fit the mold.
 
 - [x] License chosen: AGPL-3.0, with a commercial-licensing option
 - [x] `LICENSE` added with the exact, unmodified AGPL-3.0 text
-- [ ] Confirm the copyright holder name for source-file headers (an
-      individual, or the `healers-second-look` organization)
+- [x] Copyright holder confirmed: the **`healers-second-look`** organization
+      (not an individual contributor's name)
 - [ ] Set up an actual contact channel for commercial-licensing inquiries
       (an email address or a dedicated issue template) — this file
       currently points to the GitHub org, which works but isn't ideal for
