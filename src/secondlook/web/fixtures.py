@@ -15,6 +15,9 @@ Shapes mirror IMPLEMENTATION_PLAN.md SS5's routes exactly:
     findings.json -> GET /api/findings/{id}, keyed by finding id
 
 so wiring the real API in is a base-URL swap, not a reshape.
+
+`queue-degraded.json` is the same `/queue` shape with a lane that failed,
+for exercising the degraded-state labelling in #88.
 """
 
 from __future__ import annotations
@@ -41,18 +44,25 @@ def _read(name: str, fixture_dir: Path | None = None) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-@lru_cache(maxsize=1)
-def load_all(fixture_dir: str | None = None) -> dict:
+@lru_cache(maxsize=2)
+def load_all(fixture_dir: str | None = None, *, degraded: bool = False) -> dict:
     """`{case, changes, queue, findings}` -- the whole fixture set.
 
     Cached because the dev server re-reads it per request otherwise, and a
     fixture set that changes between two requests in one page load would
     make the no-JS view disagree with itself.
+
+    `degraded=True` swaps in `queue-degraded.json`, which is `queue.json`
+    with the trials lane timed out. The two differ in exactly two places --
+    that lane's question loses its findings, and a failure object appears --
+    so the degraded view is reachable in a browser rather than only from the
+    test suite. Everything else on the page is local and must still render:
+    that is the property being demonstrated, not an incidental one.
     """
     directory = Path(fixture_dir) if fixture_dir else None
     return {
         "case": _read("case.json", directory),
         "changes": _read("changes.json", directory),
-        "queue": _read("queue.json", directory),
+        "queue": _read("queue-degraded.json" if degraded else "queue.json", directory),
         "findings": _read("findings.json", directory),
     }

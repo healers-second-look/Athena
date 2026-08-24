@@ -309,6 +309,71 @@ def render_change_banner(changes: dict) -> str:
 
 
 # ---------------------------------------------------------------------------
+# Degraded lanes and explained empty states -- the server half of #88
+# ---------------------------------------------------------------------------
+#
+# These two mirror web/src/components/DegradeNotice.jsx and EmptyState.jsx,
+# and they exist for the same reason the fixture set is shared: the no-JS
+# fallback and the client must not disagree about whether a lane was
+# reached. A brief that omits a failed lookup tells a tumour board we
+# searched and found nothing, which is a different sentence than the truth.
+
+
+def render_degrade_notice(failure: dict) -> str:
+    """A lane whose live lookup failed, labelled as such.
+
+    Per `docs/api-contracts.md` a failure object is ALWAYS rendered and never
+    filtered out before reaching the view, so there is no severity threshold
+    below which this returns "". Only a missing object renders nothing --
+    and that means no failure was reported, not that one was ignored.
+    """
+    if not failure:
+        return ""
+    lane = failure.get("lane")
+    head = f"{lane} lookup unavailable" if lane else "Lookup unavailable"
+    last_known = failure.get("last_known_at")
+    if last_known:
+        # Stale data is useful, and must never be passed off as current.
+        freshness = (
+            f"Showing last known state from <strong>{_e(str(last_known)[:10])}</strong>. "
+            "This is not a live result."
+        )
+    else:
+        freshness = "No cached result is available for this lane."
+    retry = (
+        "This may succeed on retry. Everything else on this page is local and unaffected."
+        if failure.get("retryable")
+        else "This will not succeed on retry without a change upstream."
+    )
+    return (
+        '<div class="degraded" role="status">'
+        f'<div class="degraded-head">{_e(head)}</div>'
+        f'<p class="small">{_e(failure.get("reason"))}</p>'
+        f'<p class="small">{freshness}</p>'
+        f'<p class="small muted">{retry}</p>'
+        "</div>"
+    )
+
+
+def render_empty_state(reason: str) -> str:
+    """An empty panel that says why it is empty.
+
+    The reason is REQUIRED and this raises without one, the same move as
+    `_computed_card` having no citation parameter to pass: a rule that is
+    merely documented gets skipped by someone in a hurry, and this skip is
+    invisible because a blank panel looks like a working panel with nothing
+    in it. Making the unexplained version impossible to render is the only
+    form of "absence must be visible" that survives a deadline.
+    """
+    if not reason or not str(reason).strip():
+        raise ValueError(
+            "render_empty_state requires a reason -- an unexplained empty panel "
+            "is a defect, not a neutral state"
+        )
+    return f'<p class="empty-state">{_e(reason)}</p>'
+
+
+# ---------------------------------------------------------------------------
 # The two server-rendered views
 # ---------------------------------------------------------------------------
 
@@ -447,11 +512,37 @@ def render_brief(
 
     counts = queue.get("counts") or {}
     open_qs = queue.get("open") or []
+
+    # Which lanes could not be reached this run. A question dispatched into
+    # one of them was not answered-and-empty, it was never asked, and the
+    # brief must not let those two read the same on paper.
+    failures = queue.get("failures") or []
+    degraded_lanes = {f.get("lane"): f for f in failures if f.get("lane")}
+    coverage = (
+        "<h2>Coverage</h2>" + "".join(render_degrade_notice(f) for f in failures)
+        if failures
+        else ""
+    )
+
+    def _q_row(q: dict) -> str:
+        # A question whose lane failed is still listed -- dropping it would
+        # shorten the worklist by hiding work that was never done.
+        note = (
+            '<div class="small muted">Lane unavailable this run — this question '
+            "was not dispatched.</div>"
+            if q.get("lane") in degraded_lanes
+            else ""
+        )
+        return (
+            '<li class="q">'
+            f'<div class="q-priority">Priority {_e(q.get("priority"))}</div>'
+            f"<div>{_e(q.get('text'))}</div>"
+            f"{note}"
+            "</li>"
+        )
+
     q_rows = "".join(
-        '<li class="q">'
-        f'<div class="q-priority">Priority {_e(q.get("priority"))}</div>'
-        f"<div>{_e(q.get('text'))}</div>"
-        "</li>"
+        _q_row(q)
         for q in sorted(open_qs, key=lambda q: (-int(q.get("priority", 0)), q.get("id", "")))
     )
     suppressed_n = int(counts.get("suppressed", 0) or 0)
@@ -478,13 +569,27 @@ def render_brief(
         f'<p class="small muted">Synthetic case. Generated {_e(changes.get("computed_at"))}. '
         "Research/clinical decision support — see POLICY.md.</p>"
         f"{render_change_banner(changes)}"
+        f"{coverage}"
         "<h2>Current state</h2>"
         f"{panel}"
         "<h2>Findings</h2>"
-        + ("".join(render_card(f) for f in active) or '<p class="muted">No active findings.</p>')
+        + (
+            "".join(render_card(f) for f in active)
+            or render_empty_state(
+                "No active findings. Every finding on this case has been superseded "
+                "by a later one."
+            )
+        )
         + superseded_html
         + "<h2>Open questions</h2>"
-        + (f'<ul style="list-style:none;padding:0">{q_rows}</ul>' if q_rows else "")
+        + (
+            f'<ul style="list-style:none;padding:0">{q_rows}</ul>'
+            if q_rows
+            else render_empty_state(
+                "No open questions. Every question raised by the last change set "
+                "has been answered."
+            )
+        )
         + suppressed_note
         + '<p class="nojs-note">Server-rendered, print-ready: no JavaScript, no '
         "webfonts, no image requests.</p>"

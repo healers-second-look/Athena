@@ -32,7 +32,7 @@
       "kind": "new_alteration",
       "triggered_by": {"summary": "EGFR T790M newly observed", "triggering_event_id": "e1000000-0000-4000-8000-000000000004"},
       "created_at": "2026-02-16T08:30:00Z",
-      "finding_ids": ["f0000000-0000-4000-8000-000000000031", "f0000000-0000-4000-8000-000000000032"],
+      "finding_ids": [],
       "lane": "trials"
     },
     {
@@ -92,5 +92,14 @@
       "created_at": "2026-02-16T08:30:00Z"
     }
   ],
-  "failures": []
+  "failures": [
+    {
+      "type": "failure",
+      "tier": "1",
+      "lane": "trials",
+      "reason": "ClinicalTrials.gov lookup failed: connection timed out after 3 attempts.",
+      "retryable": true,
+      "last_known_at": "2026-02-14T09:00:00Z"
+    }
+  ]
 }
