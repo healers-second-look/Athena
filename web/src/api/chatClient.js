@@ -49,3 +49,8 @@ export const getContexts = () => request('/api/chat/contexts')
 // Phase 5: FalkorDB Graph & Cypher
 export const getContextGraph = (contextId) =>
   request(`/api/chat/contexts/${encodeURIComponent(contextId)}/graph`)
+
+// Patient Timeline, unscoped -- chat sessions are keyed by context_id (a KG
+// context), not by case, so there is no case id to nest under here. See
+// secondlook/api/routes/timeline.py's read_reference_timeline.
+export const getReferenceTimeline = () => request('/api/timeline')
