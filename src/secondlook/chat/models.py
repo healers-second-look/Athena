@@ -75,21 +75,29 @@ class MockOutlineClient:
     def complete(self, prompt: str, *, system: str | None = None) -> str:
         question, context_lines, source_lines = _split_prompt(prompt)
         parts = [f"## On: {question}", ""]
-        if source_lines:
+        outage = _retrieval_outage(context_lines)
+        if outage:
+            parts.append("### Evidence search could not be run")
+            parts.append(f"- {outage}")
+            parts.append("- This is NOT a finding that no evidence exists. Nothing was searched.")
+        elif source_lines:
             parts.append(f"### What the {len(source_lines)} attached source(s) say")
             parts.extend(f"- {line}" for line in source_lines)
         else:
-            parts.append("### No sources attached")
+            parts.append("### No sources matched")
             parts.append(
-                "- Nothing was retrieved for this turn. Attach a retrieval source "
-                "or a knowledge graph to ground an answer in real evidence."
+                "- The evidence search ran and matched nothing for this question. "
+                "Attach a retrieval source or a knowledge graph to widen it."
             )
-        if context_lines:
-            # Plugin/KG-context annotations, not evidence -- kept visibly
-            # separate so they never inflate the source count above.
+        # Plugin/KG-context annotations, not evidence -- kept visibly separate
+        # so they never inflate the source count above. The outage line is
+        # excluded: it is already the lede, and repeating it here made the
+        # reply state the same failure twice.
+        extra = [line for line in context_lines if line is not outage]
+        if extra:
             parts.append("")
             parts.append("### Additional context (not sources)")
-            parts.extend(f"- {line}" for line in context_lines)
+            parts.extend(f"- {line}" for line in extra)
         parts += [
             "",
             "### Caveats",
@@ -111,12 +119,19 @@ class MockTerseClient:
     model = "mock-terse"
 
     def complete(self, prompt: str, *, system: str | None = None) -> str:
-        question, _context_lines, source_lines = _split_prompt(prompt)
+        question, context_lines, source_lines = _split_prompt(prompt)
+        outage = _retrieval_outage(context_lines)
+        if outage:
+            return (
+                f"No answer attempted for {question!r}: the evidence search could not "
+                f"be run ({outage}). Nothing was searched, so this is not a finding "
+                "that no evidence exists. Retry once the evidence store is reachable."
+            )
         if not source_lines:
             return (
-                f"No grounded answer available for {question!r}: zero sources were "
-                "attached to this turn. Attach CIViC, literature, or a knowledge "
-                "graph and ask again."
+                f"No grounded answer available for {question!r}: the evidence search "
+                "ran and matched zero sources. Attach CIViC, literature, or a "
+                "knowledge graph and ask again."
             )
         head = source_lines[0]
         rest = len(source_lines) - 1
@@ -131,6 +146,19 @@ class MockTerseClient:
 
 CONTEXT_MARKER = "### Retrieved context"
 SOURCE_MARKER = "### Retrieved sources"
+
+#: `engine.run_turn` prefixes a context line with this when the evidence store
+#: could not be reached. The mocks lead with it rather than printing their
+#: usual "no sources attached -- attach a retrieval source", which during an
+#: outage blames the user for a server failure and reads as a clinical
+#: negative. A real model gets the same fact via the CITATION GUARD system
+#: text; the mocks ignore `system`, so they read it from here.
+RETRIEVAL_FAILED_MARKER = "RETRIEVAL UNAVAILABLE"
+
+
+def _retrieval_outage(context_lines: list[str]) -> str | None:
+    """The outage line, if `engine.run_turn` put one in the context block."""
+    return next((line for line in context_lines if line.startswith(RETRIEVAL_FAILED_MARKER)), None)
 
 
 def _bullets(text: str) -> list[str]:
@@ -273,6 +301,8 @@ def build_client(model_id: str) -> LLMClient:
 __all__ = [
     "CONTEXT_MARKER",
     "DEFAULT_MODEL_ID",
+    "RETRIEVAL_FAILED_MARKER",
+    "SOURCE_MARKER",
     "ModelSpec",
     "MockOutlineClient",
     "MockTerseClient",

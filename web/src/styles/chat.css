@@ -627,3 +627,29 @@ body.chat-surface {
 @media (max-width: 768px) {
   .chat-sidebar { width: 0; overflow: hidden; }
 }
+
+/* An unreachable backend, stated rather than implied by an empty picker.
+ * Amber like the degraded lane treatment in Subsystem M (issue #88): both
+ * are claims about our own machinery, not about the patient. */
+.degraded-banner {
+  border: 1px solid #c98a2b;
+  border-left-width: 4px;
+  background: #fdf6ea;
+  border-radius: 8px;
+  padding: 0.6rem 0.75rem;
+  color: #6b4a12;
+}
+
+.degraded-banner strong {
+  display: block;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 0.25rem;
+}
+
+.degraded-banner p {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.45;
+}

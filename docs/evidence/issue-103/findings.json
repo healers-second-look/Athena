@@ -1,0 +1,36 @@
+{
+  "phase_1_floor_works_with_nothing_attached": true,
+  "phase_1_history_persists": true,
+  "phase_2_models_offered": [
+    "mock-outline",
+    "mock-terse",
+    "anthropic",
+    "openai-compatible"
+  ],
+  "phase_2_same_input_different_output": true,
+  "phase_3_entities_extracted": {
+    "genes": [
+      "EGFR"
+    ],
+    "variants": [
+      "T790M"
+    ]
+  },
+  "phase_3_notes": [
+    "variant-normalizer parsed -> genes: EGFR; variants: T790M",
+    "citation-guard active -- retrieval FAILED, reply must say so",
+    "retrieval FAILED -- FalkorDB unreachable: Error 61 connecting to localhost:6379. Connection refused."
+  ],
+  "phase_3_attached_changes_the_payload": true,
+  "rejects_unknown_attachment": 422,
+  "rejects_unknown_model": 422,
+  "rejects_empty_message": 422,
+  "unconfigured_model_status": 409,
+  "failed_turn_left_history_empty": true,
+  "phase_4_contexts_available": 0,
+  "phase_4_5_6": "NOT EVIDENCED -- FalkorDB unreachable",
+  "degraded_retrieval_failed_flag": true,
+  "degraded_retrieval_error": "FalkorDB unreachable: Error 61 connecting to localhost:6379. Connection refused.",
+  "degraded_reply": "## On: What treatment options exist for EGFR T790M in NSCLC?\n\n### Evidence search could not be run\n- RETRIEVAL UNAVAILABLE -- the evidence store could not be reached (FalkorDB unreachable: Error 61 connecting to localhost:6379. Connection refused.). No search was performed. This is not a finding of 'no evidence'.\n- This is NOT a finding that no evidence exists. Nothing was searched.\n\n### Caveats\n- Deterministic offline model. It restates retrieved context; it does not reason over it and must not be read as clinical advice.",
+  "phase_5_status_when_graph_down": 503
+}

@@ -1,8 +1,16 @@
 """In-memory session store -- issue #103, Phase 1 and 3.
 
 Sessions live in memory for the demo. Each session holds its model choice,
-active attachments, KG context, and the message history. The frontend
-mirrors this in localStorage for persistence across refreshes.
+active attachments, KG context, and the message history.
+
+Persistence across a refresh comes from the session id being in the URL
+(`/chat/:id`): the client refetches `GET /sessions/{id}` on mount and
+restores the history from here. There is no localStorage mirror -- an
+earlier version of this docstring claimed one, and none exists anywhere in
+`web/src`. That matters because it sets the real durability boundary: a
+refresh survives, a BACKEND RESTART does not, and issue #103's Phase 1 bar
+("survives a page refresh") is met by the round trip rather than by
+anything on the client.
 
 No database dependency -- the chat surface is standalone.
 """
