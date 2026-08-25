@@ -86,6 +86,26 @@ class GraphContext:
         return {"id": self.id, "label": self.label, "kind": self.kind, "detail": self.detail}
 
 
+@dataclass(frozen=True)
+class RetrievalResult:
+    """Evidence for one turn, plus whether the search actually ran.
+
+    `sources == []` with `failed is False` means the search ran and matched
+    nothing -- a real, reportable finding. `failed is True` means we never
+    looked. Callers must render the two differently.
+    """
+
+    sources: list[dict]
+    failed: bool = False
+    error: str | None = None
+
+    def __bool__(self) -> bool:  # pragma: no cover - convenience only
+        return bool(self.sources)
+
+    def __len__(self) -> int:
+        return len(self.sources)
+
+
 class GraphUnavailable(RuntimeError):
     """FalkorDB could not be reached or queried."""
 
@@ -144,6 +164,25 @@ def list_contexts(graph=None) -> list[GraphContext]:
     except GraphUnavailable as exc:
         logger.warning("KG contexts unavailable: %s", exc)
         return []
+
+
+#: The context-id kinds this module knows how to read. Anything else falls
+#: through to the whole-graph summary, so an unvalidated id does not error --
+#: it silently becomes a different query than the caller asked for.
+CONTEXT_KINDS = frozenset({"gene", "disease", "graph"})
+
+
+def is_valid_context_id(context_id: str) -> bool:
+    """Shape check only -- deliberately does NOT hit the database.
+
+    Existence is not checkable while FalkorDB is down, and refusing to let
+    someone configure a session during an outage would make the outage
+    worse. The turn itself already reports an unreachable graph
+    (`describe_context` returns an UNAVAILABLE line), so a well-formed id
+    for a node that no longer exists degrades visibly rather than silently.
+    """
+    kind, sep, value = context_id.partition(":")
+    return bool(sep) and kind in CONTEXT_KINDS and bool(value.strip())
 
 
 def describe_context(context_id: str, *, limit: int = 12, graph=None) -> list[str]:
@@ -276,10 +315,20 @@ def retrieve_evidence_for_turn(
     *,
     limit: int = 6,
     graph=None,
-) -> list[dict]:
+) -> RetrievalResult:
     """Fetch structured evidence records for entities or context (Phase 6).
 
-    Returns a list of evidence dicts ready for `turn.sources` and prompt assembly.
+    Returns a `RetrievalResult`, not a bare list, because the caller has to
+    be able to tell an empty search apart from a search that never ran. This
+    previously returned `[]` for both and logged the failure -- so with
+    FalkorDB down the UI said "no sources attached, attach a retrieval
+    source", blaming the user for an outage and reporting a server failure
+    as a clinical negative.
+
+    Same rule the rest of this repo already enforces: `SignalBatch`
+    carries `empty_reason`, and Subsystem M labels a degraded lane rather
+    than rendering it as an absence (issue #88). A generator with nothing
+    to say must still say why.
     """
     sources: list[dict] = []
     try:
@@ -328,17 +377,23 @@ def retrieve_evidence_for_turn(
                 }
             )
     except Exception as exc:  # noqa: BLE001
+        # Still logged, but no longer ONLY logged: a warning in the server's
+        # stdout is invisible to the clinician reading the answer.
         logger.warning("Evidence retrieval failed: %s", exc)
+        return RetrievalResult(sources=[], failed=True, error=str(exc))
 
-    return sources
+    return RetrievalResult(sources=sources)
 
 
 __all__ = [
     "GRAPH_NAME",
     "GraphContext",
+    "CONTEXT_KINDS",
     "GraphUnavailable",
+    "RetrievalResult",
     "describe_context",
     "fetch_subgraph",
+    "is_valid_context_id",
     "list_contexts",
     "retrieve_evidence_for_turn",
 ]

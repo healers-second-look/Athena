@@ -14,7 +14,10 @@ import time
 import uuid
 from dataclasses import asdict, dataclass, field
 
-from secondlook.chat.knowledge import describe_context, retrieve_evidence_for_turn
+from secondlook.chat.knowledge import (
+    describe_context,
+    retrieve_evidence_for_turn,
+)
 from secondlook.chat.models import CONTEXT_MARKER, DEFAULT_MODEL_ID, SOURCE_MARKER, build_client
 from secondlook.chat.plugins import Turn, apply_attachments
 
@@ -40,6 +43,12 @@ class TurnResult:
     context_lines: list[str] = field(default_factory=list)
     sources: list[dict] = field(default_factory=list)
     sources_count: int = 0
+    #: True when the evidence store could not be reached. The client MUST
+    #: render this: an empty source drawer means "we searched and found
+    #: nothing", and showing it during an outage reports a server failure
+    #: as a clinical negative.
+    retrieval_failed: bool = False
+    retrieval_error: str | None = None
 
     def as_dict(self) -> dict:
         return asdict(self)
@@ -83,9 +92,10 @@ def run_turn(
         system_prompt=system or DEFAULT_SYSTEM,
     )
 
-    # Phase 3 attachments pre-processing (e.g. variant-normalizer extracts entities)
+    # Phase 3, pre-retrieval hooks: entity extraction, skills, and the modes
+    # that set `max_sources` -- which retrieval reads, so they must run first.
     if attachment_ids:
-        apply_attachments(turn, attachment_ids)
+        apply_attachments(turn, attachment_ids, phase="pre")
 
     # Phase 4: KG context facts
     if context_id:
@@ -93,12 +103,21 @@ def run_turn(
         turn.context_lines.extend(kg_lines)
 
     # Phase 6: Live FalkorDB evidence retrieval
-    retrieved_sources = retrieve_evidence_for_turn(
+    retrieval = retrieve_evidence_for_turn(
         entities=turn.entities,
         context_id=context_id,
         limit=turn.max_sources,
     )
+    retrieved_sources = retrieval.sources
     turn.sources = retrieved_sources
+    turn.retrieval_failed = retrieval.failed
+    turn.retrieval_error = retrieval.error
+
+    # Phase 3, post-retrieval hooks. citation-guard lives here: it branches
+    # on what was actually retrieved, and running it above would hand it an
+    # empty list every time.
+    if attachment_ids:
+        apply_attachments(turn, attachment_ids, phase="post")
 
     # Numbered citation lines for genuinely retrieved sources -- kept out of
     # turn.context_lines on purpose (issue #107): that list also holds
@@ -112,10 +131,20 @@ def run_turn(
         for src in retrieved_sources
     ]
 
-    # Re-apply citation-guard if attached now that sources are loaded
-    if attachment_ids and "citation-guard" in attachment_ids:
-        if turn.sources:
-            turn.notes.append(f"retrieval attached {len(turn.sources)} live CIViC source(s)")
+    if turn.retrieval_failed:
+        # Stated in the prompt, not just in the payload: a model handed no
+        # sources and no explanation will answer from its own weights and
+        # present it as evidence-backed.
+        turn.context_lines.append(
+            f"RETRIEVAL UNAVAILABLE -- the evidence store could not be reached "
+            f"({turn.retrieval_error}). No search was performed. This is not a "
+            f"finding of 'no evidence'."
+        )
+        turn.notes.append(f"retrieval FAILED -- {turn.retrieval_error}")
+    elif turn.sources:
+        turn.notes.append(f"retrieval attached {len(turn.sources)} live CIViC source(s)")
+    else:
+        turn.notes.append("retrieval ran and matched no sources for this turn")
 
     # Build prompt and call model
     prompt = build_prompt(turn.message, turn.context_lines, source_lines)
@@ -133,6 +162,8 @@ def run_turn(
         context_lines=turn.context_lines,
         sources=turn.sources,
         sources_count=len(turn.sources),
+        retrieval_failed=turn.retrieval_failed,
+        retrieval_error=turn.retrieval_error,
     )
 
 

@@ -34,24 +34,34 @@ export default function ChatInterface() {
   // Phase 5 Graph Viewer state
   const [activeGraphContext, setActiveGraphContext] = useState(null)
 
-  // Load catalogs on mount
+  // True when the catalog fetch failed. Distinct from "the catalogs are
+  // genuinely empty" -- one is an outage, the other is a deployment with
+  // nothing configured, and they need different words on screen.
+  const [catalogFailed, setCatalogFailed] = useState(false)
+
+  // Load catalogs on mount.
+  //
+  // A failure here is reported, not papered over. This used to fall back to
+  // a hardcoded copy of the model and attachment lists, which had two
+  // problems: it drifted from the real registry the moment anyone added a
+  // model, and -- worse -- it rendered a fully working-looking picker while
+  // the backend was unreachable. The user configured a session against
+  // options that were not really there, and only found out on send. An
+  // unreachable backend is a fact about the session; it belongs on screen.
   useEffect(() => {
     Promise.all([getModels(), getAttachments(), getContexts()])
       .then(([m, a, c]) => {
         setModels(m)
         setAttachments(a)
         setContexts(c)
+        setCatalogFailed(false)
       })
-      .catch(() => {
-        setModels([
-          { id: 'mock-outline', label: 'Athena Outline (offline)', available: true },
-          { id: 'mock-terse', label: 'Athena Terse (offline)', available: true },
-        ])
-        setAttachments([
-          { id: 'variant-normalizer', label: 'Variant normalizer', kind: 'plugin' },
-          { id: 'citation-guard', label: 'Citation guard', kind: 'plugin' },
-          { id: 'evidence-grader', label: 'Evidence grader', kind: 'skill' },
-        ])
+      .catch((err) => {
+        setModels([])
+        setAttachments([])
+        setContexts([])
+        setCatalogFailed(true)
+        setError(`Backend unreachable — ${err.message}`)
       })
   }, [])
 
@@ -73,6 +83,8 @@ export default function ChatInterface() {
               notes: lastAssistant.notes,
               context_lines: lastAssistant.context_lines,
               sources: lastAssistant.sources,
+              retrieval_failed: lastAssistant.retrieval_failed,
+              retrieval_error: lastAssistant.retrieval_error,
             })
           }
         })
@@ -280,6 +292,23 @@ export default function ChatInterface() {
         </div>
 
         <div className="sidebar-scroll">
+          {/* The session cannot be configured against a catalog we never
+              received. Saying so beats an empty picker that reads as "this
+              deployment has no models". */}
+          {catalogFailed ? (
+            <div className="config-section" role="status">
+              <div className="degraded-banner">
+                <strong>Session options unavailable</strong>
+                <p className="small">
+                  The backend could not be reached, so the model, plugin and knowledge-graph
+                  catalogs could not be loaded. This is not a deployment with nothing
+                  configured — it is a connection failure. Sending a message will fail until
+                  it recovers.
+                </p>
+              </div>
+            </div>
+          ) : null}
+
           {/* Model selector */}
           <div className="config-section">
             <label className="section-label">Model (Phase 2)</label>
@@ -419,6 +448,8 @@ export default function ChatInterface() {
                   notes: msg.notes,
                   context_lines: msg.context_lines,
                   sources: msg.sources,
+                  retrieval_failed: msg.retrieval_failed,
+                  retrieval_error: msg.retrieval_error,
                 })}
               >
                 <div className="msg-avatar">
@@ -564,9 +595,25 @@ export default function ChatInterface() {
                       </div>
                     ))}
                   </div>
+                ) : selectedTurn.retrieval_failed ? (
+                  /* An empty drawer because the evidence store was down is
+                     not the same as an empty drawer because the search
+                     matched nothing -- the second is a finding, the first
+                     is an outage, and rendering them identically reports a
+                     server failure as clinical evidence of absence. */
+                  <div className="degraded-banner" role="status">
+                    <strong>Evidence search could not be run</strong>
+                    <p className="small">
+                      {selectedTurn.retrieval_error || 'The evidence store could not be reached.'}
+                    </p>
+                    <p className="small">
+                      Nothing was searched, so this is <strong>not</strong> a finding that no
+                      evidence exists.
+                    </p>
+                  </div>
                 ) : (
                   <p style={{ fontSize: 12, color: 'var(--outline)' }}>
-                    No retrieved sources attached to this turn.
+                    The evidence search ran and matched no sources for this turn.
                   </p>
                 )}
               </section>

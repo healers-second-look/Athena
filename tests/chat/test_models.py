@@ -74,7 +74,7 @@ def test_mock_models_do_not_count_context_as_sources():
     outline_res = MockOutlineClient().complete(prompt)
     terse_res = MockTerseClient().complete(prompt)
 
-    assert "No sources attached" in outline_res
+    assert "No sources matched" in outline_res
     assert "0 attached source" not in outline_res
     assert "No grounded answer available" in terse_res
     assert "retrieved source" not in terse_res.lower()

@@ -1,11 +1,26 @@
 /**
  * Chat API client -- connects to the FastAPI backend.
  *
- * Base URL defaults to localhost:8000 (the FastAPI dev server) but respects
- * VITE_CHAT_API_BASE for production.
+ * Base URL resolution, in order:
+ *
+ *   1. VITE_CHAT_API_BASE -- only for the rare deployment that serves the
+ *      chat API from a different origin than the rest of the REST API.
+ *   2. VITE_API_BASE -- the one the deployment already sets. It is a build
+ *      arg in web/Dockerfile, a build arg in docker-compose.yml, and is
+ *      documented in .env.example.
+ *   3. http://localhost:8000 -- the `uvicorn --reload` default, for
+ *      `vite dev` where neither is set.
+ *
+ * Reading VITE_API_BASE matters because Vite INLINES these at build time.
+ * This file previously read only VITE_CHAT_API_BASE, which is set nowhere
+ * in the repo -- so every container built from docker-compose baked in the
+ * localhost:8000 fallback and the chat UI reached for the user's own
+ * machine no matter where the API actually was. It appeared to work for
+ * exactly one person: whoever ran the API locally on the default port.
  */
 
-const BASE = import.meta.env?.VITE_CHAT_API_BASE || 'http://localhost:8000'
+const BASE =
+  import.meta.env?.VITE_CHAT_API_BASE || import.meta.env?.VITE_API_BASE || 'http://localhost:8000'
 
 async function request(path, options = {}) {
   const url = `${BASE}${path}`

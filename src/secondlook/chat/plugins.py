@@ -117,6 +117,12 @@ class Turn:
     notes: list[str] = field(default_factory=list)
     entities: dict[str, list[str]] = field(default_factory=dict)
     max_sources: int = 8
+    #: True when the evidence store could not be reached for this turn.
+    #: Distinct from `sources == []`, which means the search ran and matched
+    #: nothing. Collapsing the two turns an outage into a clinical negative.
+    retrieval_failed: bool = False
+    #: Why, when it failed. Rendered to the user, never only logged.
+    retrieval_error: str | None = None
 
 
 @dataclass(frozen=True)
@@ -126,6 +132,19 @@ class Attachment:
     kind: str  # "skill" | "plugin" | "mode"
     description: str
     apply: Callable[[Turn], None]
+    #: When this hook runs relative to retrieval.
+    #:
+    #: "pre"  -- needs only the question. Modes belong here: they set
+    #:           `max_sources`, which retrieval reads, so they MUST precede it.
+    #: "post" -- needs to know what retrieval actually returned.
+    #:
+    #: citation-guard is the reason this field exists. It branches on
+    #: `turn.sources`, and running it pre-retrieval meant it always saw an
+    #: empty list and told the model "nothing was retrieved" while the prompt
+    #: below carried real sources -- the exact confident-mismatch it was
+    #: written to prevent, inverted. The mock models never revealed it
+    #: because neither reads `system`.
+    phase: str = "pre"
 
     def as_dict(self) -> dict:
         return {
@@ -184,13 +203,32 @@ def _citation_guard(turn: Turn) -> None:
     The failure this exists to prevent is the confident sourceless
     paragraph. When nothing was retrieved, the model is told to lead with
     that fact rather than to answer anyway.
+
+    Declared `phase="post"` because it branches on `turn.sources`, and
+    `apply_attachments` refuses to run a post hook before retrieval has
+    populated them. Three outcomes, three different instructions: sources
+    present, retrieval genuinely empty, and retrieval failed -- the last two
+    are not the same fact and must not produce the same reply.
     """
     if turn.sources:
         turn.system_prompt += (
             "\n\nCITATION GUARD: cite a retrieved source for every clinical claim. "
             "If a claim is not supported by the retrieved context, mark it UNSOURCED."
         )
-        turn.notes.append("citation-guard active with retrieved context present")
+        turn.notes.append(
+            f"citation-guard active with {len(turn.sources)} retrieved source(s) present"
+        )
+    elif turn.retrieval_failed:
+        # Not the same as "nothing matched". Telling the model no evidence
+        # exists, when the truth is we could not look, invents a negative
+        # finding out of an outage.
+        turn.system_prompt += (
+            "\n\nCITATION GUARD: retrieval FAILED for this turn -- the evidence store "
+            "could not be reached, which is not the same as finding no evidence. Open "
+            "the reply by saying the search could not be run, and do not state or imply "
+            "that no evidence exists."
+        )
+        turn.notes.append("citation-guard active -- retrieval FAILED, reply must say so")
     else:
         turn.system_prompt += (
             "\n\nCITATION GUARD: nothing was retrieved for this turn. Open the reply "
@@ -249,6 +287,7 @@ ATTACHMENTS: tuple[Attachment, ...] = (
         kind="plugin",
         description="Forces the reply to declare when a claim has no retrieved source.",
         apply=_citation_guard,
+        phase="post",
     ),
     Attachment(
         id="evidence-grader",
@@ -295,17 +334,27 @@ def unknown_ids(attachment_ids: list[str]) -> list[str]:
     return [a for a in attachment_ids if a not in _BY_ID]
 
 
-def apply_attachments(turn: Turn, attachment_ids: list[str]) -> Turn:
-    """Run each attached hook, in registry order rather than click order.
+def apply_attachments(turn: Turn, attachment_ids: list[str], *, phase: str = "pre") -> Turn:
+    """Run the attached hooks for one `phase`, in registry order.
 
     Registry order matters: modes set `max_sources`, and a plugin that
     trims context must see the final budget. Honouring the order the user
     happened to click checkboxes in would make the same configuration
     behave differently between two sessions.
+
+    `phase` splits the pipeline around retrieval. A "pre" hook needs only
+    the question; a "post" hook needs to know what retrieval returned.
+    Running everything pre-retrieval -- as this did until citation-guard
+    was caught telling the model "nothing was retrieved" over a prompt
+    full of sources -- silently gives every post hook an empty
+    `turn.sources` to reason about.
     """
-    attached = [a for a in ATTACHMENTS if a.id in set(attachment_ids)]
-    for attachment in attached:
-        attachment.apply(turn)
+    if phase not in ("pre", "post"):
+        raise ValueError(f"phase must be 'pre' or 'post', got {phase!r}")
+    wanted = set(attachment_ids)
+    for attachment in ATTACHMENTS:
+        if attachment.id in wanted and attachment.phase == phase:
+            attachment.apply(turn)
     return turn
 
 
