@@ -28,6 +28,13 @@
 
   --alarm: #b3261e;
   --alarm-wash: #fdf3f2;
+
+  /* Focus is an interaction affordance, not an evidence class, so it gets
+   * its own token rather than borrowing --regulatory. Reusing one of the
+   * four above would make a focused card read as a different evidence
+   * class than it is, which is the one confusion this palette exists to
+   * prevent. */
+  --focus: #1f6feb;
 }
 
 * { box-sizing: border-box; }
@@ -236,4 +243,52 @@ h3 { font-size: .95rem; margin: 0 0 .35rem; }
    * to a tumour board. Both survive to paper. */
   .degraded, .empty-state { break-inside: avoid; }
   .degraded { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
+
+/* --- Keyboard-first worklist (#88 part 2) ------------------------------ */
+
+.q-list { list-style: none; padding: 0; margin: 0; }
+
+/* The focused question must be obvious without hunting for it. A roving
+ * tabindex moves real DOM focus, so :focus-visible is the honest hook --
+ * it shows for keyboard users and stays out of the way for mouse users. */
+.q:focus-visible,
+.q[data-active="true"]:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/* Which row the arrow keys will act on, shown even when focus has moved
+ * into the reason field -- otherwise arming a decision makes the list
+ * appear to forget where it was. */
+.q[data-active="true"] { box-shadow: inset 3px 0 0 var(--focus); }
+
+.kbd-legend { margin: .35rem 0 .75rem; }
+
+kbd {
+  font: inherit;
+  font-size: .85em;
+  border: 1px solid var(--rule);
+  border-bottom-width: 2px;
+  border-radius: 3px;
+  padding: 0 .3em;
+  background: #fff;
+}
+
+.decision {
+  display: flex;
+  flex-direction: column;
+  gap: .35rem;
+  margin-top: .6rem;
+  padding: .6rem .7rem;
+  border-left: 3px solid var(--focus);
+  background: #f7f9fc;
+}
+
+.decision-head { font-weight: 700; }
+.decision textarea { font: inherit; padding: .4rem; border: 1px solid var(--rule); }
+
+@media print {
+  /* Neither the keys nor a half-written decision belong on paper. */
+  .kbd-legend, .decision { display: none; }
 }
