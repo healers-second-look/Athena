@@ -120,3 +120,48 @@ class TestSectionParsing:
     def test_an_empty_body_is_not_evidence(self):
         ok, _ = check("", ["web/src/routes/ChatInterface.jsx"])
         assert not ok
+
+
+class TestFencedBlocksAreNotMistakenForHeadings:
+    """Evidence in this repo routinely contains markdown.
+
+    A captured assistant reply opens with `## On: ...`. Scanning for `^#`
+    without tracking code fences truncates the Evidence section at the first
+    line of the payload being checked -- so a PR with real evidence reads as
+    having none. Found by running this checker against PR #111.
+    """
+
+    UI = ["web/src/routes/ChatInterface.jsx"]
+
+    REPLY_EVIDENCE = '''## Evidence
+
+The reply, captured live:
+
+```
+## On: What treatment options exist for EGFR T790M in NSCLC?
+
+### Evidence search could not be run
+- RETRIEVAL UNAVAILABLE -- the evidence store could not be reached.
+```
+'''
+
+    def test_a_payload_containing_headings_still_counts(self):
+        ok, message = check(self.REPLY_EVIDENCE, self.UI)
+        assert ok, message
+
+    def test_the_section_keeps_the_whole_fenced_block(self):
+        section = evidence_section(self.REPLY_EVIDENCE)
+        assert "RETRIEVAL UNAVAILABLE" in section
+
+    def test_a_real_heading_after_the_fence_still_ends_the_section(self):
+        body = self.REPLY_EVIDENCE + "\n## Checklist\n\n- [x] tests pass\n"
+        section = evidence_section(body)
+        assert "RETRIEVAL UNAVAILABLE" in section
+        assert "Checklist" not in section
+
+    def test_tilde_fences_work_too(self):
+        body = (
+            "## Evidence\n\n~~~\n## On: a question\n"
+            "real payload content here, long enough\n~~~\n"
+        )
+        assert "real payload content" in evidence_section(body)

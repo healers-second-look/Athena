@@ -45,7 +45,8 @@ SURFACE_PREFIXES = ("web/src/", "web/index.html", "src/secondlook/api/")
 SURFACE_EXEMPT_SUFFIXES = (".test.jsx", ".test.js", ".spec.jsx", ".spec.js")
 
 _EVIDENCE_HEADING = re.compile(r"^#{1,4}\s*evidence\b.*$", re.IGNORECASE | re.MULTILINE)
-_NEXT_HEADING = re.compile(r"^#{1,4}\s", re.MULTILINE)
+_FENCE = re.compile(r"^\s*(?:```|~~~)")
+_HEADING_LINE = re.compile(r"^#{1,4}\s")
 _IMAGE_OR_VIDEO = re.compile(
     r"!\[[^\]]*\]\([^)]+\)"  # markdown image
     r"|<img\s"  # inline html image
@@ -68,6 +69,27 @@ def touches_a_drivable_surface(changed_paths: list[str]) -> bool:
     return False
 
 
+def _next_heading_offset(text: str) -> int | None:
+    """Offset of the next heading, ignoring anything inside a code fence.
+
+    Fence-awareness is not a nicety. Evidence for this repo routinely
+    contains markdown -- a captured assistant reply opens with `## On: ...`
+    and `### Evidence search could not be run`. Scanning for `^#` without
+    tracking fences truncates the section at the first line of the very
+    payload being checked, so a PR with real evidence reads as having none.
+    Caught by running this against PR #111, which is exactly that shape.
+    """
+    offset = 0
+    in_fence = False
+    for line in text.splitlines(keepends=True):
+        if _FENCE.match(line):
+            in_fence = not in_fence
+        elif not in_fence and _HEADING_LINE.match(line):
+            return offset
+        offset += len(line)
+    return None
+
+
 def evidence_section(body: str) -> str | None:
     """The text under the `## Evidence` heading, or None if there is none."""
     if not body:
@@ -76,8 +98,8 @@ def evidence_section(body: str) -> str | None:
     if match is None:
         return None
     rest = body[match.end() :]
-    following = _NEXT_HEADING.search(rest)
-    return rest[: following.start()] if following else rest
+    following = _next_heading_offset(rest)
+    return rest[:following] if following is not None else rest
 
 
 def _has_real_payload(section: str) -> bool:
