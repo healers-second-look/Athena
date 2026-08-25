@@ -35,6 +35,18 @@ export const getCase = (id) => get(`/api/cases/${id}`, caseFixture)
 export const getChanges = (id) => get(`/api/cases/${id}/changes`, changesFixture)
 export const getQueue = (id) => get(`/api/cases/${id}/queue`, queueFixture)
 
+// No fixture fallback: the timeline bundle is ~1.6MB of real reference data
+// (see src/secondlook/timeline/reference_data.py), not something to also
+// duplicate as a small committed fixture. VITE_API_BASE must be set to use
+// this route -- the error is the honest signal that it isn't, rather than a
+// silent empty timeline.
+export async function getTimeline(id) {
+  if (!BASE) {
+    throw new Error('Patient Timeline needs VITE_API_BASE set -- there is no offline fixture for it')
+  }
+  return get(`/api/cases/${id}/timeline`, null)
+}
+
 export async function getFinding(id) {
   if (!BASE) {
     const record = findingsFixture[id]

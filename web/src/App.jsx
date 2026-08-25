@@ -2,6 +2,7 @@ import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import CaseDashboard from './routes/CaseDashboard.jsx'
 import ResearchQueue from './routes/ResearchQueue.jsx'
 import FindingDetail from './routes/FindingDetail.jsx'
+import PatientTimeline from './routes/PatientTimeline.jsx'
 import ChatLanding from './routes/ChatLanding.jsx'
 import ChatInterface from './routes/ChatInterface.jsx'
 import { DEMO_CASE_ID, isFixtureBacked } from './api/client.js'
@@ -28,6 +29,7 @@ export default function App() {
         <Route path="/" element={<Navigate to="/chat" replace />} />
         <Route path="/cases/:id" element={<CaseDashboard />} />
         <Route path="/cases/:id/queue" element={<ResearchQueue />} />
+        <Route path="/cases/:id/timeline" element={<PatientTimeline />} />
         <Route path="/findings/:id" element={<FindingDetail />} />
         {/* Chat surface (issue #103) */}
         <Route path="/chat" element={<ChatLanding />} />
@@ -44,7 +46,7 @@ function NotFound() {
       <h1>Not found</h1>
       <p className="muted">
         Client routes are <code>/cases/:id</code>, <code>/cases/:id/queue</code>,{' '}
-        <code>/findings/:id</code>, and <code>/chat</code>.
+        <code>/cases/:id/timeline</code>, <code>/findings/:id</code>, and <code>/chat</code>.
       </p>
     </>
   )
