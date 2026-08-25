@@ -3,8 +3,23 @@ name: CI
 on:
   push:
     branches: [main]
+  # No `branches:` filter on pull_request, deliberately.
+  #
+  # It used to read `branches: [main]`, which meant a PR targeting anything
+  # else got no CI at all -- not the test suite, not ruff/black, not the
+  # bundle budget. Only `labeler.yml` ran, because it is the one workflow
+  # here using `pull_request_target` without a filter.
+  #
+  # That silently exempts every stacked PR. Issue #88 is built in three
+  # dependent parts, so part 2 (#112) targets part 1's branch rather than
+  # main -- and reports green on nothing but a label check. A
+  # stacked PR is the case where CI matters MORE, not less: it lands code on
+  # a branch that is itself still open, so a failure there is inherited by
+  # everything above it and surfaces only when the whole stack reaches main.
+  #
+  # `push` keeps its filter: pushes to feature branches are already covered
+  # by their PR, and running both doubles every job for no new signal.
   pull_request:
-    branches: [main]
 
 jobs:
   test:
