@@ -4,6 +4,7 @@ import { BrowserRouter } from 'react-router-dom'
 import App from './App.jsx'
 import './styles/app.css'
 import './styles/chat.css'
+import './styles/timeline.css'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
