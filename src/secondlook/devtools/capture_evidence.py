@@ -97,9 +97,9 @@ def run(base: str, recorder: Recorder) -> dict:
     print("\nPhase 1 -- basic chat, zero attachments (the floor)")
     session = recorder.call("POST", "/api/chat/sessions", {})["response"]["body"]
     sid = session["id"]
-    turn = recorder.call(
-        "POST", f"/api/chat/sessions/{sid}/turns", {"message": QUESTION}
-    )["response"]["body"]["turn"]
+    turn = recorder.call("POST", f"/api/chat/sessions/{sid}/turns", {"message": QUESTION})[
+        "response"
+    ]["body"]["turn"]
     findings["phase_1_floor_works_with_nothing_attached"] = bool(turn["content"])
 
     print("\nPhase 1 -- history survives a refetch (what the client does on reload)")
@@ -109,9 +109,9 @@ def run(base: str, recorder: Recorder) -> dict:
     print("\nPhase 2 -- the same question through a second model")
     models = recorder.call("GET", "/api/chat/models")["response"]["body"]
     findings["phase_2_models_offered"] = [m["id"] for m in models]
-    terse_sid = recorder.call(
-        "POST", "/api/chat/sessions", {"model_id": "mock-terse"}
-    )["response"]["body"]["id"]
+    terse_sid = recorder.call("POST", "/api/chat/sessions", {"model_id": "mock-terse"})["response"][
+        "body"
+    ]["id"]
     terse_turn = recorder.call(
         "POST", f"/api/chat/sessions/{terse_sid}/turns", {"message": QUESTION}
     )["response"]["body"]["turn"]
@@ -128,9 +128,7 @@ def run(base: str, recorder: Recorder) -> dict:
     )["response"]["body"]["turn"]
     findings["phase_3_entities_extracted"] = plugin_turn["entities"]
     findings["phase_3_notes"] = plugin_turn["notes"]
-    findings["phase_3_attached_changes_the_payload"] = (
-        plugin_turn["entities"] != turn["entities"]
-    )
+    findings["phase_3_attached_changes_the_payload"] = plugin_turn["entities"] != turn["entities"]
 
     print("\nBoundary: configuration that does not exist is refused")
     findings["rejects_unknown_attachment"] = recorder.call(
@@ -159,17 +157,15 @@ def run(base: str, recorder: Recorder) -> dict:
 
     if graph_live:
         context_id = contexts[0]["id"]
-        kg_sid = recorder.call(
-            "POST", "/api/chat/sessions", {"context_id": context_id}
-        )["response"]["body"]["id"]
+        kg_sid = recorder.call("POST", "/api/chat/sessions", {"context_id": context_id})[
+            "response"
+        ]["body"]["id"]
         kg_turn = recorder.call(
             "POST", f"/api/chat/sessions/{kg_sid}/turns", {"message": QUESTION}
         )["response"]["body"]["turn"]
         findings["phase_4_context_reached_the_prompt"] = bool(kg_turn["context_lines"])
         findings["phase_6_sources_retrieved"] = kg_turn["sources_count"]
-        graph = recorder.call(
-            "GET", f"/api/chat/contexts/{context_id}/graph"
-        )["response"]["body"]
+        graph = recorder.call("GET", f"/api/chat/contexts/{context_id}/graph")["response"]["body"]
         findings["phase_5_cypher"] = graph.get("cypher")
         findings["phase_5_node_count"] = len(graph.get("nodes", []))
         findings["phase_5_edge_count"] = len(graph.get("edges", []))
@@ -190,9 +186,7 @@ def run(base: str, recorder: Recorder) -> dict:
 
 def write_report(out_dir: Path, result: dict, recorder: Recorder, base: str) -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
-    (out_dir / "exchanges.json").write_text(
-        json.dumps(recorder.log, indent=2), encoding="utf-8"
-    )
+    (out_dir / "exchanges.json").write_text(json.dumps(recorder.log, indent=2), encoding="utf-8")
     (out_dir / "findings.json").write_text(
         json.dumps(result["findings"], indent=2), encoding="utf-8"
     )
@@ -242,8 +236,8 @@ def write_report(out_dir: Path, result: dict, recorder: Recorder, base: str) -> 
             "## What the run DID show: the degraded path",
             "",
             "With the evidence store down, the surface now says so instead of "
-            "reporting an empty search. Before PR #111 this rendered as *\"no "
-            "sources attached — attach a retrieval source\"*, which blames the "
+            'reporting an empty search. Before PR #111 this rendered as *"no '
+            'sources attached — attach a retrieval source"*, which blames the '
             "clinician for an outage and reads as a clinical negative.",
             "",
             "```json",
@@ -309,12 +303,23 @@ def main(argv: list[str] | None = None) -> int:
     print(f"Starting uvicorn on {base} ...")
     proc = subprocess.Popen(
         [
-            sys.executable, "-m", "uvicorn",
-            "secondlook.api.app:create_app", "--factory",
-            "--host", "127.0.0.1", "--port", str(port), "--log-level", "warning",
+            sys.executable,
+            "-m",
+            "uvicorn",
+            "secondlook.api.app:create_app",
+            "--factory",
+            "--host",
+            "127.0.0.1",
+            "--port",
+            str(port),
+            "--log-level",
+            "warning",
         ],
-        cwd=REPO_ROOT, env=env,
-        stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
+        cwd=REPO_ROOT,
+        env=env,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
     )
     try:
         _wait_for_server(base, proc)
@@ -329,8 +334,11 @@ def main(argv: list[str] | None = None) -> int:
             proc.kill()
 
     print(f"\nWrote {args.out}/README.md, exchanges.json, findings.json")
-    print("Graph-backed phases evidenced." if result["graph_live"]
-          else "Phases 4-6 NOT evidenced: FalkorDB unreachable (recorded as such).")
+    print(
+        "Graph-backed phases evidenced."
+        if result["graph_live"]
+        else "Phases 4-6 NOT evidenced: FalkorDB unreachable (recorded as such)."
+    )
     return 0
 
 

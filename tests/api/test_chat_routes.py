@@ -166,8 +166,12 @@ class TestUnknownConfigurationIsRejected:
 
     def test_an_empty_message_is_rejected(self, client):
         session_id = client.post("/api/chat/sessions", json={}).json()["id"]
-        assert client.post(f"/api/chat/sessions/{session_id}/turns",
-                           json={"message": "   "}).status_code == 422
+        assert (
+            client.post(
+                f"/api/chat/sessions/{session_id}/turns", json={"message": "   "}
+            ).status_code
+            == 422
+        )
 
 
 class TestAFailedTurnLeavesNoTrace:

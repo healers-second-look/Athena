@@ -133,7 +133,7 @@ class TestFencedBlocksAreNotMistakenForHeadings:
 
     UI = ["web/src/routes/ChatInterface.jsx"]
 
-    REPLY_EVIDENCE = '''## Evidence
+    REPLY_EVIDENCE = """## Evidence
 
 The reply, captured live:
 
@@ -143,7 +143,7 @@ The reply, captured live:
 ### Evidence search could not be run
 - RETRIEVAL UNAVAILABLE -- the evidence store could not be reached.
 ```
-'''
+"""
 
     def test_a_payload_containing_headings_still_counts(self):
         ok, message = check(self.REPLY_EVIDENCE, self.UI)

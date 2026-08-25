@@ -79,9 +79,7 @@ class MockOutlineClient:
         if outage:
             parts.append("### Evidence search could not be run")
             parts.append(f"- {outage}")
-            parts.append(
-                "- This is NOT a finding that no evidence exists. Nothing was searched."
-            )
+            parts.append("- This is NOT a finding that no evidence exists. Nothing was searched.")
         elif source_lines:
             parts.append(f"### What the {len(source_lines)} attached source(s) say")
             parts.extend(f"- {line}" for line in source_lines)
