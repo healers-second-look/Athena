@@ -62,3 +62,23 @@ def test_timeline_event_shape_matches_the_schema(client, store):
         "condition_track",
     }
     assert event["category"] in {"Treatments", "Procedures", "Imaging"}
+
+
+def test_unscoped_timeline_needs_no_case(client):
+    """The chat interface has no case to nest under (sessions are keyed by
+    context_id, a KG context -- see chatClient.js), so /api/timeline must
+    work with no case in the store at all."""
+    response = client.get("/api/timeline")
+    assert response.status_code == 200
+    body = response.json()
+    assert set(body.keys()) == {"events", "mrd", "cytometry", "lab_results"}
+    assert len(body["events"]) > 0
+
+
+def test_unscoped_and_case_scoped_timeline_return_the_same_bundle(client, store):
+    """Both routes call the same get_patient_timeline() -- same reference
+    bundle either way, today."""
+    case = store.create_case(label="C1", cancer_type="NSCLC")
+    scoped = client.get(f"/api/cases/{case.id}/timeline").json()
+    unscoped = client.get("/api/timeline").json()
+    assert scoped == unscoped

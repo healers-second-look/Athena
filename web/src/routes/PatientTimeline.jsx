@@ -1,8 +1,7 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { getTimeline } from '../api/client.js'
-import TimelineChart from '../components/timeline/TimelineChart.jsx'
-import MeasurementExplorer from '../components/timeline/MeasurementExplorer.jsx'
+import TimelineContent from '../components/timeline/TimelineContent.jsx'
 import { Failure } from './CaseDashboard.jsx'
 
 // Patient Timeline -- modeled on https://osteosarc.com/timeline/'s category
@@ -30,30 +29,9 @@ export default function PatientTimeline() {
       .finally(() => setLoading(false))
   }, [id])
 
-  const eventCategories = useMemo(() => {
-    if (!bundle) return []
-    return [...new Set(bundle.events.map((e) => e.category))].sort()
-  }, [bundle])
-
-  const [activeCategories, setActiveCategories] = useState(null)
-  useEffect(() => {
-    if (eventCategories.length) setActiveCategories(new Set(eventCategories))
-  }, [eventCategories])
-
   if (loading) return <p className="muted">Loading patient timeline…</p>
   if (error) return <Failure what="patient timeline" error={error} />
   if (!bundle) return null
-
-  const toggleCategory = (cat) => {
-    setActiveCategories((prev) => {
-      const next = new Set(prev)
-      if (next.has(cat)) next.delete(cat)
-      else next.add(cat)
-      return next
-    })
-  }
-
-  const visibleEvents = bundle.events.filter((e) => activeCategories?.has(e.category))
 
   return (
     <div className="patient-timeline">
@@ -69,69 +47,7 @@ export default function PatientTimeline() {
         connected.
       </p>
 
-      <div className="timeline-legend">
-        {eventCategories.map((cat) => (
-          <button
-            key={cat}
-            type="button"
-            className={`timeline-legend-chip cat-${cat.toLowerCase()} ${
-              activeCategories?.has(cat) ? 'active' : 'inactive'
-            }`}
-            onClick={() => toggleCategory(cat)}
-            aria-pressed={activeCategories?.has(cat)}
-          >
-            {cat} ({bundle.events.filter((e) => e.category === cat).length})
-          </button>
-        ))}
-      </div>
-
-      <TimelineChart events={visibleEvents} mrd={bundle.mrd} />
-
-      <h2>Minimum Residual Disease (MRD)</h2>
-      <MrdTable rows={bundle.mrd} />
-
-      <h2>Flow Cytometry</h2>
-      <MeasurementExplorer
-        rows={bundle.cytometry}
-        measurementKey="short_name"
-        valueKey="value"
-        emptyLabel="flow cytometry measurement"
-      />
-
-      <h2>Laboratory Results</h2>
-      <MeasurementExplorer
-        rows={bundle.lab_results}
-        measurementKey="test_name"
-        valueKey="value"
-        emptyLabel="lab test"
-        numeric={false}
-      />
-    </div>
-  )
-}
-
-function MrdTable({ rows }) {
-  if (!rows.length) return <p className="muted">No MRD measurements recorded.</p>
-  return (
-    <div className="timeline-table-scroll">
-      <table className="timeline-table">
-        <thead>
-          <tr>
-            <th>Date</th>
-            <th>Assay</th>
-            <th>Result</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((r, i) => (
-            <tr key={i} className={r.kind === 'not_detected' ? 'mrd-negative' : undefined}>
-              <td>{r.date}</td>
-              <td>{r.assay}</td>
-              <td>{r.value ?? r.kind.replace(/_/g, ' ')}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <TimelineContent bundle={bundle} />
     </div>
   )
 }
