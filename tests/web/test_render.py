@@ -50,6 +50,12 @@ def data():
     return load_all()
 
 
+@pytest.fixture(scope="module")
+def degraded():
+    """The same case with the trials lane timed out."""
+    return load_all(degraded=True)
+
+
 def _gz(html: str) -> int:
     return len(gzip.compress(html.encode("utf-8"), 9))
 
@@ -284,6 +290,162 @@ class TestFixtures:
 
         with pytest.raises(FileNotFoundError, match="not found"):
             _read("case.json", tmp_path)
+
+
+class TestDegradeNoticeSaysWhatFailedAndWhen:
+    """#88: a failed lookup and an empty result must not render the same.
+
+    Everything here is one assertion in different clothes -- the reader can
+    tell, from the page alone, whether we looked and found nothing or never
+    managed to look.
+    """
+
+    FAILURE = {
+        "type": "failure",
+        "tier": "1",
+        "lane": "trials",
+        "reason": "ClinicalTrials.gov lookup failed: connection timed out.",
+        "retryable": True,
+        "last_known_at": "2026-02-14T09:00:00Z",
+    }
+
+    def test_names_the_lane_and_the_reason(self):
+        html = render.render_degrade_notice(self.FAILURE)
+        assert "trials lookup unavailable" in html
+        assert "connection timed out" in html
+
+    def test_stale_data_is_dated_and_labelled_as_not_live(self):
+        html = render.render_degrade_notice(self.FAILURE)
+        assert "2026-02-14" in html
+        assert "not a live result" in html
+
+    def test_absent_cache_says_so_rather_than_implying_a_fresh_empty(self):
+        html = render.render_degrade_notice({**self.FAILURE, "last_known_at": None})
+        assert "No cached result is available" in html
+        assert "not a live result" not in html
+
+    def test_retryable_and_terminal_read_differently(self):
+        retryable = render.render_degrade_notice(self.FAILURE)
+        terminal = render.render_degrade_notice({**self.FAILURE, "retryable": False})
+        assert "may succeed on retry" in retryable
+        assert "will not succeed on retry" in terminal
+
+    def test_a_lane_less_failure_still_renders(self):
+        # docs/api-contracts.md: a failure object is always rendered. A
+        # missing optional field is not grounds to drop the whole notice.
+        html = render.render_degrade_notice({**self.FAILURE, "lane": None})
+        assert "Lookup unavailable" in html
+        assert "connection timed out" in html
+
+    def test_only_an_absent_failure_renders_nothing(self):
+        assert render.render_degrade_notice({}) == ""
+        assert render.render_degrade_notice(None) == ""
+
+    def test_the_reason_is_escaped(self):
+        html = render.render_degrade_notice(
+            {**self.FAILURE, "reason": '<img src=x onerror="alert(1)">'}
+        )
+        assert "<img" not in html
+        assert "&lt;img" in html
+
+
+class TestEmptyStateRefusesToRenderWithoutAReason:
+    """The same move as `_computed_card` having no citation parameter: a rule
+    that is only documented gets skipped, and a blank panel hides the skip."""
+
+    @pytest.mark.parametrize("reason", [None, "", "   ", "\n"])
+    def test_an_unexplained_empty_panel_cannot_be_rendered(self, reason):
+        with pytest.raises(ValueError, match="requires a reason"):
+            render.render_empty_state(reason)
+
+    def test_the_reason_is_rendered_and_escaped(self):
+        assert "0 candidates passed" in render.render_empty_state(
+            "No trials matched — 0 candidates passed the gene/disease filter."
+        )
+        assert "&lt;b&gt;" in render.render_empty_state("<b>none</b>")
+
+
+class TestBriefUnderDegrade:
+    def _brief(self, bundle):
+        return render.render_brief(
+            bundle["case"], bundle["changes"], bundle["queue"], bundle["findings"]
+        )
+
+    def test_a_healthy_run_has_no_coverage_section(self, data):
+        html = self._brief(data)
+        assert "<h2>Coverage</h2>" not in html
+        assert 'class="degraded"' not in html
+
+    def test_a_failed_lane_is_reported_before_the_reader_can_stop_scrolling(self, degraded):
+        html = self._brief(degraded)
+        assert "<h2>Coverage</h2>" in html
+        assert "trials lookup unavailable" in html
+        # Above Current state, so a reader who stops after the first screen
+        # still knows the run was incomplete.
+        assert html.index("<h2>Coverage</h2>") < html.index("<h2>Current state</h2>")
+
+    def test_the_unanswered_question_is_listed_and_marked_not_dispatched(self, degraded):
+        html = self._brief(degraded)
+        assert "Are there recruiting trials matching EGFR T790M?" in html
+        assert "was not dispatched" in html
+
+    def test_questions_in_healthy_lanes_are_not_marked(self, degraded):
+        # Exactly one question is in the failed lane; the rest must read as
+        # normal open work, or the label means nothing.
+        assert self._brief(degraded).count("was not dispatched") == 1
+
+    def test_local_content_still_renders_with_the_lane_down(self, degraded):
+        # III.3's actual requirement: only live external lookups degrade. The
+        # case record, the change banner and the curated-KB findings are all
+        # local and must be unaffected.
+        html = self._brief(degraded)
+        assert "Lung adenocarcinoma" in html
+        assert "Superseded findings" in html
+        for klass in ("documented", "computed", "regulatory", "contextual"):
+            assert f"card-{klass}" in html
+
+
+class TestNoSilentBlankPanels:
+    def test_an_empty_queue_says_why_instead_of_rendering_nothing(self, data):
+        empty = {"counts": {"open": 0, "suppressed": 0}, "open": [], "suppressed": []}
+        html = render.render_brief(data["case"], data["changes"], empty, data["findings"])
+        assert "No open questions" in html
+        assert 'class="empty-state"' in html
+
+    def test_no_active_findings_says_why(self, data):
+        superseded_only = {
+            k: v for k, v in data["findings"].items() if v.get("status") == "superseded"
+        }
+        assert superseded_only, "fixture set must contain a superseded finding"
+        html = render.render_brief(data["case"], data["changes"], data["queue"], superseded_only)
+        assert "No active findings" in html
+        assert "superseded" in html
+
+
+class TestTheTwoQueueFixturesDifferOnlyInTheDegrade:
+    """Guards the contrast the whole feature rests on. If the fixtures drift
+    apart in other ways, `TestBriefUnderDegrade` stops proving anything."""
+
+    def test_same_case_same_questions(self, data, degraded):
+        healthy_q, degraded_q = data["queue"], degraded["queue"]
+        assert healthy_q["case_id"] == degraded_q["case_id"]
+        assert [q["id"] for q in healthy_q["open"]] == [q["id"] for q in degraded_q["open"]]
+        assert healthy_q["counts"] == degraded_q["counts"]
+
+    def test_the_healthy_set_states_that_nothing_failed(self, data):
+        # Present and empty, not absent: "we checked, nothing failed" is a
+        # fact the route always states.
+        assert data["queue"]["failures"] == []
+
+    def test_the_failed_lane_lost_exactly_its_own_findings(self, data, degraded):
+        healthy = {q["id"]: q for q in data["queue"]["open"]}
+        failed_lane = degraded["queue"]["failures"][0]["lane"]
+        for q in degraded["queue"]["open"]:
+            if q["lane"] == failed_lane:
+                assert q["finding_ids"] == []
+                assert healthy[q["id"]]["finding_ids"], "the contrast needs a non-empty baseline"
+            else:
+                assert q["finding_ids"] == healthy[q["id"]]["finding_ids"]
 
 
 class TestDevServerDoesNotReflectUnescapedInput:
