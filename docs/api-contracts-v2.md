@@ -31,7 +31,7 @@ Every tool/query returns:
 
 See `src/secondlook/query/contracts.py`:
 
-- `CaseSummary` — case demographics, folded alterations, question counts, active finding count
+- `CaseSummary` — case demographics, folded alterations, question counts, active finding count, plus `current_state` (alterations/biomarkers/treatments/assessments, mirroring `case/state.py`'s `CaseState`) and `timeline` (raw event list) for the frontend's dashboard (issue #101 — these two were originally missing even though the underlying `CaseState` data was already computed correctly)
 - `CaseView` — bare Case row returned by `POST /api/cases` (no folded state; `CaseSummary` is too heavy for creation)
 - `EvidenceItem` — one structured retrieval hit (`retrieval_mode` is `exact` or `relaxed`; semantic retrieval is not chained)
 - `TrialMatchResult` — bucketed eligibility match for one trial

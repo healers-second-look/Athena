@@ -100,6 +100,7 @@ services:
       ATHENA_LLM_MODEL: ${ATHENA_LLM_MODEL:-}
       ATHENA_LLM_BASE_URL: ${ATHENA_LLM_BASE_URL:-}
       ATHENA_LLM_API_KEY: ${ATHENA_LLM_API_KEY:-}
+      ATHENA_CORS_ORIGINS: ${ATHENA_CORS_ORIGINS:-http://localhost:8080}
     ports:
       - "8000:8000"
     depends_on:

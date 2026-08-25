@@ -34,26 +34,28 @@ def _engine(url: str) -> Engine:
 def get_session() -> Iterator[Session]:
     """A request-scoped session that COMMITS when the request succeeds.
 
-    It previously yielded and then went straight to `session.close()`. Close
-    rolls back an open transaction, and `CaseStore` deliberately flushes
-    without ever committing -- it leaves transaction control to its caller,
-    which is this function. So every write through the API was discarded.
+    The commit is load-bearing and must not be "simplified" away. `CaseStore`
+    flushes and never commits, by design -- it leaves transaction control to
+    its caller, which is this function. A version that went from `yield`
+    straight to `close()` therefore discarded every write through the API
+    (fixed in #102; this docstring exists so it does not come back).
 
-    It did not look like a failure, which is why it survived. The flush had
+    That failure was invisible, which is why it survived. The flush had
     already assigned the primary key and the server defaults, so the response
     came back fully populated with a real id and a real `created_at`. The
-    caller saw a successful create; the row was never there. The next request
-    for that id returned 404.
+    caller saw a successful create; the row was never there, and the next
+    request for that id returned 404.
 
-    No test caught it because `tests/api/test_routes.py` overrides `get_store`
-    with a store built on its own session, so this function -- the only place
-    the transaction boundary is decided -- never executes under test.
+    It is still untested on main: `tests/api/test_routes.py` overrides
+    `get_store` with a store built on its own session, so this function --
+    the only place the transaction boundary is decided -- never executes
+    under test. `tests/api/test_session_lifecycle.py` closes that gap.
     """
     session = Session(_engine(os.environ.get("ATHENA_DATABASE_URL", DEFAULT_DATABASE_URL)))
     try:
         yield session
         session.commit()
-    except Exception:  # noqa: BLE001 -- re-raised, not swallowed
+    except Exception:
         # The handler already failed; the request must not half-persist.
         session.rollback()
         raise
@@ -80,11 +82,15 @@ def get_existing_finding(finding_id: uuid.UUID, store: CaseStore = Depends(get_s
 
 
 def get_graph():
-    return None
+    from secondlook.tier1.graph_connection import connect_graph
+
+    return connect_graph()
 
 
 def get_llm_client():
-    return None
+    from secondlook.synthesis.llm_client import get_llm_client as _get_llm_client
+
+    return _get_llm_client()
 
 
 def get_dispatch():

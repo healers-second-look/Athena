@@ -17,6 +17,51 @@ class AlterationView(BaseModel):
     variant: str
 
 
+class BiomarkerView(BaseModel):
+    name: str
+    value: float
+    unit: str | None = None
+
+
+class TreatmentView(BaseModel):
+    regimen: str
+    action: str
+    line: int | None = None
+
+
+class AssessmentView(BaseModel):
+    status: str
+
+
+class CurrentStateView(BaseModel):
+    """Mirrors `case/state.py`'s `CaseState` shape for the frontend's
+    `CurrentStatePanel` -- see issue #101. `alterations` is duplicated
+    here (also present top-level on `CaseSummary` for `api/brief.py` and
+    any other existing consumer) rather than replacing it, so this is a
+    purely additive field.
+    """
+
+    alterations: list[AlterationView] = Field(default_factory=list)
+    biomarkers: list[BiomarkerView] = Field(default_factory=list)
+    treatments: list[TreatmentView] = Field(default_factory=list)
+    assessments: list[AssessmentView] = Field(default_factory=list)
+
+
+class TimelineEventView(BaseModel):
+    """One raw case event, shaped for `web/src/components/Timeline.jsx`'s
+    `describe()` -- it switches on `event_type` and reads fields straight
+    out of `payload`, so this mirrors `CaseEvent`, not a pre-rendered
+    summary string.
+    """
+
+    id: str
+    event_type: str
+    payload: dict
+    occurred_at: datetime
+    recorded_at: datetime
+    source_document: str | None = None
+
+
 class QuestionView(BaseModel):
     id: str
     text: str
@@ -35,6 +80,8 @@ class CaseSummary(BaseModel):
     doid: str | None = None
     latest_assessment: str | None = None
     alterations: list[AlterationView] = Field(default_factory=list)
+    current_state: CurrentStateView = Field(default_factory=CurrentStateView)
+    timeline: list[TimelineEventView] = Field(default_factory=list)
     questions: list[QuestionView] = Field(default_factory=list)
     question_counts: dict[str, int] = Field(default_factory=dict)
     active_finding_count: int = 0

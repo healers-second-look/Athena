@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Athena Clinical Evidence Platform</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Newsreader:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "surface-container-highest": "#e4e2dd",
+                      "background": "#fbf9f4",
+                      "primary-fixed": "#c1edd0",
+                      "on-surface-variant": "#414943",
+                      "tertiary-fixed": "#ffdcc5",
+                      "on-secondary-fixed-variant": "#334866",
+                      "on-primary": "#ffffff",
+                      "tertiary": "#775842",
+                      "on-background": "#1b1c19",
+                      "on-primary-fixed": "#002112",
+                      "on-tertiary-fixed": "#2c1606",
+                      "on-error": "#ffffff",
+                      "surface-tint": "#3f6750",
+                      "inverse-on-surface": "#f2f1ec",
+                      "error-container": "#ffdad6",
+                      "secondary-fixed-dim": "#b2c8ec",
+                      "inverse-surface": "#30312e",
+                      "primary": "#3f6750",
+                      "tertiary-fixed-dim": "#e7bfa4",
+                      "secondary-container": "#c3d8fe",
+                      "tertiary-container": "#bd987f",
+                      "sage-deep": "#5D826C",
+                      "inverse-primary": "#a5d0b5",
+                      "outline-variant": "#c1c8c1",
+                      "on-secondary": "#ffffff",
+                      "on-secondary-fixed": "#031c38",
+                      "secondary-fixed": "#d5e3ff",
+                      "surface-variant": "#e4e2dd",
+                      "on-error-container": "#93000a",
+                      "on-tertiary-container": "#4a311d",
+                      "primary-container": "#7fa98f",
+                      "periwinkle-light": "#C4D1E5",
+                      "surface-container-high": "#eae8e3",
+                      "surface": "#fbf9f4",
+                      "outline": "#717973",
+                      "error": "#ba1a1a",
+                      "on-primary-fixed-variant": "#274e39",
+                      "secondary": "#4b5f7f",
+                      "surface-dim": "#dbdad5",
+                      "on-secondary-container": "#4a5e7e",
+                      "ink-stone": "#3A443F",
+                      "surface-container-lowest": "#ffffff",
+                      "surface-bright": "#fbf9f4",
+                      "on-tertiary-fixed-variant": "#5d412c",
+                      "surface-container-low": "#f5f3ee",
+                      "on-surface": "#1b1c19",
+                      "surface-alt": "#FFFFFF",
+                      "surface-container": "#f0eee9",
+                      "primary-fixed-dim": "#a5d0b5",
+                      "on-tertiary": "#ffffff",
+                      "on-primary-container": "#153e2a"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "xl": "80px",
+                      "sm": "12px",
+                      "xs": "4px",
+                      "base": "8px",
+                      "md": "24px",
+                      "margin-mobile": "16px",
+                      "gutter": "24px",
+                      "lg": "48px",
+                      "margin-desktop": "64px"
+              },
+              "fontFamily": {
+                      "headline-lg-mobile": [
+                              "Newsreader"
+                      ],
+                      "headline-md": [
+                              "Newsreader"
+                      ],
+                      "body-md": [
+                              "Inter"
+                      ],
+                      "body-sm": [
+                              "Inter"
+                      ],
+                      "body-lg": [
+                              "Inter"
+                      ],
+                      "label-md": [
+                              "Inter"
+                      ],
+                      "label-sm": [
+                              "Inter"
+                      ],
+                      "headline-xl": [
+                              "Newsreader"
+                      ],
+                      "headline-lg": [
+                              "Newsreader"
+                      ]
+              },
+              "fontSize": {
+                      "headline-lg-mobile": [
+                              "28px",
+                              {
+                                      "lineHeight": "36px",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "headline-md": [
+                              "24px",
+                              {
+                                      "lineHeight": "32px",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "body-md": [
+                              "16px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "body-sm": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "body-lg": [
+                              "18px",
+                              {
+                                      "lineHeight": "28px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "label-md": [
+                              "14px",
+                              {
+                                      "lineHeight": "16px",
+                                      "letterSpacing": "0.01em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "label-sm": [
+                              "12px",
+                              {
+                                      "lineHeight": "14px",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "headline-xl": [
+                              "48px",
+                              {
+                                      "lineHeight": "56px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "headline-lg": [
+                              "32px",
+                              {
+                                      "lineHeight": "40px",
+                                      "fontWeight": "500"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+      </script>
+<style>
+        .medical-shadow {
+            box-shadow: 0 10px 40px -10px rgba(127, 169, 143, 0.08);
+        }
+      </style>
+</head>
+<body class="bg-surface text-on-surface h-screen overflow-hidden flex font-body-md">
+<!-- Left Sidebar -->
+<aside class="w-[240px] bg-surface-container-low border-r border-outline-variant/20 flex flex-col h-full flex-shrink-0">
+<!-- Brand -->
+<div class="p-md flex items-center gap-sm">
+<img class="w-8 h-8 object-contain" data-alt="A stylized minimalist sage green owl logo representing clinical wisdom" src="https://lh3.googleusercontent.com/aida/AEtjO1WeNmNLTcyQ29tOrfHHYt4C1cgIwudFDjzaEeOWpYtZaKdlUh4G7ycQWFaSckTFM7YUesic1QHeaYgj8UvE0RtytwtrSbSnXWBbjCBiPKZyOqcPdkLQnrKAPARxYneIk2_r0cabWNzSksR7iCkxDS2fYQQa5C80QzcUBbmoSo6mfteU-qI6KU1BwmTiLYRtKAlQBLLfmdaQ_ZBDOElJnEy26QiEszigsVNZ9MPUlkpdR1f2aGRP5PBH1kg"/>
+<span class="font-headline-md text-headline-md font-bold text-sage-deep">Athena</span>
+</div>
+<!-- New Chat Action -->
+<div class="px-md pb-md">
+<button class="w-full bg-primary-container hover:bg-sage-deep text-on-primary font-label-md text-label-md py-sm rounded-lg flex items-center justify-center gap-xs transition-colors medical-shadow">
+<span class="material-symbols-outlined text-[18px]">add</span>
+                New Chat
+            </button>
+</div>
+<!-- Scrollable content -->
+<div class="flex-1 overflow-y-auto px-md py-sm flex flex-col gap-lg">
+<!-- Chat History -->
+<div>
+<h3 class="font-label-sm text-label-sm text-on-surface-variant mb-sm uppercase tracking-wider">Recent Sessions</h3>
+<ul class="flex flex-col gap-xs">
+<li class="group cursor-pointer p-xs -mx-xs rounded-lg hover:bg-surface-variant transition-colors flex justify-between items-center">
+<span class="font-body-sm text-body-sm truncate text-primary">EGFR Resistance</span>
+<span class="font-label-sm text-label-sm text-outline group-hover:text-on-surface-variant">2h</span>
+</li>
+<li class="group cursor-pointer p-xs -mx-xs rounded-lg hover:bg-surface-variant transition-colors flex justify-between items-center">
+<span class="font-body-sm text-body-sm truncate text-on-surface-variant">BRCA1 Pathways</span>
+<span class="font-label-sm text-label-sm text-outline group-hover:text-on-surface-variant">1d</span>
+</li>
+<li class="group cursor-pointer p-xs -mx-xs rounded-lg hover:bg-surface-variant transition-colors flex justify-between items-center">
+<span class="font-body-sm text-body-sm truncate text-on-surface-variant">TKI Tolerability</span>
+<span class="font-label-sm text-label-sm text-outline group-hover:text-on-surface-variant">3d</span>
+</li>
+</ul>
+</div>
+<hr class="border-t border-primary/10"/>
+<!-- Session Config -->
+<div class="flex flex-col gap-md">
+<!-- Model -->
+<div>
+<label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Model</label>
+<select class="w-full bg-surface-alt border border-outline-variant/40 rounded-lg py-xs px-sm font-body-sm text-body-sm focus:border-primary-container focus:ring-1 focus:ring-primary-container outline-none transition-all cursor-pointer appearance-none">
+<option>Athena Outline (offline)</option>
+<option>Athena Core</option>
+</select>
+</div>
+<!-- Mode -->
+<div>
+<label class="font-label-sm text-label-sm text-on-surface-variant block mb-sm">Mode</label>
+<div class="flex flex-col gap-xs">
+<label class="flex items-center gap-sm cursor-pointer">
+<input class="text-primary-container focus:ring-primary-container border-outline-variant" name="mode" type="radio"/>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Explore</span>
+</label>
+<label class="flex items-center gap-sm cursor-pointer">
+<input checked="" class="text-primary-container focus:ring-primary-container border-outline-variant" name="mode" type="radio"/>
+<span class="font-body-sm text-body-sm text-primary">Strict evidence</span>
+</label>
+<label class="flex items-center gap-sm cursor-pointer">
+<input class="text-primary-container focus:ring-primary-container border-outline-variant" name="mode" type="radio"/>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Tumor board</span>
+</label>
+</div>
+</div>
+<!-- Attachments -->
+<div>
+<label class="font-label-sm text-label-sm text-on-surface-variant block mb-sm">Attachments</label>
+<div class="flex flex-wrap gap-xs">
+<span class="bg-tertiary-fixed-dim/20 text-on-tertiary-fixed-variant font-label-sm text-label-sm px-2 py-1 rounded-full border border-tertiary-fixed-dim/30">Variant normalizer</span>
+<span class="bg-secondary-fixed-dim/20 text-on-secondary-fixed-variant font-label-sm text-label-sm px-2 py-1 rounded-full border border-secondary-fixed-dim/30">Citation guard</span>
+<span class="bg-primary-fixed-dim/20 text-on-primary-fixed-variant font-label-sm text-label-sm px-2 py-1 rounded-full border border-primary-fixed-dim/30">Evidence grader</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Bottom Knowledge Graph -->
+<div class="p-md border-t border-outline-variant/20 bg-surface-container-low mt-auto">
+<label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs flex justify-between items-center">
+                Knowledge Graph
+                <span class="material-symbols-outlined text-[14px]">link</span>
+</label>
+<select class="w-full bg-surface-alt border border-outline-variant/40 rounded-lg py-xs px-sm font-body-sm text-body-sm focus:border-primary-container outline-none transition-all cursor-pointer">
+<option>Gene: EGFR</option>
+<option>Pathway: MAPK</option>
+</select>
+</div>
+</aside>
+<!-- Center Chat Area -->
+<main class="flex-1 flex flex-col h-full bg-surface-bright relative">
+<!-- Top Bar -->
+<header class="h-16 border-b border-outline-variant/10 flex items-center justify-between px-md shrink-0 bg-surface-bright/80 backdrop-blur-md z-10 sticky top-0">
+<div class="flex items-center gap-sm">
+<span class="font-headline-md text-headline-md font-medium text-on-surface">Synthesis</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant bg-surface-container-highest px-2 py-0.5 rounded-md">Athena Outline</span>
+</div>
+<div class="flex gap-xs">
+<span class="material-symbols-outlined text-primary-container text-[20px]" title="Strict Evidence Mode">verified_user</span>
+<span class="material-symbols-outlined text-outline text-[20px]">help</span>
+</div>
+</header>
+<!-- Chat Feed -->
+<div class="flex-1 overflow-y-auto p-lg flex flex-col gap-lg w-full max-w-4xl mx-auto pb-32">
+<!-- User Message -->
+<div class="flex justify-end w-full">
+<div class="bg-periwinkle-light/40 text-on-surface-variant p-md rounded-xl rounded-tr-sm max-w-[80%] font-body-md text-body-md shadow-sm border border-periwinkle-light/20">
+                    What are the primary clinical considerations when an EGFR T790M resistance mutation is detected in non-small cell lung cancer post-first-line TKI therapy?
+                </div>
+</div>
+<!-- AI Response -->
+<div class="flex justify-start w-full gap-sm">
+<div class="w-8 h-8 rounded-full bg-primary-container/20 flex items-center justify-center shrink-0 mt-1">
+<span class="material-symbols-outlined text-primary text-[18px]">auto_awesome</span>
+</div>
+<div class="bg-surface-alt p-md rounded-xl border-l-4 border-l-primary-container medical-shadow max-w-[85%] font-body-md text-body-md text-on-surface">
+<p class="mb-4">The detection of an <strong>EGFR T790M</strong> mutation represents the most common mechanism of acquired resistance to first- and second-generation EGFR tyrosine kinase inhibitors (TKIs) in non-small cell lung cancer (NSCLC), occurring in approximately 50-60% of cases <sup class="text-primary font-medium cursor-pointer hover:underline">[1]</sup>.</p>
+<p class="mb-2 font-medium text-sage-deep">Key Clinical Considerations:</p>
+<ul class="list-disc pl-5 mb-4 space-y-2 text-on-surface-variant">
+<li><strong>Therapeutic Pivot:</strong> The presence of T790M strongly indicates a switch to a third-generation EGFR TKI, notably Osimertinib, which has demonstrated superior progression-free survival compared to platinum-pemetrexed therapy in this specific setting <sup class="text-primary font-medium cursor-pointer hover:underline">[2]</sup>.</li>
+<li><strong>Testing Modality:</strong> Confirmation via liquid biopsy (ctDNA) is often preferred initially due to lower invasiveness, but a tissue biopsy is recommended if plasma testing is negative, to rule out false negatives <sup class="text-primary font-medium cursor-pointer hover:underline">[3]</sup>.</li>
+<li><strong>Co-occurring Alterations:</strong> Consideration must be given to potential emerging co-mutations or phenotypic transformations (e.g., small cell transformation), which may necessitate alternative strategies.</li>
+</ul>
+<div class="mt-4 pt-4 border-t border-primary/10 flex items-center gap-sm">
+<span class="bg-tertiary-fixed-dim/20 text-on-tertiary-fixed-variant font-label-sm text-label-sm px-2 py-0.5 rounded flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">done</span> Evidence Graded: High</span>
+</div>
+</div>
+</div>
+<!-- User Message -->
+<div class="flex justify-end w-full">
+<div class="bg-periwinkle-light/40 text-on-surface-variant p-md rounded-xl rounded-tr-sm max-w-[80%] font-body-md text-body-md shadow-sm border border-periwinkle-light/20">
+                    Are there specific toxicity profiles associated with the transition to Osimertinib?
+                </div>
+</div>
+<!-- AI Response Loading -->
+<div class="flex justify-start w-full gap-sm opacity-60">
+<div class="w-8 h-8 rounded-full bg-primary-container/20 flex items-center justify-center shrink-0 mt-1">
+<span class="material-symbols-outlined text-primary text-[18px] animate-spin">sync</span>
+</div>
+<div class="bg-surface-alt p-md rounded-xl border-l-4 border-l-outline-variant medical-shadow w-64 h-16 flex items-center">
+<div class="flex gap-1">
+<div class="w-2 h-2 rounded-full bg-outline-variant animate-pulse"></div>
+<div class="w-2 h-2 rounded-full bg-outline-variant animate-pulse delay-75"></div>
+<div class="w-2 h-2 rounded-full bg-outline-variant animate-pulse delay-150"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Sticky Input Area -->
+<div class="absolute bottom-0 left-0 right-0 p-md bg-gradient-to-t from-surface-bright via-surface-bright to-transparent pt-xl">
+<div class="max-w-4xl mx-auto relative bg-surface-container-lowest rounded-xl medical-shadow border border-outline-variant/20 flex items-end p-2 transition-all focus-within:border-primary-container focus-within:ring-1 focus-within:ring-primary-container">
+<button class="p-2 text-outline hover:text-primary transition-colors mb-1">
+<span class="material-symbols-outlined">attach_file</span>
+</button>
+<textarea class="flex-1 bg-transparent border-none focus:ring-0 resize-none max-h-32 min-h-[44px] py-3 px-2 font-body-md text-body-md text-on-surface placeholder:text-outline-variant outline-none" placeholder="Ask about clinical evidence..." rows="1"></textarea>
+<button class="p-2 mb-1 bg-primary text-on-primary rounded-lg hover:bg-sage-deep transition-colors shadow-sm">
+<span class="material-symbols-outlined text-[20px]">arrow_upward</span>
+</button>
+</div>
+<div class="max-w-4xl mx-auto text-center mt-2">
+<p class="font-label-sm text-label-sm text-outline-variant">Athena may produce inaccurate information about clinical subjects. Verify critical evidence.</p>
+</div>
+</div>
+</main>
+<!-- Right Panel (Turn Details) -->
+<aside class="w-[280px] bg-surface-container-lowest border-l border-outline-variant/10 flex flex-col h-full flex-shrink-0">
+<header class="p-md border-b border-outline-variant/10 flex items-center justify-between shrink-0">
+<h2 class="font-headline-md text-headline-md text-sage-deep">Turn Details</h2>
+<button class="text-outline hover:text-on-surface-variant transition-colors">
+<span class="material-symbols-outlined">close</span>
+</button>
+</header>
+<div class="flex-1 overflow-y-auto p-md flex flex-col gap-lg">
+<!-- Entities Detected -->
+<section>
+<h3 class="font-label-md text-label-md text-on-surface-variant mb-sm flex items-center gap-xs">
+<span class="material-symbols-outlined text-[16px]">scatter_plot</span>
+                    Entities Detected
+                </h3>
+<div class="flex flex-wrap gap-sm">
+<div class="bg-tertiary-fixed-dim/15 border border-tertiary-fixed-dim/30 rounded-md p-2 w-full flex justify-between items-center">
+<span class="font-label-sm text-label-sm text-on-tertiary-fixed-variant">Gene</span>
+<span class="font-body-sm text-body-sm text-on-surface font-medium">EGFR</span>
+</div>
+<div class="bg-tertiary-fixed-dim/15 border border-tertiary-fixed-dim/30 rounded-md p-2 w-full flex justify-between items-center">
+<span class="font-label-sm text-label-sm text-on-tertiary-fixed-variant">Variant</span>
+<span class="font-body-sm text-body-sm text-on-surface font-medium">T790M</span>
+</div>
+<div class="bg-tertiary-fixed-dim/15 border border-tertiary-fixed-dim/30 rounded-md p-2 w-full flex justify-between items-center">
+<span class="font-label-sm text-label-sm text-on-tertiary-fixed-variant">Disease</span>
+<span class="font-body-sm text-body-sm text-on-surface font-medium">NSCLC</span>
+</div>
+</div>
+</section>
+<hr class="border-t border-primary/10"/>
+<!-- Active Attachments -->
+<section>
+<h3 class="font-label-md text-label-md text-on-surface-variant mb-sm flex items-center gap-xs">
+<span class="material-symbols-outlined text-[16px]">extension</span>
+                    Execution Trace
+                </h3>
+<div class="flex flex-col gap-xs">
+<div class="flex items-start gap-xs">
+<span class="material-symbols-outlined text-primary text-[16px] mt-0.5">check_circle</span>
+<div>
+<p class="font-label-sm text-label-sm text-on-surface">Variant Normalizer</p>
+<p class="font-body-sm text-body-sm text-outline-variant text-[11px]">Mapped T790M to NM_005228.5:c.2369C&gt;T</p>
+</div>
+</div>
+<div class="flex items-start gap-xs mt-2">
+<span class="material-symbols-outlined text-primary text-[16px] mt-0.5">check_circle</span>
+<div>
+<p class="font-label-sm text-label-sm text-on-surface">Citation Guard</p>
+<p class="font-body-sm text-body-sm text-outline-variant text-[11px]">Verified 2 literature anchors.</p>
+</div>
+</div>
+</div>
+</section>
+<hr class="border-t border-primary/10"/>
+<!-- Sources -->
+<section>
+<h3 class="font-label-md text-label-md text-on-surface-variant mb-sm flex items-center gap-xs">
+<span class="material-symbols-outlined text-[16px]">menu_book</span>
+                    Sources Used
+                </h3>
+<ul class="flex flex-col gap-sm">
+<li class="bg-surface-alt border border-outline-variant/20 rounded-lg p-sm hover:shadow-sm transition-shadow cursor-pointer">
+<div class="flex gap-2">
+<span class="font-label-sm text-label-sm text-primary-container">[1]</span>
+<div>
+<p class="font-label-sm text-label-sm text-on-surface leading-tight mb-1">Acquired Resistance to EGFR TKIs in NSCLC...</p>
+<p class="font-body-sm text-body-sm text-outline-variant text-[11px]">J Clin Oncol, 2019</p>
+</div>
+</div>
+</li>
+<li class="bg-surface-alt border border-outline-variant/20 rounded-lg p-sm hover:shadow-sm transition-shadow cursor-pointer">
+<div class="flex gap-2">
+<span class="font-label-sm text-label-sm text-primary-container">[2]</span>
+<div>
+<p class="font-label-sm text-label-sm text-on-surface leading-tight mb-1">Osimertinib or Platinum-Pemetrexed in EGFR T790M-Positive NSCLC</p>
+<p class="font-body-sm text-body-sm text-outline-variant text-[11px]">N Engl J Med, 2017</p>
+</div>
+</div>
+</li>
+</ul>
+</section>
+</div>
+</aside>
+</body></html>

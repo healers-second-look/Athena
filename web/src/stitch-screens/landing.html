@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Athena - Clinical Evidence Platform</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Newsreader:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container-lowest": "#ffffff",
+                        "on-secondary": "#ffffff",
+                        "background": "#fbf9f4",
+                        "on-surface": "#1b1c19",
+                        "secondary-fixed-dim": "#b2c8ec",
+                        "on-tertiary-container": "#4a311d",
+                        "secondary-container": "#c3d8fe",
+                        "tertiary-fixed-dim": "#e7bfa4",
+                        "surface-container-highest": "#e4e2dd",
+                        "sage-deep": "#5D826C",
+                        "on-tertiary-fixed-variant": "#5d412c",
+                        "error-container": "#ffdad6",
+                        "on-primary-fixed": "#002112",
+                        "surface-container-low": "#f5f3ee",
+                        "secondary": "#4b5f7f",
+                        "surface-dim": "#dbdad5",
+                        "on-secondary-container": "#4a5e7e",
+                        "on-error-container": "#93000a",
+                        "tertiary": "#775842",
+                        "surface-bright": "#fbf9f4",
+                        "on-secondary-fixed": "#031c38",
+                        "inverse-on-surface": "#f2f1ec",
+                        "surface-variant": "#e4e2dd",
+                        "inverse-primary": "#a5d0b5",
+                        "tertiary-fixed": "#ffdcc5",
+                        "on-primary-container": "#153e2a",
+                        "on-background": "#1b1c19",
+                        "secondary-fixed": "#d5e3ff",
+                        "on-secondary-fixed-variant": "#334866",
+                        "primary-fixed-dim": "#a5d0b5",
+                        "surface": "#fbf9f4",
+                        "inverse-surface": "#30312e",
+                        "primary-fixed": "#c1edd0",
+                        "primary-container": "#7fa98f",
+                        "tertiary-container": "#bd987f",
+                        "surface-tint": "#3f6750",
+                        "on-tertiary": "#ffffff",
+                        "on-error": "#ffffff",
+                        "on-surface-variant": "#414943",
+                        "surface-alt": "#FFFFFF",
+                        "surface-container-high": "#eae8e3",
+                        "on-primary-fixed-variant": "#274e39",
+                        "on-tertiary-fixed": "#2c1606",
+                        "error": "#ba1a1a",
+                        "primary": "#3f6750",
+                        "outline-variant": "#c1c8c1",
+                        "surface-container": "#f0eee9",
+                        "periwinkle-light": "#C4D1E5",
+                        "on-primary": "#ffffff",
+                        "outline": "#717973",
+                        "ink-stone": "#3A443F"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "margin-desktop": "64px",
+                        "base": "8px",
+                        "gutter": "24px",
+                        "xl": "80px",
+                        "lg": "48px",
+                        "xs": "4px",
+                        "margin-mobile": "16px",
+                        "md": "24px",
+                        "sm": "12px"
+                    },
+                    "fontFamily": {
+                        "headline-lg": ["Newsreader"],
+                        "label-md": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "body-sm": ["Inter"],
+                        "headline-xl": ["Newsreader"],
+                        "headline-lg-mobile": ["Newsreader"],
+                        "headline-md": ["Newsreader"],
+                        "label-sm": ["Inter"],
+                        "body-md": ["Inter"]
+                    },
+                    "fontSize": {
+                        "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "500"}],
+                        "label-md": ["14px", {"lineHeight": "16px", "letterSpacing": "0.01em", "fontWeight": "600"}],
+                        "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                        "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "headline-xl": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+                        "headline-lg-mobile": ["28px", {"lineHeight": "36px", "fontWeight": "500"}],
+                        "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "500"}],
+                        "label-sm": ["12px", {"lineHeight": "14px", "fontWeight": "500"}],
+                        "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}]
+                    },
+                    boxShadow: {
+                        'medical-soft': '0 20px 40px -10px rgba(127, 169, 143, 0.08)',
+                        'medical-hover': '0 25px 50px -12px rgba(127, 169, 143, 0.12)',
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body {
+            background-color: #F7F5F0; /* Warm Parchment Override for full body */
+        }
+    </style>
+</head>
+<body class="font-body-md text-on-surface antialiased min-h-screen flex flex-col relative overflow-x-hidden">
+<!-- Ambient Background Element -->
+<div class="fixed top-0 left-0 w-full h-full pointer-events-none z-[-1] opacity-30 mix-blend-multiply" data-alt="Subtle, elegant botanical branch illustration with soft sage green leaves, minimalist design, light mode background element, serene medical aesthetics, low contrast." style="background-image: url('https://lh3.googleusercontent.com/aida/AEtjO1WMEBwNT_OFebMlf6-rxpPxSc1GPJuaH6i1t_CnlBzoIGvaDWKWl2qzmoWsShPSR4PPdr6TvgIG75OOXjlEOu1TdOqSc0Cm3AJscos3opadwGplfsMIjhTlpbiv5Hugogf0QXoHvD8AFkdqaaIgtvzPUmoa3_MR2WDPljYW9Bd3yQsT1odt26GmkWIHftly1uXD88tqV6__YM0oir8Agcl5NngjwqKjFijcLwNsg2GMXoClguAOpvCVGTo'); background-size: cover; background-position: top right; background-repeat: no-repeat;"></div>
+<!-- TopAppBar -->
+<header class="w-full top-0 sticky bg-surface-bright dark:bg-surface-dim shadow-sm z-50 transition-all duration-200 ease-in-out">
+<div class="flex justify-between items-center px-margin-mobile md:px-margin-desktop py-base w-full max-w-7xl mx-auto">
+<!-- Brand -->
+<div class="flex items-center gap-sm">
+<img alt="Athena Logo" class="h-10 w-10 object-contain" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD_45yasJPUYmr67pgBVSV6I_WuD7kQvWPTyjVcJKi8lfnyRKqHMTSJeqPs4B-9eSo_p9D7mFLhBgK3vV9DyzlpgiJdjxuUIcOVh6bCRkovYD1zahwwCWAk2aS4qJCM-P1K30yYb7wXTdJfT79Vm3L3PEb7848zYsHnWQ3OrMbMxt585JJcoqajxBSY-LG1w5KJJ_C3FsPGlGOSQvFoUZExUwLNOEWLOR100jwuWaT-J-CMihN5fRH2p2GKWnmxRaYarYeggNIuzis"/>
+<span class="font-headline-md text-headline-md font-bold text-sage-deep dark:text-primary-fixed-dim hidden md:block">Athena</span>
+</div>
+<!-- Navigation (Desktop) -->
+<nav class="hidden md:flex items-center gap-md">
+<a class="font-label-md text-label-md text-primary dark:text-primary-fixed font-bold border-b-2 border-primary pb-1 transition-all duration-200 ease-in-out" href="#">Synthesis</a>
+<a class="font-label-md text-label-md text-on-surface-variant dark:text-outline-variant hover:text-primary dark:hover:text-primary-fixed transition-colors" href="#">Evidence</a>
+<a class="font-label-md text-label-md text-on-surface-variant dark:text-outline-variant hover:text-primary dark:hover:text-primary-fixed transition-colors" href="#">Knowledge Graph</a>
+<a class="font-label-md text-label-md text-on-surface-variant dark:text-outline-variant hover:text-primary dark:hover:text-primary-fixed transition-colors" href="#">About</a>
+</nav>
+<!-- Trailing Actions -->
+<div class="flex items-center gap-sm md:gap-md">
+<div class="hidden sm:flex items-center gap-xs">
+<button class="p-2 rounded-full text-on-surface-variant hover:bg-surface-container-highest transition-colors">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">help</span>
+</button>
+<button class="p-2 rounded-full text-on-surface-variant hover:bg-surface-container-highest transition-colors">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">settings</span>
+</button>
+</div>
+<button class="font-label-md text-label-md text-primary dark:text-primary-fixed hover:text-sage-deep transition-colors px-4 py-2 rounded-full border border-primary/20 hover:border-primary/50">
+                    Sign In
+                </button>
+</div>
+</div>
+</header>
+<!-- Main Content -->
+<main class="flex-grow w-full max-w-7xl mx-auto px-margin-mobile md:px-margin-desktop py-xl flex flex-col items-center">
+<!-- Hero Section -->
+<section class="text-center max-w-3xl mx-auto mb-xl pt-lg md:pt-xl flex flex-col items-center">
+<h1 class="font-headline-xl text-headline-lg-mobile md:text-headline-xl text-ink-stone mb-md tracking-tight">Clinical Evidence, Synthesized</h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant mb-lg max-w-2xl leading-relaxed">
+                AI-powered research assistant grounded in real clinical evidence from CIViC, PubMed, and your knowledge graph.
+            </p>
+<button class="bg-primary hover:bg-sage-deep text-on-primary font-label-md text-label-md px-8 py-4 rounded-full shadow-medical-soft hover:shadow-medical-hover transition-all duration-300 transform hover:-translate-y-1">
+                Start a New Chat
+            </button>
+</section>
+<!-- Feature Grid (Bento style) -->
+<section class="w-full grid grid-cols-1 md:grid-cols-3 gap-gutter mt-lg pb-xl">
+<!-- Card 1 -->
+<div class="bg-[#C4D1E5]/20 rounded-xl p-lg flex flex-col h-full shadow-medical-soft transition-all duration-300 hover:shadow-medical-hover relative overflow-hidden group">
+<div class="absolute -right-10 -top-10 w-32 h-32 bg-[#C4D1E5]/40 rounded-full blur-2xl group-hover:bg-[#C4D1E5]/60 transition-all duration-500"></div>
+<span class="material-symbols-outlined text-[#4b5f7f] text-4xl mb-md relative z-10" style="font-variation-settings: 'FILL' 0;">model_training</span>
+<h3 class="font-headline-md text-headline-md text-ink-stone mb-sm relative z-10">Multi-Model Support</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant relative z-10">
+                    Seamlessly switch between leading LLMs to find the best reasoning engine for your specific clinical query.
+                </p>
+</div>
+<!-- Card 2 -->
+<div class="bg-[#E7BFA4]/20 rounded-xl p-lg flex flex-col h-full shadow-medical-soft transition-all duration-300 hover:shadow-medical-hover relative overflow-hidden group">
+<div class="absolute -left-10 -bottom-10 w-40 h-40 bg-[#E7BFA4]/40 rounded-full blur-2xl group-hover:bg-[#E7BFA4]/60 transition-all duration-500"></div>
+<span class="material-symbols-outlined text-[#775842] text-4xl mb-md relative z-10" style="font-variation-settings: 'FILL' 0;">account_tree</span>
+<h3 class="font-headline-md text-headline-md text-ink-stone mb-sm relative z-10">Knowledge Graph Context</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant relative z-10">
+                    Grounds responses in a deeply structured ontology, ensuring relationships between entities are logically sound.
+                </p>
+</div>
+<!-- Card 3 -->
+<div class="bg-[#7FA98F]/20 rounded-xl p-lg flex flex-col h-full shadow-medical-soft transition-all duration-300 hover:shadow-medical-hover relative overflow-hidden group">
+<div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-32 h-32 bg-[#7FA98F]/30 rounded-full blur-3xl group-hover:bg-[#7FA98F]/50 transition-all duration-500"></div>
+<span class="material-symbols-outlined text-primary text-4xl mb-md relative z-10" style="font-variation-settings: 'FILL' 0;">verified</span>
+<h3 class="font-headline-md text-headline-md text-ink-stone mb-sm relative z-10">Evidence Grading</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant relative z-10">
+                    Automatically categorizes citations by tier, providing transparent confidence levels for therapeutic recommendations.
+                </p>
+</div>
+</section>
+</main>
+<!-- Footer -->
+<footer class="w-full mt-xl bg-surface-container-low dark:bg-surface-container-high border-t border-outline-variant/10">
+<div class="flex flex-col md:flex-row justify-between items-center px-margin-mobile md:px-margin-desktop py-lg w-full max-w-7xl mx-auto gap-lg md:gap-0">
+<div class="flex flex-col items-center md:items-start gap-xs">
+<span class="font-headline-sm text-headline-sm font-semibold text-sage-deep dark:text-primary-fixed-dim">Athena</span>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Built for clinicians and researchers.</p>
+<p class="font-body-sm text-body-sm text-outline mt-sm">© 2024 Athena Clinical Evidence Platform. All rights reserved.</p>
+</div>
+<nav class="flex flex-wrap justify-center gap-md">
+<a class="font-body-sm text-body-sm text-on-surface-variant dark:text-outline-variant hover:text-sage-deep dark:hover:text-primary-fixed-dim transition-colors opacity-90 hover:opacity-100" href="#">Privacy Policy</a>
+<a class="font-body-sm text-body-sm text-on-surface-variant dark:text-outline-variant hover:text-sage-deep dark:hover:text-primary-fixed-dim transition-colors opacity-90 hover:opacity-100" href="#">Terms of Service</a>
+<a class="font-body-sm text-body-sm text-on-surface-variant dark:text-outline-variant hover:text-sage-deep dark:hover:text-primary-fixed-dim transition-colors opacity-90 hover:opacity-100" href="#">Contact Support</a>
+<a class="font-body-sm text-body-sm text-on-surface-variant dark:text-outline-variant hover:text-sage-deep dark:hover:text-primary-fixed-dim transition-colors opacity-90 hover:opacity-100" href="#">API Documentation</a>
+</nav>
+</div>
+</footer>
+</body></html>

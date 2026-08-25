@@ -4,11 +4,16 @@
 # drift from the API's own.
 #
 # Deliberately does NOT include the `structural` extra (RDKit, AutoDock
-# Vina, Playwright, ...) or `semantic` (sentence-transformers / torch, ~2GB).
-# Those are Tier 2 structural-prediction and semantic-retrieval concerns,
-# not required to run the case-memory API a hospital actually deploys day
-# to day -- see Subsystem O's hardware-sizing guide (docs/deployment/) for
-# why keeping this image lean matters on a single mid-spec server.
+# Vina, Playwright, ...) -- that's a Tier 2 structural-prediction concern,
+# not required to run the case-memory API.
+#
+# DOES include `semantic` (sentence-transformers / torch, ~2GB) even
+# though it isn't listed in the `api` extra -- confirmed by an actual
+# 500 crash, not assumed, that `signals/literature.py` calls semantic
+# retrieval unconditionally for every ChangeKind (see issue #99), so it
+# is not optional Tier-2-adjacent tooling the way it first looked. This
+# is the single largest driver of this image's size; see
+# docs/deployment/hardware-sizing.md for the real, re-measured figure.
 # Multi-stage: `hgvs` (a core dependency, not just the `api` extra) pulls in
 # plain `psycopg2` transitively, which builds from source and needs
 # pg_config/libpq-dev + a compiler -- confirmed by an actual failed build,
@@ -28,7 +33,7 @@ COPY src/ ./src/
 
 RUN python -m venv /venv
 ENV PATH="/venv/bin:$PATH"
-RUN pip install --no-cache-dir -e ".[api]"
+RUN pip install --no-cache-dir -e ".[api,semantic]"
 
 FROM python:3.11-slim
 

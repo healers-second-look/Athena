@@ -26,6 +26,7 @@ class FakeEvent:
     payload: dict
     occurred_at: datetime
     recorded_at: datetime
+    source_document: str | None = None
 
 
 @dataclass
