@@ -91,12 +91,15 @@ class MockOutlineClient:
                 "- The evidence search ran and matched nothing for this question. "
                 "Attach a retrieval source or a knowledge graph to widen it."
             )
-        if context_lines:
-            # Plugin/KG-context annotations, not evidence -- kept visibly
-            # separate so they never inflate the source count above.
+        # Plugin/KG-context annotations, not evidence -- kept visibly separate
+        # so they never inflate the source count above. The outage line is
+        # excluded: it is already the lede, and repeating it here made the
+        # reply state the same failure twice.
+        extra = [line for line in context_lines if line is not outage]
+        if extra:
             parts.append("")
             parts.append("### Additional context (not sources)")
-            parts.extend(f"- {line}" for line in context_lines)
+            parts.extend(f"- {line}" for line in extra)
         parts += [
             "",
             "### Caveats",

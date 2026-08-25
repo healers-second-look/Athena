@@ -216,3 +216,14 @@ class TestAnOutageIsNotAClinicalNegative:
             # The outage reply must not tell the user to go attach something:
             # nothing they attach fixes a server being down.
             assert "matched zero sources" not in outage_text, model_id
+
+    def test_the_outage_is_stated_once_not_twice(self, monkeypatch):
+        """Caught by driving the real server, not by a unit test.
+
+        The outage line is both the lede and a context line, and the outline
+        mock rendered every context line -- so the reply announced the same
+        failure twice.
+        """
+        _patch_retrieval(monkeypatch, self.OUTAGE)
+        content = engine.run_turn("Q?", model_id="mock-outline").content
+        assert content.count("No search was performed") == 1

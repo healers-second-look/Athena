@@ -1,0 +1,507 @@
+[
+  {
+    "request": {
+      "method": "POST",
+      "path": "/api/chat/sessions",
+      "body": {}
+    },
+    "response": {
+      "status": 200,
+      "elapsed_ms": 1.9,
+      "body": {
+        "id": "14f1a5c3-51a3-459a-bde3-c8ecc53a99fc",
+        "model_id": "mock-outline",
+        "attachment_ids": [],
+        "context_id": null,
+        "history": [],
+        "created_at": 1787630644.811179,
+        "updated_at": 1787630644.811179
+      }
+    }
+  },
+  {
+    "request": {
+      "method": "POST",
+      "path": "/api/chat/sessions/14f1a5c3-51a3-459a-bde3-c8ecc53a99fc/turns",
+      "body": {
+        "message": "What treatment options exist for EGFR T790M in NSCLC?"
+      }
+    },
+    "response": {
+      "status": 200,
+      "elapsed_ms": 50.1,
+      "body": {
+        "user_message": {
+          "id": "1ef4c31f-c83a-4581-8ef5-234d3fffd5ce",
+          "role": "user",
+          "content": "What treatment options exist for EGFR T790M in NSCLC?",
+          "timestamp": 1787630644.861289
+        },
+        "assistant_message": {
+          "id": "668d6496-8843-432a-bef8-678a357fd019",
+          "role": "assistant",
+          "content": "## On: What treatment options exist for EGFR T790M in NSCLC?\n\n### Evidence search could not be run\n- RETRIEVAL UNAVAILABLE -- the evidence store could not be reached (FalkorDB unreachable: Error 61 connecting to localhost:6379. Connection refused.). No search was performed. This is not a finding of 'no evidence'.\n- This is NOT a finding that no evidence exists. Nothing was searched.\n\n### Caveats\n- Deterministic offline model. It restates retrieved context; it does not reason over it and must not be read as clinical advice.",
+          "timestamp": 1787630644.861295,
+          "entities": {},
+          "notes": [
+            "retrieval FAILED -- FalkorDB unreachable: Error 61 connecting to localhost:6379. Connection refused."
+          ],
+          "context_lines": [
+            "RETRIEVAL UNAVAILABLE -- the evidence store could not be reached (FalkorDB unreachable: Error 61 connecting to localhost:6379. Connection refused.). No search was performed. This is not a finding of 'no evidence'."
+          ],
+          "sources": [],
+          "sources_count": 0,
+          "retrieval_failed": true,
+          "retrieval_error": "FalkorDB unreachable: Error 61 connecting to localhost:6379. Connection refused.",
+          "model_id": "mock-outline"
+        },
+        "turn": {
+          "id": "542777fd-82e0-41fa-bd7f-f5288df831cc",
+          "role": "assistant",
+          "content": "## On: What treatment options exist for EGFR T790M in NSCLC?\n\n### Evidence search could not be run\n- RETRIEVAL UNAVAILABLE -- the evidence store could not be reached (FalkorDB unreachable: Error 61 connecting to localhost:6379. Connection refused.). No search was performed. This is not a finding of 'no evidence'.\n- This is NOT a finding that no evidence exists. Nothing was searched.\n\n### Caveats\n- Deterministic offline model. It restates retrieved context; it does not reason over it and must not be read as clinical advice.",
+          "model_id": "mock-outline",
+          "timestamp": 1787630644.861276,
+          "entities": {},
+          "notes": [
+            "retrieval FAILED -- FalkorDB unreachable: Error 61 connecting to localhost:6379. Connection refused."
+          ],
+          "context_lines": [
+            "RETRIEVAL UNAVAILABLE -- the evidence store could not be reached (FalkorDB unreachable: Error 61 connecting to localhost:6379. Connection refused.). No search was performed. This is not a finding of 'no evidence'."
+          ],
+          "sources": [],
+          "sources_count": 0,
+          "retrieval_failed": true,
+          "retrieval_error": "FalkorDB unreachable: Error 61 connecting to localhost:6379. Connection refused."
+        }
+      }
+    }
+  },
+  {
+    "request": {
+      "method": "GET",
+      "path": "/api/chat/sessions/14f1a5c3-51a3-459a-bde3-c8ecc53a99fc",
+      "body": null
+    },
+    "response": {
+      "status": 200,
+      "elapsed_ms": 1.1,
+      "body": {
+        "id": "14f1a5c3-51a3-459a-bde3-c8ecc53a99fc",
+        "model_id": "mock-outline",
+        "attachment_ids": [],
+        "context_id": null,
+        "history": [
+          {
+            "id": "1ef4c31f-c83a-4581-8ef5-234d3fffd5ce",
+            "role": "user",
+            "content": "What treatment options exist for EGFR T790M in NSCLC?",
+            "timestamp": 1787630644.861289
+          },
+          {
+            "id": "668d6496-8843-432a-bef8-678a357fd019",
+            "role": "assistant",
+            "content": "## On: What treatment options exist for EGFR T790M in NSCLC?\n\n### Evidence search could not be run\n- RETRIEVAL UNAVAILABLE -- the evidence store could not be reached (FalkorDB unreachable: Error 61 connecting to localhost:6379. Connection refused.). No search was performed. This is not a finding of 'no evidence'.\n- This is NOT a finding that no evidence exists. Nothing was searched.\n\n### Caveats\n- Deterministic offline model. It restates retrieved context; it does not reason over it and must not be read as clinical advice.",
+            "timestamp": 1787630644.861295,
+            "entities": {},
+            "notes": [
+              "retrieval FAILED -- FalkorDB unreachable: Error 61 connecting to localhost:6379. Connection refused."
+            ],
+            "context_lines": [
+              "RETRIEVAL UNAVAILABLE -- the evidence store could not be reached (FalkorDB unreachable: Error 61 connecting to localhost:6379. Connection refused.). No search was performed. This is not a finding of 'no evidence'."
+            ],
+            "sources": [],
+            "sources_count": 0,
+            "retrieval_failed": true,
+            "retrieval_error": "FalkorDB unreachable: Error 61 connecting to localhost:6379. Connection refused.",
+            "model_id": "mock-outline"
+          }
+        ],
+        "created_at": 1787630644.811179,
+        "updated_at": 1787630644.8612962
+      }
+    }
+  },
+  {
+    "request": {
+      "method": "GET",
+      "path": "/api/chat/models",
+      "body": null
+    },
+    "response": {
+      "status": 200,
+      "elapsed_ms": 0.8,
+      "body": [
+        {
+          "id": "mock-outline",
+          "label": "Athena Outline (offline)",
+          "provider": "mock",
+          "description": "Deterministic. Structured sections over retrieved sources.",
+          "available": true,
+          "unavailable_reason": null
+        },
+        {
+          "id": "mock-terse",
+          "label": "Athena Terse (offline)",
+          "provider": "mock",
+          "description": "Deterministic. Two sentences of prose, same inputs.",
+          "available": true,
+          "unavailable_reason": null
+        },
+        {
+          "id": "anthropic",
+          "label": "Anthropic (claude-sonnet-5)",
+          "provider": "anthropic",
+          "description": "Hosted Claude via the Anthropic API.",
+          "available": false,
+          "unavailable_reason": "ANTHROPIC_API_KEY is not set in this deployment."
+        },
+        {
+          "id": "openai-compatible",
+          "label": "Self-hosted (unconfigured)",
+          "provider": "openai_compatible",
+          "description": "Any server speaking OpenAI chat-completions -- vLLM, Ollama, TGI. Which weights are behind the URL is a deployment choice.",
+          "available": false,
+          "unavailable_reason": "ATHENA_LLM_BASE_URL and ATHENA_LLM_MODEL not set in this deployment."
+        }
+      ]
+    }
+  },
+  {
+    "request": {
+      "method": "POST",
+      "path": "/api/chat/sessions",
+      "body": {
+        "model_id": "mock-terse"
+      }
+    },
+    "response": {
+      "status": 200,
+      "elapsed_ms": 0.9,
+      "body": {
+        "id": "62136ff7-5851-419f-a077-52955423a466",
+        "model_id": "mock-terse",
+        "attachment_ids": [],
+        "context_id": null,
+        "history": [],
+        "created_at": 1787630644.864515,
+        "updated_at": 1787630644.864515
+      }
+    }
+  },
+  {
+    "request": {
+      "method": "POST",
+      "path": "/api/chat/sessions/62136ff7-5851-419f-a077-52955423a466/turns",
+      "body": {
+        "message": "What treatment options exist for EGFR T790M in NSCLC?"
+      }
+    },
+    "response": {
+      "status": 200,
+      "elapsed_ms": 2.1,
+      "body": {
+        "user_message": {
+          "id": "c7b92b24-9bf7-4495-9531-6a4eb5bc0236",
+          "role": "user",
+          "content": "What treatment options exist for EGFR T790M in NSCLC?",
+          "timestamp": 1787630644.86665
+        },
+        "assistant_message": {
+          "id": "64a6af5d-9cf9-44e9-8ace-df3d4b9f8b78",
+          "role": "assistant",
+          "content": "No answer attempted for 'What treatment options exist for EGFR T790M in NSCLC?': the evidence search could not be run (RETRIEVAL UNAVAILABLE -- the evidence store could not be reached (FalkorDB unreachable: Error 61 connecting to localhost:6379. Connection refused.). No search was performed. This is not a finding of 'no evidence'.). Nothing was searched, so this is not a finding that no evidence exists. Retry once the evidence store is reachable.",
+          "timestamp": 1787630644.866656,
+          "entities": {},
+          "notes": [
+            "retrieval FAILED -- FalkorDB unreachable: Error 61 connecting to localhost:6379. Connection refused."
+          ],
+          "context_lines": [
+            "RETRIEVAL UNAVAILABLE -- the evidence store could not be reached (FalkorDB unreachable: Error 61 connecting to localhost:6379. Connection refused.). No search was performed. This is not a finding of 'no evidence'."
+          ],
+          "sources": [],
+          "sources_count": 0,
+          "retrieval_failed": true,
+          "retrieval_error": "FalkorDB unreachable: Error 61 connecting to localhost:6379. Connection refused.",
+          "model_id": "mock-terse"
+        },
+        "turn": {
+          "id": "85946af5-ef35-44c9-8106-df285054fbe2",
+          "role": "assistant",
+          "content": "No answer attempted for 'What treatment options exist for EGFR T790M in NSCLC?': the evidence search could not be run (RETRIEVAL UNAVAILABLE -- the evidence store could not be reached (FalkorDB unreachable: Error 61 connecting to localhost:6379. Connection refused.). No search was performed. This is not a finding of 'no evidence'.). Nothing was searched, so this is not a finding that no evidence exists. Retry once the evidence store is reachable.",
+          "model_id": "mock-terse",
+          "timestamp": 1787630644.8666408,
+          "entities": {},
+          "notes": [
+            "retrieval FAILED -- FalkorDB unreachable: Error 61 connecting to localhost:6379. Connection refused."
+          ],
+          "context_lines": [
+            "RETRIEVAL UNAVAILABLE -- the evidence store could not be reached (FalkorDB unreachable: Error 61 connecting to localhost:6379. Connection refused.). No search was performed. This is not a finding of 'no evidence'."
+          ],
+          "sources": [],
+          "sources_count": 0,
+          "retrieval_failed": true,
+          "retrieval_error": "FalkorDB unreachable: Error 61 connecting to localhost:6379. Connection refused."
+        }
+      }
+    }
+  },
+  {
+    "request": {
+      "method": "POST",
+      "path": "/api/chat/sessions",
+      "body": {
+        "attachment_ids": [
+          "variant-normalizer",
+          "citation-guard"
+        ]
+      }
+    },
+    "response": {
+      "status": 200,
+      "elapsed_ms": 0.7,
+      "body": {
+        "id": "30aa4b77-e409-4084-b8a6-5b2332b412ae",
+        "model_id": "mock-outline",
+        "attachment_ids": [
+          "variant-normalizer",
+          "citation-guard"
+        ],
+        "context_id": null,
+        "history": [],
+        "created_at": 1787630644.867553,
+        "updated_at": 1787630644.867553
+      }
+    }
+  },
+  {
+    "request": {
+      "method": "POST",
+      "path": "/api/chat/sessions/30aa4b77-e409-4084-b8a6-5b2332b412ae/turns",
+      "body": {
+        "message": "What treatment options exist for EGFR T790M in NSCLC?"
+      }
+    },
+    "response": {
+      "status": 200,
+      "elapsed_ms": 2.0,
+      "body": {
+        "user_message": {
+          "id": "265ec227-1389-4f60-bada-6eb7c1dbc192",
+          "role": "user",
+          "content": "What treatment options exist for EGFR T790M in NSCLC?",
+          "timestamp": 1787630644.869382
+        },
+        "assistant_message": {
+          "id": "17b80713-8a25-4357-8932-7f9d30d5aa8d",
+          "role": "assistant",
+          "content": "## On: What treatment options exist for EGFR T790M in NSCLC?\n\n### Evidence search could not be run\n- RETRIEVAL UNAVAILABLE -- the evidence store could not be reached (FalkorDB unreachable: Error 61 connecting to localhost:6379. Connection refused.). No search was performed. This is not a finding of 'no evidence'.\n- This is NOT a finding that no evidence exists. Nothing was searched.\n\n### Additional context (not sources)\n- Normalized entities from the question -- genes: EGFR; variants: T790M\n\n### Caveats\n- Deterministic offline model. It restates retrieved context; it does not reason over it and must not be read as clinical advice.",
+          "timestamp": 1787630644.869388,
+          "entities": {
+            "genes": [
+              "EGFR"
+            ],
+            "variants": [
+              "T790M"
+            ]
+          },
+          "notes": [
+            "variant-normalizer parsed -> genes: EGFR; variants: T790M",
+            "citation-guard active -- retrieval FAILED, reply must say so",
+            "retrieval FAILED -- FalkorDB unreachable: Error 61 connecting to localhost:6379. Connection refused."
+          ],
+          "context_lines": [
+            "Normalized entities from the question -- genes: EGFR; variants: T790M",
+            "RETRIEVAL UNAVAILABLE -- the evidence store could not be reached (FalkorDB unreachable: Error 61 connecting to localhost:6379. Connection refused.). No search was performed. This is not a finding of 'no evidence'."
+          ],
+          "sources": [],
+          "sources_count": 0,
+          "retrieval_failed": true,
+          "retrieval_error": "FalkorDB unreachable: Error 61 connecting to localhost:6379. Connection refused.",
+          "model_id": "mock-outline"
+        },
+        "turn": {
+          "id": "3f04ff16-b216-4e29-8172-4dfd8ce31557",
+          "role": "assistant",
+          "content": "## On: What treatment options exist for EGFR T790M in NSCLC?\n\n### Evidence search could not be run\n- RETRIEVAL UNAVAILABLE -- the evidence store could not be reached (FalkorDB unreachable: Error 61 connecting to localhost:6379. Connection refused.). No search was performed. This is not a finding of 'no evidence'.\n- This is NOT a finding that no evidence exists. Nothing was searched.\n\n### Additional context (not sources)\n- Normalized entities from the question -- genes: EGFR; variants: T790M\n\n### Caveats\n- Deterministic offline model. It restates retrieved context; it does not reason over it and must not be read as clinical advice.",
+          "model_id": "mock-outline",
+          "timestamp": 1787630644.869375,
+          "entities": {
+            "genes": [
+              "EGFR"
+            ],
+            "variants": [
+              "T790M"
+            ]
+          },
+          "notes": [
+            "variant-normalizer parsed -> genes: EGFR; variants: T790M",
+            "citation-guard active -- retrieval FAILED, reply must say so",
+            "retrieval FAILED -- FalkorDB unreachable: Error 61 connecting to localhost:6379. Connection refused."
+          ],
+          "context_lines": [
+            "Normalized entities from the question -- genes: EGFR; variants: T790M",
+            "RETRIEVAL UNAVAILABLE -- the evidence store could not be reached (FalkorDB unreachable: Error 61 connecting to localhost:6379. Connection refused.). No search was performed. This is not a finding of 'no evidence'."
+          ],
+          "sources": [],
+          "sources_count": 0,
+          "retrieval_failed": true,
+          "retrieval_error": "FalkorDB unreachable: Error 61 connecting to localhost:6379. Connection refused."
+        }
+      }
+    }
+  },
+  {
+    "request": {
+      "method": "POST",
+      "path": "/api/chat/sessions",
+      "body": {
+        "attachment_ids": [
+          "not-a-real-plugin"
+        ]
+      }
+    },
+    "response": {
+      "status": 422,
+      "elapsed_ms": 0.8,
+      "body": {
+        "detail": "unknown attachment(s) not-a-real-plugin; known are variant-normalizer, citation-guard, evidence-grader, mode:explore, mode:strict-evidence, mode:tumor-board"
+      }
+    }
+  },
+  {
+    "request": {
+      "method": "POST",
+      "path": "/api/chat/sessions",
+      "body": {
+        "model_id": "gpt-9-ultra"
+      }
+    },
+    "response": {
+      "status": 422,
+      "elapsed_ms": 1.2,
+      "body": {
+        "detail": "unknown model 'gpt-9-ultra'; known models are mock-outline, mock-terse, anthropic, openai-compatible"
+      }
+    }
+  },
+  {
+    "request": {
+      "method": "POST",
+      "path": "/api/chat/sessions/14f1a5c3-51a3-459a-bde3-c8ecc53a99fc/turns",
+      "body": {
+        "message": "   "
+      }
+    },
+    "response": {
+      "status": 422,
+      "elapsed_ms": 0.8,
+      "body": {
+        "detail": "message must not be empty"
+      }
+    }
+  },
+  {
+    "request": {
+      "method": "POST",
+      "path": "/api/chat/sessions",
+      "body": {}
+    },
+    "response": {
+      "status": 200,
+      "elapsed_ms": 0.7,
+      "body": {
+        "id": "241b52af-4c9f-4116-94d2-884f529e22b7",
+        "model_id": "mock-outline",
+        "attachment_ids": [],
+        "context_id": null,
+        "history": [],
+        "created_at": 1787630644.873225,
+        "updated_at": 1787630644.873225
+      }
+    }
+  },
+  {
+    "request": {
+      "method": "PATCH",
+      "path": "/api/chat/sessions/241b52af-4c9f-4116-94d2-884f529e22b7",
+      "body": {
+        "model_id": "anthropic"
+      }
+    },
+    "response": {
+      "status": 200,
+      "elapsed_ms": 0.9,
+      "body": {
+        "id": "241b52af-4c9f-4116-94d2-884f529e22b7",
+        "model_id": "anthropic",
+        "attachment_ids": [],
+        "context_id": null,
+        "history": [],
+        "created_at": 1787630644.873225,
+        "updated_at": 1787630644.874169
+      }
+    }
+  },
+  {
+    "request": {
+      "method": "POST",
+      "path": "/api/chat/sessions/241b52af-4c9f-4116-94d2-884f529e22b7/turns",
+      "body": {
+        "message": "What treatment options exist for EGFR T790M in NSCLC?"
+      }
+    },
+    "response": {
+      "status": 409,
+      "elapsed_ms": 1.9,
+      "body": {
+        "detail": "model 'anthropic' is not configured: ANTHROPIC_API_KEY is not set in this deployment."
+      }
+    }
+  },
+  {
+    "request": {
+      "method": "GET",
+      "path": "/api/chat/sessions/241b52af-4c9f-4116-94d2-884f529e22b7",
+      "body": null
+    },
+    "response": {
+      "status": 200,
+      "elapsed_ms": 0.7,
+      "body": {
+        "id": "241b52af-4c9f-4116-94d2-884f529e22b7",
+        "model_id": "anthropic",
+        "attachment_ids": [],
+        "context_id": null,
+        "history": [],
+        "created_at": 1787630644.873225,
+        "updated_at": 1787630644.874169
+      }
+    }
+  },
+  {
+    "request": {
+      "method": "GET",
+      "path": "/api/chat/contexts",
+      "body": null
+    },
+    "response": {
+      "status": 200,
+      "elapsed_ms": 1.5,
+      "body": []
+    }
+  },
+  {
+    "request": {
+      "method": "GET",
+      "path": "/api/chat/contexts/gene:EGFR/graph",
+      "body": null
+    },
+    "response": {
+      "status": 503,
+      "elapsed_ms": 1.5,
+      "body": {
+        "detail": "Graph unavailable: FalkorDB unreachable: Error 61 connecting to localhost:6379. Connection refused."
+      }
+    }
+  }
+]
