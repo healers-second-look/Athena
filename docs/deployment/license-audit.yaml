@@ -197,6 +197,11 @@ javascript:
     group: devDependencies
     checked_via: npm registry
     checked_on: "2026-08-24"
+  "@testing-library/user-event":
+    license: MIT
+    group: devDependencies
+    checked_via: npm registry
+    checked_on: "2026-08-25"
   "@vitejs/plugin-react":
     license: MIT
     group: devDependencies
