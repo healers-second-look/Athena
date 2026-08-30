@@ -43,7 +43,7 @@ api = [
     "alembic>=1.14",
     "pydantic>=2.9",
     "anthropic>=0.40",
-    "mcp>=1.2,<2",
+    "mcp>=1.2,<3",
 ]
 dev = [
     "pytest>=8.0",
