@@ -1,338 +1,258 @@
-# Athena — SecondLook
+# 🧬 Athena — SecondLook
 
-AI second-opinion copilot for **rare and treatment-exhausted cancers**. Given a
-patient's gene, mutation and cancer type, Athena answers two questions:
+[![CI](https://github.com/healers-second-look/Athena/actions/workflows/ci.yml/badge.svg)](https://github.com/healers-second-look/Athena/actions/workflows/ci.yml)
+[![License: AGPL v3](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](LICENSE.md)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11-blue.svg)](pyproject.toml)
 
-1. **What is already documented?** — Tier 1 searches a curated knowledge graph
-   (CIViC + PubMed in FalkorDB) for real, citable clinical evidence.
-2. **What can be computed when nothing is documented?** — Tier 2 sources an
-   experimental protein structure and measures where the mutation sits relative
-   to a candidate drug's binding pocket.
+An oncologist runs out of standard genomic leads on a rare or treatment-exhausted
+cancer and needs a second opinion that isn't a chatbot guessing confidently.
+Athena tries to be that second opinion — grounded in a real evidence graph, with
+every claim traceable back to a citation or a computed method, never to a model's
+imagination.
 
-Tier 1 runs first. Only when it finds nothing strong does Tier 2 run — so a
-computed signal never displaces real evidence. **That two-tier split is the
-current implementation, not the intended end state** — see
-[`ARCHITECTURE.md`](ARCHITECTURE.md) for the target design (one signal graph
-across target discovery, therapy modality, access pathway, and evidence, with
-no tier gating one path on another's failure) and §2 there for exactly which
-of today's modules already carry over unchanged.
+Given a patient's case, it answers two questions people actually ask in tumour
+boards:
 
-> **Before you demo this, read [`ISSUES.md`](ISSUES.md) §1.** The pipeline runs
-> end to end, but it does **not** currently produce a validated binding-change
-> prediction, and its documented fallback — binding-site *proximity* — has
-> since been evaluated against a pre-committed criterion and also did not pass
-> cleanly (7/8 non-ambiguous cases; see `validation/results.md`'s "Proximity
-> criterion evaluation" section). Neither result is a bug to hide — both are
-> honestly reported, pre-committed evaluations. Describe them as what they are.
+1. **What's already known?** Documented clinical evidence for this gene, this
+   variant, this cancer type — pulled live from a CIViC + PubMed knowledge graph,
+   not recalled from an LLM's training data.
+2. **What happens as the case evolves?** New pathology, a new scan, a new lab
+   result — Athena remembers the case, diffs what changed, and flags exactly
+   which prior findings that change invalidates.
+
+There's a second, older half of this repo too: a structural-biology pipeline
+(binding-affinity prediction, AlphaFold/AlphaMissense lookups, candidate-drug
+scoring) for cases where the evidence graph comes back empty. It's real,
+heavily tested, and **honestly not validated as a product claim yet** — see
+[Where this stands](#-where-this-actually-stands-right-now) before you assume
+it predicts anything.
 
 ---
 
-## Quick start
+## ⚠️ Read this before you demo anything
+
+- **Real LLMs are not technically constrained to the retrieved evidence.** The
+  system prompt tells whichever model you've configured (Claude, Gemini, a
+  self-hosted one) to cite only retrieved sources and say so when it has none —
+  but that's an instruction, not an enforced guardrail. Nothing in the response
+  path rejects a claim the model pulled from its own training weights instead of
+  the graph. Test this directly with sparse retrieval before you trust an answer.
+- **Tier 2's binding-affinity prediction has not passed its own validation.**
+  Across the nine-case gold standard, zero candidates were scored by docking or
+  mCSM-lig (`scored_by_method: {'null': 9}`) — every result today is
+  `proximity_only`. The fallback claim (that proximity alone separates resistant
+  from sensitive mutations) was tested too and also missed, 7/8. Full details in
+  [`ISSUES.md`](ISSUES.md) §1 — read it before anyone sees this pipeline run.
+- **The Patient Timeline shows the same reference dataset for every case**, on
+  purpose, until a real per-patient data source is wired in. It's real,
+  published osteosarcoma treatment data, not a mock-up — but it isn't *this*
+  patient's data. `src/secondlook/timeline/reference_data.py` says so on every
+  call.
+- **This repo is mid-merge between two architectures.** [`ARCHITECTURE.md`](ARCHITECTURE.md)
+  is replacing the Tier 1/Tier 2 split you'll see below with one signal graph
+  where structural prediction is just another signal, not a fallback gated on
+  evidence coming up empty. Most of Tier 1 survives that merge unchanged; the
+  binding-delta code is explicitly being demoted off the presented path. Don't
+  be surprised the two docs disagree about what's "current" — they're describing
+  before and after the same rewrite.
+
+---
+
+## 🚀 Quick start
+
+The fastest path to something clickable is Docker — it brings up the knowledge
+graph, the case database, the API, and the web client together:
 
 ```bash
-cd athena_ultimate
-python3.11 -m venv .venv && source .venv/bin/activate
-pip install -e ".[dev]"
-pytest                                    # 549 tests, ~10s, fully offline
+cp .env.example .env      # then set a real ATHENA_API_KEY (see the file for how)
+docker compose up -d
 ```
 
-If that prints `549 passed`, the project is working. Everything below is for
-running the parts that need live services. This repo has no remote configured
-yet — set one before treating any `git clone`/push instructions elsewhere as
-applicable here.
-
----
-
-## Contents
-
-1. [Prerequisites](#1-prerequisites)
-2. [Full install](#2-full-install)
-3. [Start the knowledge graph](#3-start-the-knowledge-graph)
-4. [Run the tests](#4-run-the-tests)
-5. [Use the pipeline](#5-use-the-pipeline)
-6. [Run gold-standard validation](#6-run-gold-standard-validation)
-7. [Pre-demo checklist](#7-pre-demo-checklist)
-8. [Troubleshooting](#8-troubleshooting)
-9. [Repo map](#9-repo-map)
-
----
-
-## 1. Prerequisites
-
-| Need | Why |
+| Service | URL |
 |---|---|
-| **Python 3.11** | 3.12+ untested; `hgvs`/`pysam` are fussy |
-| **Docker Desktop** | Runs FalkorDB, the knowledge graph |
-| **≥3 GB free disk** | `sentence-transformers` pulls torch (~2 GB). A full disk wedged Docker during development — see [§8](#8-troubleshooting) |
+| Web app (chat, case dashboard, patient timeline) | http://localhost:8080 |
+| API + interactive docs | http://localhost:8000/docs |
+| FalkorDB graph browser | http://localhost:3000 |
 
-macOS / Apple Silicon also needs:
+No LLM key configured yet? The chat interface still works — it ships with two
+deterministic offline models (`mock-outline`, `mock-terse`) precisely so the
+whole surface is testable and demoable with no API key and no network. Point it
+at a real model later by setting `ANTHROPIC_API_KEY`, or `ATHENA_LLM_BASE_URL` +
+`ATHENA_LLM_MODEL` + `ATHENA_LLM_API_KEY` for anything speaking the OpenAI
+chat-completions format — vLLM, Ollama, or Gemini's own [OpenAI-compatible
+endpoint](https://ai.google.dev/gemini-api/docs/openai). See `.env.example` for
+every knob.
+
+No Docker? The genomics pipeline runs standalone, fully offline:
 
 ```bash
-brew install libpq openssl readline swig boost open-babel
+pip install -e ".[dev,api]"
+pytest -q
 ```
 
-**AutoDock Vina has no macOS arm64 wheel** and needs a patched source build.
-Follow [`docs/local-setup.md`](docs/local-setup.md) *before* installing the
-`structural` extra, not after.
+That installs both the core package and the `api` extra (some offline tests
+import `secondlook.case.models`, which needs SQLAlchemy even without a live
+database) and runs the non-integration suite — everything except the tests
+that need a running FalkorDB or live external APIs, which are deselected by
+default and skip cleanly rather than fail when those aren't reachable. CI runs
+this exact command on Python 3.11 for every PR; that's the badge at the top of
+this file.
 
 ---
 
-## 2. Full install
+## 🧭 What's actually in here
 
-Athena is **one Python package** — `secondlook`, with Tier 1 as the
-`secondlook.tier1` subpackage. One install, no path juggling.
+**Case Memory** (`src/secondlook/case/`) — the source of truth for a patient's
+case. Events append; nothing about `case_events` can be updated or deleted
+through `CaseStore`, not by convention but by the class simply having no such
+method, which a test asserts directly. Findings derive from folding those
+events and carry their own citations; a new event can supersede an old finding,
+and the dashboard shows you exactly which one and why.
 
-```bash
-python3.11 -m venv .venv
-source .venv/bin/activate
+**Chat / Synthesis** (`src/secondlook/chat/`, the "Synthesis" tab in the web
+app) — ask a question, get an answer grounded in whatever the knowledge graph
+actually retrieves for it. Every model behind the picker — the two offline
+mocks, hosted Claude, or any OpenAI-compatible server — goes through the same
+`complete(prompt, system=)` interface, so swapping models never touches
+retrieval or prompt construction. Retrieved evidence and a plugin's own
+annotations are kept in genuinely separate prompt sections; conflating them
+once caused a model to cite a source that was never retrieved, which is
+exactly the kind of bug this project writes an issue for before fixing.
 
-pip install -e ".[dev]"           # core + test tooling — enough for `pytest`
-pip install -e ".[structural]"    # Vina/RDKit/PDBFixer — read docs/local-setup.md first
-pip install -e ".[semantic]"      # sentence-transformers, for retrieval Mode 3
-```
+**Patient Timeline** — a chronological view of treatment history, procedures,
+imaging, MRD, flow cytometry, and lab results, reachable both from a case's own
+dashboard and, more recently, as a quick-look modal straight from the chat
+interface. Built against real reference data today; the seam for real
+per-patient data is one function.
 
-Verify:
+**Knowledge graph** (FalkorDB) — CIViC evidence and PubMed literature as a
+proper graph, not a flat table: `Gene -[:HAS_VARIANT]-> Variant`, evidence
+items, publications, drugs, all queryable in the browser at `:3000` or via the
+chat interface's "Explore Graph" panel, which shows you the exact Cypher it
+ran, not just the results.
 
-```bash
-python -c "
-from secondlook.pipeline import run_tier2
-from secondlook.tier1 import retrieval
-from secondlook.tier1_adapter import Tier1RetrievalPolicy
-print('Athena OK — both tiers importable')"
-```
+**MCP server** (`src/secondlook/mcp_server/`) — five read-only tools
+(`get_case_summary`, `get_recent_changes`, `search_evidence`, `match_trials`,
+`get_access_pathways`) exposed to any MCP-speaking client. Binds to loopback
+only unless you explicitly opt into remote access, and refuses to start
+remotely without an API key configured — fails closed, not open.
+
+**mCODE / FHIR export** (`src/secondlook/interop/`) — maps a case onto FHIR R4
+resources shaped after mCODE. It's structurally valid FHIR, and it's honest
+about not being full mCODE-conformant: real conformance needs SNOMED/LOINC/RxNorm
+coding this system's underlying data doesn't carry yet, and a guessed medical
+code is worse than an absent one, so every `CodeableConcept` here carries text
+only.
+
+**Structured Case Index** (`src/secondlook/index/`) — a k-anonymity-gated,
+allowlist-only export path for aggregating de-identified case summaries across
+patients. The gate fails *closed*: at realistic early-deployment case volumes
+it will usually refuse to export, which is correct behavior, not a bug someone
+should "fix" by lowering the threshold.
+
+**Tier 1 — evidence retrieval** (`src/secondlook/tier1/`) — three retrieval
+modes over the graph (exact match, relaxed same-class match, and semantic
+search via sentence-transformers over evidence/publication embeddings), plus
+loaders for ClinicalTrials.gov, a curated guideline knowledge base, and
+US/India access-pathway registries. The one rule enforced everywhere in this
+subpackage: an item with no citation URL is never returned as evidence, full
+stop.
+
+**Tier 2 — structural prediction** (`pipeline.py` and friends) — for the cases
+Tier 1 comes back empty on. Validates the mutation against a canonical
+sequence, pulls an AlphaMissense pathogenicity score, sources a structure
+(RCSB → AlphaFold → ESM Atlas, in that order), finds candidate drugs (DGIdb →
+Open Targets → ChEMBL), and scores binding-affinity change with mCSM-lig or a
+Vina docking fallback — gated by a covalent-mechanism check so a covalent drug
+never gets scored by a method that can't see the covalent bond at all. See the
+caveats above before treating any of this as a validated prediction.
 
 ---
 
-## 3. Start the knowledge graph
+## 🏗️ Where this actually stands right now
 
-```bash
-docker compose up -d              # FalkorDB on :6379, browser UI on :3000
+This repo is honest about being two systems, not one polished product:
 
-# Confirm CIViC's live API shape BEFORE loading. Don't skip this — the loader
-# parses a specific response shape, and this is what catches an upstream change
-# before it corrupts the graph.
-python -m secondlook.tier1.civic_verify
+| Doc | What it covers |
+|---|---|
+| [`ARCHITECTURE.md`](ARCHITECTURE.md) | The target design — one signal graph, no tier gating one path on another's failure. Read this to understand *why* the current split exists and what's replacing it, and its §2 for exactly which modules carry over unchanged versus which get re-wired. |
+| [`docs/architecture.md`](docs/architecture.md) | The tier-based system *as built today* — Tier 1 gating Tier 2, an orchestration API, an LLM synthesis layer. Not the target; a snapshot of the current wiring. |
+| [`ISSUES.md`](ISSUES.md) | Every known problem in the current implementation, with root cause and candidate fix. Non-negotiable pre-demo reading. |
+| [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) | The subsystem-by-subsystem build plan the case/chat/API/web half was built against. |
+| [`docs/`](docs/) | Deployment sizing, cost model, validation plans, license audit, and the rest of the specs. |
 
-python -m secondlook.tier1.civic_loader     # ~37 variants, 57 response edges
-python -m secondlook.tier1.chembl_enrich    # drug_class — retrieval Mode 2 needs it
-```
-
-Optional, for Mode 3 semantic retrieval over literature:
-
-```bash
-python -m secondlook.tier1.pubmed_loader "NTRK1 fusion sarcoma larotrectinib" --max-results 20
-```
-
-Check it's alive:
-
-```bash
-docker exec falkordb redis-cli ping        # -> PONG
-```
-
-Browse the graph visually at <http://localhost:3000>.
+If you only read one thing before evaluating this project: **ISSUES.md §1**.
+The genomics pipeline runs end to end and produces output, but that output is
+not the same thing as a validated prediction, and this project would rather
+you know that going in than find out from a wrong answer.
 
 ---
 
-## 4. Run the tests
-
-Integration tests hit live services and a running FalkorDB. They're
-**deselected by default**, and they **skip** (never fail) when the database is
-down.
+## 🧪 Testing
 
 ```bash
-pytest                       # 549 unit tests, offline    -> expect "549 passed"
-pytest -m integration        # live services + FalkorDB   -> expect ~33 passed
+pytest -q                    # offline unit tests, no network, no live services
+pytest -m integration        # hits live FalkorDB + external APIs, skips cleanly if unreachable
 pytest tests/tier1           # Tier 1 only
-pytest tests/test_pipeline.py -v
+pytest tests/chat            # chat/synthesis engine only
+cd web && npm test           # 27 frontend component tests (vitest)
 ```
 
-**Expected: 549 passing, 0 failures.** Anything else is a regression — do not
-demo until it's green.
+The offline suite collects on the order of a thousand test cases across both
+halves of the repo and runs green on Python 3.11 in CI for every PR (the badge
+up top). If you're on a newer Python locally and `hgvs`/`pysam` refuses to
+build a wheel — a real, known friction point, not something wrong with your
+setup — either stay on 3.11 for now or skip the modules that need it; nothing
+else in the repo depends on it.
+
+Bundle size is enforced, not just measured: `cd web && npm run build && npm run
+budget` fails the build if the shipped JS/CSS grows past what a low-bandwidth
+clinic connection can reasonably load.
 
 ---
 
-## 5. Use the pipeline
-
-### Tier 2 alone
-
-```python
-from secondlook.pipeline import run_tier2
-
-out = run_tier2("ABL1", "T315I", restrict_to_drugs=("imatinib",))
-print(out.status)                        # complete | partial | failed
-for item in out.results:
-    print(item.drug, item.signal_type, item.binding_site_distance_angstrom)
-```
-
-Two contract-valid result shapes, told apart by `signal_type`:
-
-| `signal_type` | Meaning | Populated |
-|---|---|---|
-| `binding_delta` | A binding change was computed | `method`, `delta_score`, `label` |
-| `proximity_only` | Position vs pocket measured; **no prediction made** | `proximity` only; the other three are `None` |
-
-`proximity_only` is **not a failure**. It's the honest output wherever a
-defensible delta couldn't be computed. Every current gold-standard result is
-this shape — see [`ISSUES.md`](ISSUES.md) §1.
-
-### Tier 1 activation, then Tier 2
-
-```python
-from secondlook.tier1_adapter import Tier1RetrievalPolicy
-
-d = Tier1RetrievalPolicy().decide(gene="TP53", mutation="NP_000537.3:p.Arg273His")
-print(d.state, d.should_run_tier2, d.reason)
-for item in d.tier1_results:
-    print(item.evidence_level, item.drug, item.citation_url)
-```
-
-| State | Tier 2 runs? | Means |
-|---|---|---|
-| `strong_hit` | No | Level A/B CIViC evidence for this exact variant |
-| `weak_hit` | Yes | Evidence exists but weaker, or only for a related variant |
-| `no_hit` | Yes | Nothing documented |
-| `manual_override` | Yes | Clinician asked for it explicitly |
-
-Thresholds come from `tier1-retrieval.md` §Activation and are implemented in
-**exactly one place** — `tier1_adapter._classify`. Don't duplicate them.
-
-### Write results back to the graph
-
-```python
-from secondlook.tier1_adapter import FalkorDBGraphSink
-sink = FalkorDBGraphSink()
-for signal in out.signals:
-    sink.emit(signal)
-```
-
-Produces
-`(Gene)-[:HAS_VARIANT]->(Variant)-[:HAS_COMPUTATIONAL_SIGNAL]->(StructuralSignal)-[:PREDICTS_BINDING_CHANGE]->(Drug)`.
-
----
-
-## 6. Run gold-standard validation
-
-```bash
-python validation/run_gold_standard.py            # ~40 min, live services
-python validation/run_gold_standard.py --report-only   # regenerate from cache
-```
-
-Writes `validation/results.md`. Successful runs cache to `validation/cache/`
-(gitignored), and a failed re-run **will not** overwrite a good cached result.
-
-> The criteria in `docs/validation-plan.md` were **pre-committed** and must
-> never be adjusted after seeing results. Falling below threshold is a
-> documented outcome with a defined fallback — not something to fix by moving
-> the bar.
-
----
-
-## 7. Pre-demo checklist
-
-Run all five. All five must pass.
-
-```bash
-# 1. package imports
-python -c "from secondlook.pipeline import run_tier2; from secondlook.tier1 import retrieval; print('1 OK')"
-
-# 2. unit tests green
-pytest -q | tail -1
-
-# 3. graph reachable
-docker exec falkordb redis-cli ping
-
-# 4. activation works both ways
-python -c "
-from secondlook.tier1_adapter import Tier1RetrievalPolicy
-p = Tier1RetrievalPolicy()
-a = p.decide(gene='TP53', mutation='NP_000537.3:p.Arg273His')
-b = p.decide(gene='ABL1', mutation='NP_005148.2:p.Thr315Ile')
-print('in  scope:', a.state, '-> Tier 2:', a.should_run_tier2)
-print('out scope:', b.state, '-> Tier 2:', b.should_run_tier2)
-assert b.state == 'no_hit' and b.should_run_tier2
-print('4 OK')"
-
-# 5. live graph round-trip
-pytest tests/test_tier1_integration.py -m integration -q | tail -1
-```
-
----
-
-## 8. Troubleshooting
-
-**`pytest` collects 0 tests / import errors**
-Install in editable mode: `pip install -e ".[dev]"`. Don't run pytest against a
-copied source tree without installing.
-
-**`ModuleNotFoundError: falkordb` or connection refused on :6379**
-`docker compose up -d`. Integration tests skip cleanly when it's down; if they
-*error* instead, that's a bug — report it.
-
-**Docker hangs, `docker ps` never returns**
-Almost always a full disk. Check `df -h`, then `docker builder prune`. If the
-daemon is already wedged, quit Docker Desktop from the menu bar and relaunch —
-the CLI can't recover it.
-
-**`vina` won't install on Apple Silicon**
-Expected. See [`docs/local-setup.md`](docs/local-setup.md) for the patched
-source build.
-
-**A test that passed yesterday fails today**
-Check the upstream service before assuming a regression — Ensembl and UniProt
-outages both caused false alarms during development:
-
-```bash
-curl -o /dev/null -w "%{http_code}\n" https://rest.uniprot.org/uniprotkb/P00533.fasta
-curl -o /dev/null -w "%{http_code}\n" https://files.rcsb.org/download/2ITY.pdb
-```
-
----
-
-## 9. Repo map
+## 📁 Repo map
 
 ```
 src/secondlook/
-├── pipeline.py          Step 7 — run_tier2(), composes everything
-├── labeling.py          Step 6 — delta -> label, orientation-normalised
-├── proximity.py         Binding-site distance bands
-├── vina_dock.py         AutoDock Vina WT-vs-mutant docking
-├── binding.py           mCSM-lig scoring + covalent gate
-├── covalent.py          Refuses non-covalent scoring of covalent drugs
-├── graph.py             StructuralSignal — the graph contract
-├── tier1_contract.py    Tier boundary contracts + inert placeholders
-├── tier1_adapter.py     Real Tier 1 backing (activation policy, graph sink)
-├── validation.py        Gold-standard harness, pre-committed criteria
-└── tier1/               Tier 1 — CIViC loader, retrieval Modes 1-3, graph schema
+├── case/          Case Memory Store — append-only events, folded findings, diffs
+├── chat/          Synthesis engine — retrieval, prompt assembly, model registry
+├── api/           FastAPI routes for cases, chat, timeline, findings
+├── timeline/      Patient Timeline reference data + retrieval
+├── query/         Read-side query layer backing the API and MCP server
+├── interop/       mCODE / FHIR R4 export
+├── index/         k-anonymity-gated Structured Case Index export
+├── intake/        LLM-assisted, human-confirmed document → case-event extraction
+├── mcp_server/    Read-only MCP tools over case data
+├── synthesis/     LLM client abstraction + citation-gated generation
+├── harness/       LLM decision-quality/safety evaluation harness
+├── signals/       Typed evidence/trial/access-pathway signal generators
+├── tier1/         Evidence retrieval — CIViC, PubMed, trials, guidelines, access pathways
+└── pipeline.py    Tier 2 — structural prediction orchestrator
 
-tests/                   549 unit tests (tests/tier1/ for Tier 1)
-validation/              Gold-standard runner and results
-docs/                    Specs, setup guides, research notes
-ISSUES.md                Every known problem and its candidate fix
+web/               React + Vite frontend (chat, case dashboard, timeline)
+tests/             Mirrors src/ — one test package per subsystem
+validation/        Gold-standard structural-prediction validation harness
+docs/              Architecture, deployment, and validation specs
+ISSUES.md          Every known problem and its candidate fix — read before demoing
 ```
 
-| Doc | Covers |
-|---|---|
-| [`ARCHITECTURE.md`](ARCHITECTURE.md) | **The target design — read this first.** Why the tier split is going away, what carries over unchanged, build order. |
-| [`ISSUES.md`](ISSUES.md) | Every known problem, cause, and fix in the *current* implementation. Read before presenting. |
-| [`docs/architecture.md`](docs/architecture.md) | System architecture of the *current* tier-based implementation (frontend/backend/Tier 1/Tier 2) |
-| [`docs/validation-plan.md`](docs/validation-plan.md) | Pre-committed pass/fail criteria |
-| [`docs/local-setup.md`](docs/local-setup.md) | macOS install hurdles |
-| [`docs/briefing/`](docs/briefing/) | Standalone explanation of the method and its limits |
+---
+
+## 🤝 Contributing
+
+Contributions of any kind count — code, documentation, curated clinical data,
+issue triage, review. See [`CONTRIBUTING.md`](CONTRIBUTING.md) for the how and
+[`CONTRIBUTORS.md`](CONTRIBUTORS.md) to add yourself once something's merged.
+[`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md) and [`GOVERNANCE.md`](GOVERNANCE.md)
+cover the rest.
 
 ---
 
-## The one rule
+## 📜 License
 
-**Never state a medical fact that was not retrieved or computed in a traceable
-step.** Every claim carries its citation or its method. No exceptions — this is
-what separates Athena from a chatbot that sounds confident.
-
----
-
-## License
-
-Athena is licensed under **AGPL-3.0** — free to use, run, and modify for
-everyone, including large hospitals, as long as you keep your changes
-open. A separate commercial license is available for organizations that
-need different terms. See [`LICENSE.md`](LICENSE.md) for the plain-language
-explanation and [`LICENSE`](LICENSE) for the full legal text.
+Athena is licensed under **AGPL-3.0** — free to run, modify, and deploy for
+anyone, including large hospitals, as long as changes stay open. A separate
+commercial license is available for organizations that need different terms.
+See [`LICENSE.md`](LICENSE.md) for the plain-language version and
+[`LICENSE`](LICENSE) for the actual legal text.
