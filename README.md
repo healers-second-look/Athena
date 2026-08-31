@@ -1,4 +1,4 @@
-# 🧬 Athena — SecondLook
+# 🧬 Athena
 
 [![CI](https://github.com/healers-second-look/Athena/actions/workflows/ci.yml/badge.svg)](https://github.com/healers-second-look/Athena/actions/workflows/ci.yml)
 [![License: AGPL v3](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](LICENSE.md)
@@ -6,9 +6,9 @@
 
 An oncologist runs out of standard genomic leads on a rare or treatment-exhausted
 cancer and needs a second opinion that isn't a chatbot guessing confidently.
-Athena tries to be that second opinion — grounded in a real evidence graph, with
-every claim traceable back to a citation or a computed method, never to a model's
-imagination.
+Athena — the engine behind **SecondLook** — tries to be that second opinion,
+grounded in a real evidence graph, with every claim traceable back to a
+citation or a computed method, never to a model's imagination.
 
 Given a patient's case, it answers two questions people actually ask in tumour
 boards:
