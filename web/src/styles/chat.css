@@ -567,6 +567,23 @@ body.chat-surface {
 .node-inspector h3 {
   font-size: 13px; font-weight: 600; color: var(--ink); margin-bottom: 12px;
 }
+
+/* === PATIENT TIMELINE MODAL (chat-embedded) === */
+/* Reuses .graph-modal-backdrop/.graph-modal/.graph-header above -- only the
+   body needs to differ: the graph fills a fixed-height canvas, but the
+   timeline (chart + tables) is naturally taller than 600px, so it scrolls
+   inside the modal instead of being clipped. */
+.timeline-modal-body {
+  overflow-y: auto;
+  display: block;
+  padding: 20px 24px;
+}
+.timeline-modal {
+  height: 80vh;
+}
+.patient-timeline-embedded.patient-timeline {
+  max-width: none;
+}
 .inspector-badge {
   display: inline-block; padding: 2px 8px; border-radius: 4px;
   font-size: 11px; font-weight: 600; margin-bottom: 8px;

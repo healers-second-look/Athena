@@ -48,7 +48,8 @@ LIMIT $limit
 
 _EVIDENCE_BY_ENTITIES = """
 MATCH (g:Gene)-[:HAS_VARIANT]->(v:Variant)
-WHERE (g.symbol IN $genes OR coalesce(v.hgvs_p, v.name) IN $variants)
+WHERE (size($genes) > 0 AND g.symbol IN $genes)
+   OR (size($genes) = 0 AND coalesce(v.hgvs_p, v.name) IN $variants)
 OPTIONAL MATCH (e:EvidenceItem)-[:SUPPORTS]->(v)
 OPTIONAL MATCH (v)-[:PREDICTS_RESPONSE_TO]->(d:Drug)
 OPTIONAL MATCH (v)-[:OBSERVED_IN]->(dis:Disease)

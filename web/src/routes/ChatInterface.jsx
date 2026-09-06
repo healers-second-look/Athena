@@ -10,6 +10,7 @@ import {
   updateSession,
 } from '../api/chatClient.js'
 import GraphViewer from '../components/GraphViewer.jsx'
+import TimelineModal from '../components/timeline/TimelineModal.jsx'
 
 export default function ChatInterface() {
   const { id } = useParams()
@@ -33,6 +34,9 @@ export default function ChatInterface() {
 
   // Phase 5 Graph Viewer state
   const [activeGraphContext, setActiveGraphContext] = useState(null)
+
+  // Patient Timeline modal state
+  const [showTimeline, setShowTimeline] = useState(false)
 
   // Load catalogs on mount
   useEffect(() => {
@@ -387,6 +391,14 @@ export default function ChatInterface() {
               <span className="material-symbols-outlined" style={{ fontSize: 14 }}>account_tree</span>
               Explore Graph
             </button>
+            <button
+              className="btn-view-graph"
+              style={{ width: 'auto', margin: 0, padding: '4px 10px' }}
+              onClick={() => setShowTimeline(true)}
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: 14 }}>timeline</span>
+              Patient Timeline
+            </button>
             {activeMode && (
               <span className="material-symbols-outlined" style={{ fontSize: 20, color: 'var(--sage)' }} title={activeMode.label}>
                 verified_user
@@ -612,6 +624,9 @@ export default function ChatInterface() {
           onClose={() => setActiveGraphContext(null)}
         />
       )}
+
+      {/* Patient Timeline Modal */}
+      {showTimeline && <TimelineModal onClose={() => setShowTimeline(false)} />}
 
       {error && (
         <div style={{

@@ -31,6 +31,8 @@ export default function CaseDashboard() {
         {' · '}
         <Link to={`/cases/${id}/queue`}>Research queue</Link>
         {' · '}
+        <Link to={`/cases/${id}/timeline`}>Patient timeline</Link>
+        {' · '}
         {/* A normal link, not a client route: the brief is server-rendered
             and print-ready, and routing it through the SPA would replace a
             5 KB no-JS page with the whole bundle. */}

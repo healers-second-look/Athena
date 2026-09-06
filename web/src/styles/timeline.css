@@ -1,0 +1,191 @@
+/* Patient Timeline -- modeled on osteosarc.com/timeline's category
+   structure. Colors match the pastel palette already established in
+   GraphViewer.jsx (Stitch design system) rather than inventing a new one:
+   periwinkle/apricot/sage repeated here for Treatments/Procedures/Imaging,
+   plus one new pastel (rose) for MRD since nothing else used it yet. */
+
+.patient-timeline {
+  max-width: 960px;
+}
+
+.timeline-source-note {
+  border-left: 2px solid var(--rule);
+  padding-left: 0.6rem;
+  max-width: 60ch;
+}
+
+.timeline-source-note code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.85em;
+}
+
+/* -- Category legend / filter chips -------------------------------------- */
+
+.timeline-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 1rem 0;
+}
+
+.timeline-legend-chip {
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  padding: 0.3rem 0.8rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+  background: #fff;
+  color: var(--ink-soft);
+}
+
+.timeline-legend-chip.active.cat-treatments { background: #c3d8fe; border-color: #4b5f7f; color: #031c38; }
+.timeline-legend-chip.active.cat-procedures { background: #e7bfa4; border-color: #8a6a4e; color: #4a311d; }
+.timeline-legend-chip.active.cat-imaging { background: #c1edd0; border-color: #3f6750; color: #002112; }
+.timeline-legend-chip.inactive { opacity: 0.5; }
+
+.chip-inline {
+  display: inline-block;
+  border-radius: 999px;
+  padding: 0.1rem 0.6rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin-right: 0.4rem;
+}
+.chip-inline.cat-treatments { background: #c3d8fe; color: #031c38; }
+.chip-inline.cat-procedures { background: #e7bfa4; color: #4a311d; }
+.chip-inline.cat-imaging { background: #c1edd0; color: #002112; }
+.chip-inline.cat-mrd { background: #ecd2e4; color: #5c2f4d; }
+
+/* -- Chronological swim-lane chart ---------------------------------------- */
+
+.timeline-chart-wrap {
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 1.5rem;
+}
+
+.timeline-chart-scroll {
+  overflow-x: auto;
+}
+
+.timeline-lane-even { fill: #fafafa; }
+.timeline-lane-odd { fill: #ffffff; }
+
+.timeline-lane-label {
+  font-size: 11px;
+  fill: var(--ink-soft);
+  font-weight: 600;
+}
+
+.timeline-year-gridline {
+  stroke: var(--rule);
+  stroke-dasharray: 2 3;
+}
+
+.timeline-year-label {
+  font-size: 11px;
+  fill: var(--ink-soft);
+  text-anchor: middle;
+}
+
+.timeline-marker {
+  cursor: pointer;
+}
+.timeline-marker:hover {
+  filter: brightness(0.92);
+}
+
+.timeline-detail-panel {
+  border-top: 1px solid var(--rule);
+  padding: 0.7rem 1rem;
+  background: #fafafa;
+  min-height: 2.6rem;
+}
+
+/* -- Tables (MRD, lab results, cytometry) --------------------------------- */
+
+.timeline-table-scroll {
+  overflow-x: auto;
+  max-height: 360px;
+  overflow-y: auto;
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+}
+
+.timeline-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.87rem;
+}
+
+.timeline-table th {
+  position: sticky;
+  top: 0;
+  background: #fafafa;
+  text-align: left;
+  padding: 0.4rem 0.6rem;
+  border-bottom: 1px solid var(--rule);
+}
+
+.timeline-table td {
+  padding: 0.35rem 0.6rem;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.timeline-table tr.mrd-negative td:last-child {
+  color: #3f6750;
+}
+
+.timeline-table tr.lab-out-of-range {
+  background: var(--alarm-wash);
+}
+.timeline-table tr.lab-out-of-range td {
+  color: var(--alarm);
+}
+
+/* -- Measurement explorer (Flow Cytometry / Lab Results) ------------------ */
+
+.measurement-explorer {
+  margin-bottom: 2rem;
+}
+
+.measurement-explorer label {
+  display: block;
+  margin-bottom: 0.6rem;
+}
+
+.measurement-explorer select {
+  display: block;
+  margin-top: 0.3rem;
+  padding: 0.35rem;
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  max-width: 420px;
+}
+
+.measurement-chart {
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  margin-bottom: 0.7rem;
+  background: #fff;
+}
+
+.chart-axis {
+  stroke: var(--rule);
+}
+
+.chart-axis-label {
+  font-size: 10px;
+  fill: var(--ink-soft);
+}
+
+.chart-line {
+  stroke: #4b5f7f;
+  stroke-width: 1.5;
+}
+
+.chart-point {
+  fill: #9db2d6;
+  stroke: #4b5f7f;
+}
