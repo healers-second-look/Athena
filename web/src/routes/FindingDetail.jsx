@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import EvidenceCard from '../components/evidence/index.jsx'
+import PlainLanguageBox from '../components/PlainLanguageBox.jsx'
+import { t } from '../i18n.js'
 import useAsync from '../api/useAsync.js'
 import { getFinding } from '../api/client.js'
 import { Failure } from './CaseDashboard.jsx'
@@ -14,6 +16,8 @@ import { Failure } from './CaseDashboard.jsx'
 // costs one request and ~3.7 KB gzipped on a cold 3G connection.
 export default function FindingDetail() {
   const { id } = useParams()
+  const [lang, setLang] = useState('en')
+  const [plain, setPlain] = useState(false)
   const finding = useAsync(() => getFinding(id), [id])
   const paired = useAsync(
     () => (finding.data?.paired_with ? getFinding(finding.data.paired_with) : Promise.resolve(null)),
@@ -28,13 +32,40 @@ export default function FindingDetail() {
 
   return (
     <>
-      <p className="small muted"><Link to={`/cases/${f.case_id}`}>← Case dashboard</Link></p>
+      <div className="lang-nav">
+        <button
+          type="button"
+          className={`lang-btn ${lang === 'en' ? 'active' : ''}`}
+          onClick={() => setLang('en')}
+        >
+          English
+        </button>
+        <button
+          type="button"
+          className={`lang-btn ${lang === 'hi' ? 'active' : ''}`}
+          onClick={() => setLang('hi')}
+        >
+          हिन्दी
+        </button>
+        <button
+          type="button"
+          className={`lang-btn ${plain ? 'active' : ''}`}
+          onClick={() => setPlain(!plain)}
+          aria-pressed={plain}
+        >
+          {t('plain_language.toggle_button', lang)}
+        </button>
+      </div>
+
+      <p className="small muted">
+        <Link to={`/cases/${f.case_id}`}>← {t('labels.case_dashboard', lang)}</Link>
+      </p>
       <h1>{f.label || 'Finding'}</h1>
       <p className="small muted">In answer to: {f.question_text}</p>
 
       {superseded ? (
         <section className="banner" role="alert">
-          <div className="banner-head">⊘ Superseded</div>
+          <div className="banner-head">⊘ {t('status.superseded', lang)}</div>
           <div className="supersession-why">{f.superseded_note}</div>
           <div className="supersession-trigger">
             → {f.superseded_event_label || f.superseded_by}
@@ -46,6 +77,7 @@ export default function FindingDetail() {
       ) : null}
 
       <EvidenceCard finding={f} />
+      {plain ? <PlainLanguageBox finding={f} lang={lang} /> : null}
 
       {paired.data ? (
         <>
@@ -57,22 +89,23 @@ export default function FindingDetail() {
             reconciling them is a clinician’s call, not the generator’s.
           </p>
           <EvidenceCard finding={paired.data} />
+          {plain ? <PlainLanguageBox finding={paired.data} lang={lang} /> : null}
         </>
       ) : null}
 
-      <h2>Provenance</h2>
-      <Provenance entries={f.provenance} />
+      <h2>{t('labels.provenance', lang)}</h2>
+      <Provenance entries={f.provenance} lang={lang} />
 
-      <h2>Clinician review</h2>
-      <Decisions entries={f.decisions} />
-      <ReviewForm findingId={f.id} />
+      <h2>{t('labels.clinician_review', lang)}</h2>
+      <Decisions entries={f.decisions} lang={lang} />
+      <ReviewForm findingId={f.id} lang={lang} />
     </>
   )
 }
 
-function Provenance({ entries = [] }) {
+function Provenance({ entries = [], lang = 'en' }) {
   if (!entries.length) {
-    return <p className="muted small">No provenance chain recorded for this finding.</p>
+    return <p className="muted small">{t('labels.no_provenance', lang)}</p>
   }
   // Every step renders, including steps with no URL. An unlinkable step is
   // still part of the chain, and dropping it makes the chain look shorter
@@ -85,7 +118,7 @@ function Provenance({ entries = [] }) {
           <div className="detail">
             {e.detail}
             {e.url ? (
-              <>{' · '}<a href={e.url} rel="noreferrer noopener" target="_blank">open source</a></>
+              <>{' · '}<a href={e.url} rel="noreferrer noopener" target="_blank">{t('labels.open_source', lang)}</a></>
             ) : null}
           </div>
         </li>
@@ -94,8 +127,8 @@ function Provenance({ entries = [] }) {
   )
 }
 
-function Decisions({ entries = [] }) {
-  if (!entries.length) return <p className="muted small">No clinician review recorded yet.</p>
+function Decisions({ entries = [], lang = 'en' }) {
+  if (!entries.length) return <p className="muted small">{t('labels.no_review', lang)}</p>
   return (
     <ul className="caveats">
       {entries.map((d, i) => (
@@ -108,7 +141,7 @@ function Decisions({ entries = [] }) {
   )
 }
 
-function ReviewForm({ findingId }) {
+function ReviewForm({ findingId, lang = 'en' }) {
   const [reason, setReason] = useState('')
   const [action, setAction] = useState(null)
 
@@ -131,7 +164,7 @@ function ReviewForm({ findingId }) {
 
   return (
     <form className="actions" onSubmit={submit} style={{ flexDirection: 'column', alignItems: 'stretch' }}>
-      <label className="small muted" htmlFor="reason">Reason (required for every decision)</label>
+      <label className="small muted" htmlFor="reason">{t('labels.reason_label', lang)}</label>
       <textarea
         id="reason"
         rows={2}
@@ -146,9 +179,9 @@ function ReviewForm({ findingId }) {
             type="submit"
             onClick={() => setAction(a)}
             disabled={!reason.trim()}
-            title={reason.trim() ? undefined : 'A reason is required'}
+            title={reason.trim() ? undefined : t('labels.reason_required', lang)}
           >
-            {a === 'investigating' ? 'Investigating' : a === 'deferred' ? 'Defer' : 'Reject'}
+            {t(`actions.${a}`, lang)}
           </button>
         ))}
       </div>

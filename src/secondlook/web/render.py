@@ -33,6 +33,8 @@ from __future__ import annotations
 from html import escape
 from pathlib import Path
 
+from secondlook.web.fixtures import load_strings
+
 _REPO_ROOT = Path(__file__).resolve().parents[3]
 STYLESHEET = _REPO_ROOT / "web" / "src" / "styles" / "app.css"
 
@@ -54,6 +56,24 @@ CHANGE_MARK: dict[str, tuple[str, str]] = {
     "treatment_line_change": ("→", "treatment line changed"),
     "disease_progression": ("!", "disease assessment changed"),
 }
+
+
+def get_catalogue(lang: str = "en") -> dict:
+    """Read the externalized string catalogue for this language."""
+    strings = load_strings()
+    return strings.get(lang) or strings.get("en", {})
+
+
+def class_label(evidence_class: str, lang: str = "en") -> str:
+    cat = get_catalogue(lang)
+    return cat.get("class", {}).get(evidence_class, CLASS_LABEL.get(evidence_class, evidence_class))
+
+
+def change_mark(kind: str, lang: str = "en") -> tuple[str, str]:
+    mark, default_spoken = CHANGE_MARK.get(kind, ("•", "changed"))
+    cat = get_catalogue(lang)
+    spoken = cat.get("change", {}).get(kind, default_spoken)
+    return mark, spoken
 
 
 def _e(value: object) -> str:
@@ -114,6 +134,57 @@ def _citation_link(url: str | None, label: str | None) -> str:
 # ---------------------------------------------------------------------------
 
 
+def render_plain_box(finding: dict, lang: str = "en") -> str:
+    """Deterministically derive a plain-language explanation from record fields.
+
+    Never invokes a secondary LLM pass; strictly translates and explains
+    existing structured fields (warrant, claim, caveats) to prevent drift.
+    """
+    cat = get_catalogue(lang)
+    pl = cat.get("plain_language", {})
+    klass = finding.get("evidence_class")
+    source = finding.get("source") or {}
+    claim = finding.get("claim", "")
+    caveats = finding.get("caveats") or []
+
+    warrant = ""
+    if klass == "documented":
+        src_name = source.get("name") or source.get("citation_id") or "Medical literature"
+        level = finding.get("evidence_level") or "standard"
+        tmpl = pl.get("documented_warrant", "")
+        warrant = tmpl.replace("{source}", _e(src_name)).replace("{level}", _e(level))
+    elif klass == "computed":
+        method = source.get("method") or "Computational model"
+        version = source.get("version") or "1.0"
+        tmpl = pl.get("computed_warrant", "")
+        warrant = tmpl.replace("{method}", _e(method)).replace("{version}", _e(version))
+    elif klass == "regulatory":
+        instrument = source.get("instrument") or "Regulatory agency"
+        tmpl = pl.get("regulatory_warrant", "")
+        warrant = tmpl.replace("{instrument}", _e(instrument))
+    elif klass == "contextual":
+        warrant = pl.get("contextual_warrant", "")
+
+    title = _e(pl.get("title", "Plain language explanation"))
+    caveats_html = ""
+    if caveats:
+        heading = _e(pl.get("caveat_heading", "Important clinical limitations:"))
+        items = "".join(f"<li>{_e(c)}</li>" for c in caveats)
+        caveats_html = (
+            f'<div class="plain-caveats"><span class="small muted">{heading}</span>'
+            f'<ul class="caveats">{items}</ul></div>'
+        )
+
+    return (
+        '<div class="plain-box" data-testid="plain-language-box">'
+        f'<div class="plain-box-title">{title}</div>'
+        f'<p class="plain-warrant">{warrant}</p>'
+        f'<p class="small muted">{_e(claim)}</p>'
+        f"{caveats_html}"
+        "</div>"
+    )
+
+
 def _documented_card(
     claim: str,
     *,
@@ -122,17 +193,23 @@ def _documented_card(
     citation_id: str | None,
     evidence_level: str | None,
     caveats=None,
+    lang: str = "en",
 ) -> str:
     """`citation_url` is REQUIRED and positional-free -- there is no path here
     that renders a documented card without one, mirroring
     `signals.types.DocumentedSource.__post_init__`."""
+    cat = get_catalogue(lang)
+    level_label = cat.get("labels", {}).get("level", "Level")
     level = (
-        f' <span class="small muted">Level {_e(evidence_level)}</span>' if evidence_level else ""
+        f' <span class="small muted">{_e(level_label)} {_e(evidence_level)}</span>'
+        if evidence_level
+        else ""
     )
     cite = _citation_link(citation_url, citation_id or source_name)
+    badge = class_label("documented", lang)
     return (
         '<article class="card card-documented">'
-        '<div class="badge badge-documented">Documented</div>'
+        f'<div class="badge badge-documented">{_e(badge)}</div>'
         f'<p class="claim">{_e(claim)}</p>'
         f'<p class="small">{_e(source_name)}{level} &middot; {cite}</p>'
         f"{_caveats(caveats)}"
@@ -140,7 +217,7 @@ def _documented_card(
     )
 
 
-def _computed_card(claim: str, *, method: str, version: str, caveats=None) -> str:
+def _computed_card(claim: str, *, method: str, version: str, caveats=None, lang: str = "en") -> str:
     """No citation parameter. Not an optional one -- none.
 
     IMPLEMENTATION_PLAN.md SS9.2: the computed card must have no place for a
@@ -149,9 +226,10 @@ def _computed_card(claim: str, *, method: str, version: str, caveats=None) -> st
     computed signal that has acquired a citation is a documented signal, and
     the generator, not the renderer, is where that gets fixed.
     """
+    badge = class_label("computed", lang)
     return (
         '<article class="card card-computed">'
-        '<div class="badge badge-computed">Computed</div>'
+        f'<div class="badge badge-computed">{_e(badge)}</div>'
         f'<p class="claim">{_e(claim)}</p>'
         f'<p class="method">{_e(method)} &middot; {_e(version)}</p>'
         f"{_caveats(caveats)}"
@@ -165,15 +243,17 @@ def _regulatory_card(
     instrument: str,
     citation_url: str | None = None,
     caveats=None,
+    lang: str = "en",
 ) -> str:
     """The instrument is cited; precedent is stated separately (ARCHITECTURE.md
     SS5). This renderer never asserts precedent -- if a caller has one, it
     belongs in `caveats` where it reads as a separate claim."""
     cite = _citation_link(citation_url, "instrument")
     tail = f" &middot; {cite}" if cite else ""
+    badge = class_label("regulatory", lang)
     return (
         '<article class="card card-regulatory">'
-        '<div class="badge badge-regulatory">Regulatory</div>'
+        f'<div class="badge badge-regulatory">{_e(badge)}</div>'
         f'<p class="claim">{_e(claim)}</p>'
         f'<p class="small">{_e(instrument)}{tail}</p>'
         f"{_caveats(caveats)}"
@@ -187,13 +267,15 @@ def _contextual_card(
     source_name: str | None = None,
     citation_url: str | None = None,
     caveats=None,
+    lang: str = "en",
 ) -> str:
     """Visually subordinate, and it can never drive an option."""
     cite = _citation_link(citation_url, source_name or "source")
     tail = f' <span class="small">{cite}</span>' if cite else ""
+    badge = class_label("contextual", lang)
     return (
         '<article class="card card-contextual">'
-        '<div class="badge badge-contextual">Contextual</div>'
+        f'<div class="badge badge-contextual">{_e(badge)}</div>'
         f'<p class="claim">{_e(claim)}</p>'
         f'<p class="small">Background, not a finding about this patient.{tail}</p>'
         f"{_caveats(caveats)}"
@@ -201,7 +283,7 @@ def _contextual_card(
     )
 
 
-def render_card(finding: dict) -> str:
+def render_card(finding: dict, *, lang: str = "en", plain: bool = False) -> str:
     """Dispatch on `evidence_class`, unpacking only the fields that class carries.
 
     An unknown class raises rather than falling back to a generic card. A
@@ -213,43 +295,50 @@ def render_card(finding: dict) -> str:
     claim = finding.get("claim", "")
     caveats = finding.get("caveats")
 
+    card_html = ""
     if klass == "documented":
-        return _documented_card(
+        card_html = _documented_card(
             claim,
             source_name=source.get("name"),
             citation_url=source["citation_url"],
             citation_id=source.get("citation_id"),
             evidence_level=finding.get("evidence_level"),
             caveats=caveats,
+            lang=lang,
         )
-    if klass == "computed":
-        # Only method and version are read off the source. Even if a caller
-        # smuggled a citation_url onto a computed source dict, it has no way
-        # of reaching the page.
-        return _computed_card(
+    elif klass == "computed":
+        card_html = _computed_card(
             claim,
             method=source["method"],
             version=source["version"],
             caveats=caveats,
+            lang=lang,
         )
-    if klass == "regulatory":
-        return _regulatory_card(
+    elif klass == "regulatory":
+        card_html = _regulatory_card(
             claim,
             instrument=source["instrument"],
             citation_url=source.get("citation_url"),
             caveats=caveats,
+            lang=lang,
         )
-    if klass == "contextual":
-        return _contextual_card(
+    elif klass == "contextual":
+        card_html = _contextual_card(
             claim,
             source_name=source.get("name"),
             citation_url=source.get("citation_url"),
             caveats=caveats,
+            lang=lang,
         )
-    raise ValueError(
-        f"unknown evidence class {klass!r}; the four classes in ARCHITECTURE.md "
-        "SS5 each have their own renderer, and there is no generic fallback on purpose"
-    )
+    else:
+        raise ValueError(
+            f"unknown evidence class {klass!r}; the four classes in ARCHITECTURE.md "
+            "SS5 each have their own renderer, and there is no generic fallback on purpose"
+        )
+
+    if plain:
+        card_html += render_plain_box(finding, lang=lang)
+    return card_html
 
 
 # ---------------------------------------------------------------------------
@@ -257,7 +346,7 @@ def render_card(finding: dict) -> str:
 # ---------------------------------------------------------------------------
 
 
-def render_change_banner(changes: dict) -> str:
+def render_change_banner(changes: dict, *, lang: str = "en") -> str:
     """The banner from SS9.1. Renders every change, not a truncated sample."""
     items = changes.get("changes") or []
     supersessions = changes.get("supersessions") or []
@@ -272,7 +361,7 @@ def render_change_banner(changes: dict) -> str:
 
     rows = []
     for change in items:
-        mark, spoken = CHANGE_MARK.get(str(change.get("kind")), ("•", "changed"))
+        mark, spoken = change_mark(str(change.get("kind")), lang=lang)
         when = change.get("observed_on")
         rows.append(
             '<div class="change-line">'
@@ -415,7 +504,29 @@ def _decisions(entries: list[dict] | None) -> str:
     return f'<ul class="caveats">{"".join(rows)}</ul>'
 
 
-def render_finding_detail(finding: dict, *, stylesheet: str | None = None) -> str:
+def _render_lang_nav(lang: str, plain: bool, toggle_label: str) -> str:
+    plain_suffix = "&plain=1" if plain else ""
+    en_active = " active" if lang == "en" else ""
+    hi_active = " active" if lang == "hi" else ""
+    plain_active = " active" if plain else ""
+    plain_param = "&plain=1" if not plain else ""
+    return (
+        '<nav class="lang-nav">'
+        f'<a href="?lang=en{plain_suffix}" class="lang-btn{en_active}">English</a>'
+        f'<a href="?lang=hi{plain_suffix}" class="lang-btn{hi_active}">हिन्दी</a>'
+        f'<a href="?lang={lang}{plain_param}" class="lang-btn{plain_active}">'
+        f"{_e(toggle_label)}</a>"
+        "</nav>"
+    )
+
+
+def render_finding_detail(
+    finding: dict,
+    *,
+    stylesheet: str | None = None,
+    lang: str = "en",
+    plain: bool = False,
+) -> str:
     """`/findings/:id` with no JavaScript.
 
     Review buttons post a normal form. The no-JS view is not a read-only
@@ -425,6 +536,13 @@ def render_finding_detail(finding: dict, *, stylesheet: str | None = None) -> st
     superseded = finding.get("status") == "superseded"
     label = finding.get("label") or "Finding"
     claim_class = "superseded-claim" if superseded else ""
+    cat = get_catalogue(lang)
+    labels = cat.get("labels", {})
+    actions = cat.get("actions", {})
+    pl_strings = cat.get("plain_language", {})
+
+    toggle_label = pl_strings.get("toggle_button", "Plain language summary")
+    lang_links = _render_lang_nav(lang, plain, toggle_label)
 
     banner = ""
     if superseded:
@@ -437,25 +555,36 @@ def render_finding_detail(finding: dict, *, stylesheet: str | None = None) -> st
             "</section>"
         )
 
+    dashboard_label = labels.get("case_dashboard", "Case dashboard")
+    prov_title = labels.get("provenance", "Provenance")
+    review_title = labels.get("clinician_review", "Clinician review")
+    reason_note = labels.get(
+        "reason_required",
+        'A reason is required with every decision, including "investigating".',
+    )
+    act_inv = actions.get("investigating", "Investigating")
+    act_def = actions.get("deferred", "Defer")
+    act_rej = actions.get("rejected", "Reject")
+
     body = (
+        f"{lang_links}"
         f'<p class="small muted"><a href="/cases/{_e(finding.get("case_id"))}">'
-        "&larr; Case dashboard</a></p>"
+        f"&larr; {_e(dashboard_label)}</a></p>"
         f"<h1>{_e(label)}</h1>"
         f'<p class="small muted">In answer to: {_e(finding.get("question_text"))}</p>'
         f"{banner}"
         f'<p class="{claim_class}">{_e(finding.get("claim"))}</p>'
-        f"{render_card(finding)}"
-        "<h2>Provenance</h2>"
+        f"{render_card(finding, lang=lang, plain=plain)}"
+        f"<h2>{_e(prov_title)}</h2>"
         f"{_provenance(finding.get('provenance'))}"
-        "<h2>Clinician review</h2>"
+        f"<h2>{_e(review_title)}</h2>"
         f"{_decisions(finding.get('decisions'))}"
         f'<form class="actions" method="post" action="/findings/{_e(finding.get("id"))}/decision">'
-        '<button type="submit" name="action" value="investigating">Investigating</button>'
-        '<button type="submit" name="action" value="deferred">Defer</button>'
-        '<button type="submit" name="action" value="rejected">Reject</button>'
+        f'<button type="submit" name="action" value="investigating">{_e(act_inv)}</button>'
+        f'<button type="submit" name="action" value="deferred">{_e(act_def)}</button>'
+        f'<button type="submit" name="action" value="rejected">{_e(act_rej)}</button>'
         "</form>"
-        '<p class="small muted">A reason is required with every decision, including '
-        '"investigating".</p>'
+        f'<p class="small muted">{_e(reason_note)}</p>'
         '<p class="nojs-note">Server-rendered view: no JavaScript, no webfonts, '
         "no image requests. See docs/performance-budget.md.</p>"
     )
@@ -469,6 +598,8 @@ def render_brief(
     findings: dict,
     *,
     stylesheet: str | None = None,
+    lang: str = "en",
+    plain: bool = False,
 ) -> str:
     """`/cases/:id/brief` -- the tumour-board handout. Server-rendered, print-ready.
 
@@ -482,6 +613,12 @@ def render_brief(
     superseded = [f for f in findings.values() if f.get("status") == "superseded"]
     order = {"documented": 0, "computed": 1, "regulatory": 2, "contextual": 3}
     active.sort(key=lambda f: (order.get(f.get("evidence_class"), 9), f.get("id", "")))
+
+    cat = get_catalogue(lang)
+    labels = cat.get("labels", {})
+    pl_strings = cat.get("plain_language", {})
+    toggle_label = pl_strings.get("toggle_button", "Plain language summary")
+    lang_links = _render_lang_nav(lang, plain, toggle_label)
 
     state = case.get("current_state") or {}
     alterations = ", ".join(
@@ -513,29 +650,26 @@ def render_brief(
     counts = queue.get("counts") or {}
     open_qs = queue.get("open") or []
 
-    # Which lanes could not be reached this run. A question dispatched into
-    # one of them was not answered-and-empty, it was never asked, and the
-    # brief must not let those two read the same on paper.
     failures = queue.get("failures") or []
     degraded_lanes = {f.get("lane"): f for f in failures if f.get("lane")}
+    coverage_title = labels.get("coverage", "Coverage")
     coverage = (
-        "<h2>Coverage</h2>" + "".join(render_degrade_notice(f) for f in failures)
+        f"<h2>{_e(coverage_title)}</h2>" + "".join(render_degrade_notice(f) for f in failures)
         if failures
         else ""
     )
 
     def _q_row(q: dict) -> str:
-        # A question whose lane failed is still listed -- dropping it would
-        # shorten the worklist by hiding work that was never done.
         note = (
             '<div class="small muted">Lane unavailable this run — this question '
             "was not dispatched.</div>"
             if q.get("lane") in degraded_lanes
             else ""
         )
+        p_label = labels.get("priority", "Priority")
         return (
             '<li class="q">'
-            f'<div class="q-priority">Priority {_e(q.get("priority"))}</div>'
+            f'<div class="q-priority">{_e(p_label)} {_e(q.get("priority"))}</div>'
             f"<div>{_e(q.get('text'))}</div>"
             f"{note}"
             "</li>"
@@ -564,17 +698,19 @@ def render_brief(
         )
         superseded_html = f"<h2>Superseded findings</h2>{rows}"
 
+    curr_title = labels.get("current_state", "Current state")
     body = (
+        f"{lang_links}"
         f"<h1>{_e(case.get('label'))} — tumour-board brief</h1>"
         f'<p class="small muted">Synthetic case. Generated {_e(changes.get("computed_at"))}. '
         "Research/clinical decision support — see POLICY.md.</p>"
-        f"{render_change_banner(changes)}"
+        f"{render_change_banner(changes, lang=lang)}"
         f"{coverage}"
-        "<h2>Current state</h2>"
+        f"<h2>{_e(curr_title)}</h2>"
         f"{panel}"
         "<h2>Findings</h2>"
         + (
-            "".join(render_card(f) for f in active)
+            "".join(render_card(f, lang=lang, plain=plain) for f in active)
             or render_empty_state(
                 "No active findings. Every finding on this case has been superseded "
                 "by a later one."
