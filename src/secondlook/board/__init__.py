@@ -3,6 +3,7 @@
 Subsystems:
 - T: Role Charter & Capability Registry (#75, P0)
 - U: Per-Role Knowledge Graph Fabric (#76, P0)
+- V: KG Construction & Curation Pipeline (#77, P0)
 - W: Board Session Orchestrator (#78, P0)
 - X: Structured Challenge & Disagreement Ledger (#79, P1)
 - Y: Agent Harness Runtime (#80, P0)
@@ -36,6 +37,15 @@ from secondlook.board.charters import (
     RoleCharter,
     load_all_charters,
     load_charter,
+)
+from secondlook.board.curation import (
+    PERMISSIBLE_LICENSES,
+    CurationPipeline,
+    CuratorActionError,
+    LicenseType,
+    LicenseViolationError,
+    StagedKGNode,
+    StagedNodeStatus,
 )
 from secondlook.board.evaluation import (
     ReleaseSafetyBlockError,
@@ -119,6 +129,8 @@ __all__ = [
     "ClinicianOverrule",
     "ComputedCitationForbiddenError",
     "CrossGraphEdgeForbiddenError",
+    "CurationPipeline",
+    "CuratorActionError",
     "DisagreementLedger",
     "DisagreementLedgerHiddenError",
     "EvidenceClass",
@@ -132,10 +144,13 @@ __all__ = [
     "IdentityAnchor",
     "JurisdictionViolationError",
     "LaneCoverage",
+    "LicenseType",
+    "LicenseViolationError",
     "MissingOverruleReasonError",
     "NodeProvenanceTamperError",
     "OverruleAction",
     "OverruleLedger",
+    "PERMISSIBLE_LICENSES",
     "PatientReadableRecord",
     "RedTeamHarness",
     "RedTeamRegressionError",
@@ -151,6 +166,8 @@ __all__ = [
     "SandboxedKGViolationError",
     "SessionDiff",
     "SessionTrace",
+    "StagedKGNode",
+    "StagedNodeStatus",
     "ThresholdRule",
     "ToolNotPermittedError",
     "UnstructuredClaimError",
