@@ -1,4 +1,5 @@
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
+import { DEMO_CASE_ID } from '../api/client.js'
 
 export default function ChatLanding() {
   const navigate = useNavigate()
@@ -16,6 +17,7 @@ export default function ChatLanding() {
             <span className="brand-name">Athena</span>
           </div>
           <nav className="landing-nav">
+            <Link to={`/cases/${DEMO_CASE_ID}`}>Case Review</Link>
             <a href="#" className="active">Synthesis</a>
             <a href="#">Evidence</a>
             <a href="#">Knowledge Graph</a>

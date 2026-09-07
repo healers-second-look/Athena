@@ -26,7 +26,7 @@ export default function App() {
         </p>
       ) : null}
       <Routes>
-        <Route path="/" element={<Navigate to="/chat" replace />} />
+        <Route path="/" element={<Navigate to={`/cases/${DEMO_CASE_ID}`} replace />} />
         <Route path="/cases/:id" element={<CaseDashboard />} />
         <Route path="/cases/:id/queue" element={<ResearchQueue />} />
         <Route path="/cases/:id/timeline" element={<PatientTimeline />} />

@@ -70,7 +70,7 @@ docker compose up -d
 
 | Service | URL |
 |---|---|
-| Web app (chat, case dashboard, patient timeline) | http://localhost:8080 |
+| Web app (case dashboard & change-review, chat, timeline) | http://localhost:8080 |
 | API + interactive docs | http://localhost:8000/docs |
 | FalkorDB graph browser | http://localhost:3000 |
 
@@ -230,7 +230,7 @@ src/secondlook/
 ├── tier1/         Evidence retrieval — CIViC, PubMed, trials, guidelines, access pathways
 └── pipeline.py    Tier 2 — structural prediction orchestrator
 
-web/               React + Vite frontend (chat, case dashboard, timeline)
+web/               React + Vite frontend (case dashboard, change-review diff, chat)
 tests/             Mirrors src/ — one test package per subsystem
 validation/        Gold-standard structural-prediction validation harness
 docs/              Architecture, deployment, and validation specs
