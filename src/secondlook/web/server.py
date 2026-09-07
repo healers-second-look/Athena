@@ -66,6 +66,8 @@ class Handler(BaseHTTPRequestHandler):
         # trials lane timed out, so the labelling added for #88 can be opened
         # and printed rather than only asserted in tests.
         degraded = "degraded=1" in query
+        lang = "hi" if "lang=hi" in query else "en"
+        plain = "plain=1" in query
         data = load_all(degraded=degraded)
         brief = _BRIEF.match(path)
         if brief:
@@ -73,7 +75,17 @@ class Handler(BaseHTTPRequestHandler):
             if brief.group(1) != case["id"]:
                 self._error(404, f"No fixture case with id {brief.group(1)}.")
                 return
-            self._send(200, render_brief(case, data["changes"], data["queue"], data["findings"]))
+            self._send(
+                200,
+                render_brief(
+                    case,
+                    data["changes"],
+                    data["queue"],
+                    data["findings"],
+                    lang=lang,
+                    plain=plain,
+                ),
+            )
             return
 
         finding = _FINDING.match(path)
@@ -82,7 +94,7 @@ class Handler(BaseHTTPRequestHandler):
             if record is None:
                 self._error(404, f"No fixture finding with id {finding.group(1)}.")
                 return
-            self._send(200, render_finding_detail(record))
+            self._send(200, render_finding_detail(record, lang=lang, plain=plain))
             return
 
         self._error(

@@ -1,0 +1,106 @@
+{
+  "en": {
+    "class": {
+      "documented": "Documented",
+      "computed": "Computed",
+      "regulatory": "Regulatory",
+      "contextual": "Contextual"
+    },
+    "change": {
+      "new_alteration": "newly observed",
+      "biomarker_shift": "threshold crossed",
+      "treatment_line_change": "treatment line changed",
+      "disease_progression": "disease assessment changed",
+      "default": "changed"
+    },
+    "plain_language": {
+      "toggle_button": "Plain language summary",
+      "title": "Plain language explanation",
+      "documented_warrant": "Published medical evidence from {source} (Evidence Level {level}).",
+      "computed_warrant": "Calculated prediction by {method} software (v{version}) based on patient data, not directly tested in a laboratory.",
+      "regulatory_warrant": "Official regulatory approval or clinical guideline from {instrument}.",
+      "contextual_warrant": "General disease background information, not a patient-specific finding.",
+      "caveat_heading": "Important clinical limitations:"
+    },
+    "actions": {
+      "investigating": "Investigating",
+      "deferred": "Defer",
+      "rejected": "Reject"
+    },
+    "status": {
+      "superseded": "Superseded",
+      "could_not_load": "Could not load",
+      "loading": "Loading..."
+    },
+    "labels": {
+      "case_dashboard": "Case dashboard",
+      "research_queue": "Research queue",
+      "patient_timeline": "Patient timeline",
+      "tumour_board_brief": "Tumour-board brief",
+      "provenance": "Provenance",
+      "clinician_review": "Clinician review",
+      "coverage": "Coverage",
+      "current_state": "Current state",
+      "timeline": "Timeline",
+      "reason_required": "A reason is required with every decision, including 'investigating'.",
+      "reason_label": "Reason (required for every decision)",
+      "no_provenance": "No provenance chain recorded for this finding.",
+      "no_review": "No clinician review recorded yet.",
+      "open_source": "open source",
+      "level": "Level",
+      "priority": "Priority"
+    }
+  },
+  "hi": {
+    "class": {
+      "documented": "प्रलेखित",
+      "computed": "गणना-आधारित",
+      "regulatory": "नियामक",
+      "contextual": "प्रासंगिक"
+    },
+    "change": {
+      "new_alteration": "नया बदलाव",
+      "biomarker_shift": "सीमा पार",
+      "treatment_line_change": "उपचार रेखा बदली",
+      "disease_progression": "रोग मूल्यांकन बदला",
+      "default": "परिवर्तित"
+    },
+    "plain_language": {
+      "toggle_button": "सरल भाषा सारांश",
+      "title": "सरल भाषा में स्पष्टीकरण",
+      "documented_warrant": "{source} से प्रकाशित चिकित्सा साक्ष्य (साक्ष्य स्तर {level})।",
+      "computed_warrant": "रोगी के डेटा पर आधारित {method} सॉफ्टवेयर (v{version}) द्वारा की गई गणना, प्रयोगशाला में सीधे परीक्षण नहीं।",
+      "regulatory_warrant": "{instrument} द्वारा आधिकारिक नियामक अनुमोदन या दिशा-निर्देश।",
+      "contextual_warrant": "सामान्य रोग पृष्ठभूमि संदर्भ, इस विशिष्ट रोगी का प्रत्यक्ष निष्कर्ष नहीं।",
+      "caveat_heading": "महत्वपूर्ण चिकित्सीय सीमाएं:"
+    },
+    "actions": {
+      "investigating": "जांच जारी",
+      "deferred": "स्थगित",
+      "rejected": "अस्वीकार"
+    },
+    "status": {
+      "superseded": "अधिक्रमित",
+      "could_not_load": "लोड नहीं हो सका",
+      "loading": "लोड हो रहा है..."
+    },
+    "labels": {
+      "case_dashboard": "केस डैशबोर्ड",
+      "research_queue": "शोध कतार",
+      "patient_timeline": "रोगी समयरेखा",
+      "tumour_board_brief": "ट्यूमर-बोर्ड संक्षिप्त",
+      "provenance": "उत्पत्ति और स्रोत",
+      "clinician_review": "चिकित्सक समीक्षा",
+      "coverage": "कवरेज",
+      "current_state": "वर्तमान स्थिति",
+      "timeline": "समयरेखा",
+      "reason_required": "प्रत्येक निर्णय के साथ कारण आवश्यक है, जिसमें 'जांच जारी' भी शामिल है।",
+      "reason_label": "कारण (प्रत्येक निर्णय के लिए आवश्यक)",
+      "no_provenance": "इस निष्कर्ष के लिए कोई स्रोत शृंखला दर्ज नहीं है।",
+      "no_review": "अभी तक कोई चिकित्सक समीक्षा दर्ज नहीं की गई है।",
+      "open_source": "खुला स्रोत",
+      "level": "स्तर",
+      "priority": "प्राथमिकता"
+    }
+  }
+}

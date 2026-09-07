@@ -44,9 +44,15 @@ def _read(name: str, fixture_dir: Path | None = None) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def load_strings(fixture_dir: str | None = None) -> dict:
+    """Load the shared i18n string catalogue."""
+    directory = Path(fixture_dir) if fixture_dir else None
+    return _read("strings.json", directory)
+
+
 @lru_cache(maxsize=2)
 def load_all(fixture_dir: str | None = None, *, degraded: bool = False) -> dict:
-    """`{case, changes, queue, findings}` -- the whole fixture set.
+    """`{case, changes, queue, findings, strings}` -- the whole fixture set.
 
     Cached because the dev server re-reads it per request otherwise, and a
     fixture set that changes between two requests in one page load would
@@ -65,4 +71,5 @@ def load_all(fixture_dir: str | None = None, *, degraded: bool = False) -> dict:
         "changes": _read("changes.json", directory),
         "queue": _read("queue-degraded.json" if degraded else "queue.json", directory),
         "findings": _read("findings.json", directory),
+        "strings": _read("strings.json", directory),
     }

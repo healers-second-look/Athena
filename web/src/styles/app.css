@@ -292,3 +292,46 @@ kbd {
   /* Neither the keys nor a half-written decision belong on paper. */
   .kbd-legend, .decision { display: none; }
 }
+
+/* --- Plain-language toggle & externalisation (#88 part 3) -------------- */
+
+.plain-box {
+  margin-top: .6rem;
+  padding: .45rem .65rem;
+  background: #f8fafc;
+  border-left: 3px solid var(--rule);
+  font-size: .88rem;
+}
+
+.plain-box-title {
+  font-weight: 600;
+  font-size: .78rem;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  margin-bottom: .25rem;
+}
+
+.lang-nav {
+  display: flex;
+  gap: .5rem;
+  font-size: .82rem;
+  align-items: center;
+  margin-bottom: .75rem;
+}
+
+.lang-btn {
+  background: transparent;
+  border: 1px solid var(--rule);
+  padding: .15rem .45rem;
+  font: inherit;
+  font-size: .8rem;
+  cursor: pointer;
+}
+
+.lang-btn.active {
+  background: var(--ink);
+  color: var(--paper);
+  border-color: var(--ink);
+}
+

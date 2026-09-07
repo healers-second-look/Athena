@@ -22,7 +22,7 @@ import re
 
 import pytest
 
-from secondlook.web import render
+from secondlook.web import fixtures, render
 from secondlook.web.fixtures import load_all
 
 TRIAL_EXISTS = "f0000000-0000-4000-8000-000000000031"
@@ -478,3 +478,49 @@ class TestDevServerDoesNotReflectUnescapedInput:
         handler, sent = self._handler()
         handler._error(404, "Routes are /cases/<id>/brief.")
         assert "/cases/&lt;id&gt;/brief" in sent["html"]
+
+
+class TestSubsystemMI18nAndPlainLanguage:
+    def test_strings_catalogue_loads_and_has_both_languages(self):
+        catalogue = fixtures.load_strings()
+        assert "en" in catalogue and "hi" in catalogue
+        assert catalogue["en"]["plain_language"]["title"] == "Plain language explanation"
+        assert catalogue["hi"]["plain_language"]["title"] == "सरल भाषा में स्पष्टीकरण"
+
+    def test_class_label_translation(self):
+        assert render.class_label("documented", "en") == "Documented"
+        assert render.class_label("documented", "hi") == "प्रलेखित"
+        assert render.class_label("computed", "hi") == "गणना-आधारित"
+
+    def test_change_mark_translation(self):
+        mark_en, spoken_en = render.change_mark("new_alteration", lang="en")
+        mark_hi, spoken_hi = render.change_mark("new_alteration", lang="hi")
+        assert mark_en == mark_hi == "+"
+        assert spoken_en == "newly observed"
+        assert spoken_hi == "नया बदलाव"
+
+    def test_render_card_plain_language_box(self, data):
+        computed = data["findings"]["f0000000-0000-4000-8000-000000000032"]
+        html_plain = render.render_card(computed, plain=True)
+        assert 'class="plain-box"' in html_plain
+        assert "Calculated prediction" in html_plain
+        assert "not directly tested in a laboratory" in html_plain
+        # Computed card MUST NEVER leak a link or citation
+        assert "href=" not in html_plain
+
+    def test_render_card_hindi(self, data):
+        documented = data["findings"]["f0000000-0000-4000-8000-000000000021"]
+        html_hi = render.render_card(documented, lang="hi")
+        assert "प्रलेखित" in html_hi
+
+    def test_render_brief_with_hindi_and_plain_language(self, data):
+        html = render.render_brief(
+            data["case"],
+            data["changes"],
+            data["queue"],
+            data["findings"],
+            lang="hi",
+            plain=True,
+        )
+        assert "वर्तमान स्थिति" in html
+        assert 'class="plain-box"' in html
