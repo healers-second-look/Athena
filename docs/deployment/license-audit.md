@@ -27,6 +27,21 @@ two entries worth knowing about specifically:
   Athena) that runs it as an internal backend component. Flagged for
   transparency, not because it currently blocks anything.
 
+## Self-hostable model checkpoints
+
+A `models:` section in `license-audit.yaml` audits open-weight model
+checkpoints a deployer can choose to run behind
+`synthesis/llm_client.py`'s `OpenAICompatibleClient` (issue #122) — not a
+pip/npm dependency, so not covered by the automated
+pyproject.toml/package.json cross-check below, but audited by hand the
+same way the `infrastructure:` section's Docker images are, for the same
+transparency reason. **`biomistral-7b`** (Apache-2.0, fully permissive) is
+the first entry — see
+[`docs/deployment/biomistral-deployment.md`](biomistral-deployment.md)
+for the deployment recipe and, critically, the model publisher's own
+advisory against clinical production use without further testing, which
+a permissive *license* does not override.
+
 ## Method
 
 Direct dependencies only (what's declared in `pyproject.toml` and

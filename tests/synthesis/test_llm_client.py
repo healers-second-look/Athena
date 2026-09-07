@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import sys
 
 import httpx
@@ -107,6 +108,192 @@ class TestOpenAICompatibleConstruction:
         monkeypatch.delenv("ATHENA_LLM_BASE_URL", raising=False)
         with pytest.raises(Exception, match="ATHENA_LLM_"):
             OpenAICompatibleClient()
+
+
+def _mock_transport(
+    *, status_code: int = 200, json_body: dict | None = None, capture: dict | None = None
+):
+    """A fake HTTP server. `capture`, if given, records what the client
+    actually sent -- the request method, URL, headers, and parsed JSON
+    body -- so a test can assert on the real wire traffic, not just the
+    parsed return value.
+    """
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if capture is not None:
+            capture["method"] = request.method
+            capture["url"] = str(request.url)
+            capture["headers"] = {k.lower(): v for k, v in request.headers.items()}
+            capture["json"] = json.loads(request.content)
+        return httpx.Response(status_code, json=json_body)
+
+    return httpx.MockTransport(handler)
+
+
+def _openai_chat_completion(content: str, *, model: str = "BioMistral-7B") -> dict:
+    """The real response shape vLLM, Ollama, and text-generation-inference
+    all emit when serving an OpenAI-compatible `/chat/completions`
+    endpoint -- this is the standard OpenAI wire format those servers
+    implement, not something specific to any one of them. A self-hosted
+    BioMistral-7B deployment behind any of these three servers would
+    return exactly this shape.
+    """
+    return {
+        "id": "chatcmpl-test",
+        "object": "chat.completion",
+        "created": 1234567890,
+        "model": model,
+        "choices": [
+            {
+                "index": 0,
+                "message": {"role": "assistant", "content": content},
+                "finish_reason": "stop",
+            }
+        ],
+        "usage": {"prompt_tokens": 42, "completion_tokens": 17, "total_tokens": 59},
+    }
+
+
+class TestOpenAICompatibleCompleteAgainstAVllmShapedServer:
+    """Realistic mocked round-trip against the actual OpenAI-compatible
+    wire format a self-hosted BioMistral-7B deployment (behind vLLM,
+    Ollama, or TGI) would speak. This is issue #122's "confirm
+    OpenAICompatibleClient works unmodified" deliverable, verified as far
+    as an offline suite can: it proves the client sends a correctly
+    shaped request and correctly parses a correctly shaped response. It
+    does **not** prove a real, running BioMistral-7B server behaves this
+    way in practice -- see `docs/deployment/biomistral-deployment.md`'s
+    "What this does not verify" section for that gap, stated plainly
+    rather than implied away by these tests passing.
+    """
+
+    def test_complete_returns_the_message_content(self):
+        transport = _mock_transport(
+            json_body=_openai_chat_completion(
+                "EGFR T790M confers osimertinib sensitivity [ref:civic_12]."
+            )
+        )
+        client = OpenAICompatibleClient(
+            base_url="http://localhost:8000/v1",
+            model="BioMistral-7B",
+            client=httpx.Client(transport=transport),
+        )
+        result = client.complete("What evidence exists for EGFR T790M?")
+        assert result == "EGFR T790M confers osimertinib sensitivity [ref:civic_12]."
+
+    def test_request_hits_the_chat_completions_endpoint(self):
+        capture: dict = {}
+        transport = _mock_transport(json_body=_openai_chat_completion("ok"), capture=capture)
+        client = OpenAICompatibleClient(
+            base_url="http://localhost:8000/v1",
+            model="BioMistral-7B",
+            client=httpx.Client(transport=transport),
+        )
+        client.complete("question")
+        assert capture["url"] == "http://localhost:8000/v1/chat/completions"
+        assert capture["method"] == "POST"
+
+    def test_trailing_slash_on_base_url_does_not_double_up(self):
+        capture: dict = {}
+        transport = _mock_transport(json_body=_openai_chat_completion("ok"), capture=capture)
+        client = OpenAICompatibleClient(
+            base_url="http://localhost:8000/v1/",
+            model="BioMistral-7B",
+            client=httpx.Client(transport=transport),
+        )
+        client.complete("question")
+        assert capture["url"] == "http://localhost:8000/v1/chat/completions"
+
+    def test_request_body_matches_the_openai_chat_format_with_system_prompt(self):
+        capture: dict = {}
+        transport = _mock_transport(json_body=_openai_chat_completion("ok"), capture=capture)
+        client = OpenAICompatibleClient(
+            base_url="http://localhost:8000/v1",
+            model="BioMistral-7B",
+            client=httpx.Client(transport=transport),
+        )
+        client.complete("What evidence exists for EGFR T790M?", system="Cite only retrieved items.")
+        assert capture["json"]["model"] == "BioMistral-7B"
+        assert capture["json"]["messages"] == [
+            {"role": "system", "content": "Cite only retrieved items."},
+            {"role": "user", "content": "What evidence exists for EGFR T790M?"},
+        ]
+
+    def test_no_system_prompt_omits_the_system_message(self):
+        capture: dict = {}
+        transport = _mock_transport(json_body=_openai_chat_completion("ok"), capture=capture)
+        client = OpenAICompatibleClient(
+            base_url="http://localhost:8000/v1",
+            model="BioMistral-7B",
+            client=httpx.Client(transport=transport),
+        )
+        client.complete("question, no system prompt")
+        assert capture["json"]["messages"] == [
+            {"role": "user", "content": "question, no system prompt"}
+        ]
+
+    def test_api_key_becomes_a_bearer_header_when_provided(self):
+        capture: dict = {}
+        transport = _mock_transport(json_body=_openai_chat_completion("ok"), capture=capture)
+        client = OpenAICompatibleClient(
+            base_url="http://localhost:8000/v1",
+            model="BioMistral-7B",
+            api_key="sk-test-123",
+            client=httpx.Client(transport=transport),
+        )
+        client.complete("question")
+        assert capture["headers"]["authorization"] == "Bearer sk-test-123"
+
+    def test_no_api_key_sends_no_authorization_header(self):
+        """The common case for a self-hosted model on an internal
+        network: a local vLLM/Ollama deployment with no auth configured.
+        """
+        capture: dict = {}
+        transport = _mock_transport(json_body=_openai_chat_completion("ok"), capture=capture)
+        client = OpenAICompatibleClient(
+            base_url="http://localhost:8000/v1",
+            model="BioMistral-7B",
+            client=httpx.Client(transport=transport),
+        )
+        client.complete("question")
+        assert "authorization" not in capture["headers"]
+
+    def test_non_2xx_status_raises_llm_client_error(self, monkeypatch):
+        """500 is one of the statuses with_retry() treats as transient (see
+        TestOpenAICompatibleRetry below), so this exercises the full retry
+        budget before the wrapped error surfaces -- sleep is stubbed out so
+        the test doesn't pay the real backoff delay."""
+        monkeypatch.setattr("secondlook.http_retry.time.sleep", lambda _s: None)
+        transport = _mock_transport(status_code=500, json_body={"error": "internal error"})
+        client = OpenAICompatibleClient(
+            base_url="http://localhost:8000/v1",
+            model="BioMistral-7B",
+            client=httpx.Client(transport=transport),
+        )
+        with pytest.raises(LLMClientError):
+            client.complete("question")
+
+    def test_malformed_json_response_raises_llm_client_error(self):
+        def handler(request: httpx.Request) -> httpx.Response:  # noqa: ARG001
+            return httpx.Response(200, content=b"not json at all")
+
+        client = OpenAICompatibleClient(
+            base_url="http://localhost:8000/v1",
+            model="BioMistral-7B",
+            client=httpx.Client(transport=httpx.MockTransport(handler)),
+        )
+        with pytest.raises(LLMClientError):
+            client.complete("question")
+
+    def test_response_missing_choices_raises_llm_client_error(self):
+        transport = _mock_transport(json_body={"id": "x", "object": "chat.completion"})
+        client = OpenAICompatibleClient(
+            base_url="http://localhost:8000/v1",
+            model="BioMistral-7B",
+            client=httpx.Client(transport=transport),
+        )
+        with pytest.raises(LLMClientError):
+            client.complete("question")
 
 
 class TestOpenAICompatibleRetry:
