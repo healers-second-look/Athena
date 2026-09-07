@@ -141,14 +141,34 @@ class LaneCoverage:
     citation_density: float
     contradiction_count: int
     anchored_entity_count: int
+    graph_id: str | None = None
+    role_provenance: str | None = None
+    anchor_density: float = 0.0
+    is_degraded: bool = False
+
+    def __post_init__(self) -> None:
+        if self.role_provenance is None:
+            self.role_provenance = self.role_id
+        if self.graph_id is None:
+            self.graph_id = f"{self.role_id}_kg"
+        if not self.is_degraded:
+            self.is_degraded = self.node_count == 0 or self.citation_density < 0.3
+        if self.anchor_density == 0.0 and self.node_count > 0:
+            self.anchor_density = round(self.anchored_entity_count / self.node_count, 3)
 
 
 class RoleKnowledgeGraph:
     """An isolated graph namespace owned exclusively by a single board seat."""
 
-    def __init__(self, role_id: str, snapshot_id: str = "snapshot-v1") -> None:
+    def __init__(
+        self,
+        role_id: str,
+        snapshot_id: str = "snapshot-v1",
+        graph_id: str | None = None,
+    ) -> None:
         self.role_id = role_id
         self.snapshot_id = snapshot_id
+        self.graph_id = graph_id or f"{role_id}_kg"
         self._nodes: dict[str, GraphNode] = {}
         self._edges: list[GraphEdge] = []
         self._anchor_index: dict[str, list[str]] = {}
@@ -200,6 +220,10 @@ class RoleKnowledgeGraph:
                 citation_density=0.0,
                 contradiction_count=0,
                 anchored_entity_count=0,
+                graph_id=self.graph_id,
+                role_provenance=self.role_id,
+                anchor_density=0.0,
+                is_degraded=True,
             )
 
         documented_count = sum(
@@ -209,6 +233,7 @@ class RoleKnowledgeGraph:
         )
         density = documented_count / total
         contradictions = sum(1 for e in self._edges if e.relation.upper() == "CONTRADICTS")
+        is_deg = total == 0 or density < 0.3
 
         return LaneCoverage(
             role_id=self.role_id,
@@ -218,6 +243,10 @@ class RoleKnowledgeGraph:
             citation_density=round(density, 3),
             contradiction_count=contradictions,
             anchored_entity_count=len(self._anchor_index),
+            graph_id=self.graph_id,
+            role_provenance=self.role_id,
+            anchor_density=round(len(self._anchor_index) / total, 3),
+            is_degraded=is_deg,
         )
 
 
@@ -226,16 +255,24 @@ class GraphFabric:
 
     def __init__(self) -> None:
         self._graphs: dict[str, RoleKnowledgeGraph] = {}
+        self._graphs_by_id: dict[str, RoleKnowledgeGraph] = {}
 
     def register_graph(self, graph: RoleKnowledgeGraph) -> None:
         if graph.role_id in self._graphs:
             raise ValueError(f"Graph for role '{graph.role_id}' already registered")
         self._graphs[graph.role_id] = graph
+        if hasattr(graph, "graph_id") and graph.graph_id:
+            self._graphs_by_id[graph.graph_id] = graph
 
-    def get_graph(self, role_id: str) -> RoleKnowledgeGraph:
-        if role_id not in self._graphs:
-            raise KeyError(f"No graph registered for role '{role_id}'")
-        return self._graphs[role_id]
+    def get_graph(self, identifier: str) -> RoleKnowledgeGraph:
+        if identifier in self._graphs:
+            return self._graphs[identifier]
+        if identifier in self._graphs_by_id:
+            return self._graphs_by_id[identifier]
+        raise KeyError(f"No graph registered for '{identifier}'")
+
+    def compute_lane_coverage(self, identifier: str) -> LaneCoverage:
+        return self.get_graph(identifier).coverage()
 
     def all_roles(self) -> tuple[str, ...]:
         return tuple(self._graphs.keys())
