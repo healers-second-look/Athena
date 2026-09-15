@@ -59,8 +59,15 @@ class Handler(BaseHTTPRequestHandler):
         self._send(status, page("Not found — Athena", f"<h1>{_e(status)}</h1><p>{_e(message)}</p>"))
 
     def do_GET(self) -> None:  # noqa: N802 -- BaseHTTPRequestHandler's own casing
-        data = load_all()
-        brief = _BRIEF.match(self.path)
+        # Split the query off before matching: the patterns below are anchored,
+        # so any query string would otherwise fall through to the 404.
+        path, _, query = self.path.partition("?")
+        # `?degraded=1` serves the same views against a fixture set where the
+        # trials lane timed out, so the labelling added for #88 can be opened
+        # and printed rather than only asserted in tests.
+        degraded = "degraded=1" in query
+        data = load_all(degraded=degraded)
+        brief = _BRIEF.match(path)
         if brief:
             case = data["case"]
             if brief.group(1) != case["id"]:
@@ -69,7 +76,7 @@ class Handler(BaseHTTPRequestHandler):
             self._send(200, render_brief(case, data["changes"], data["queue"], data["findings"]))
             return
 
-        finding = _FINDING.match(self.path)
+        finding = _FINDING.match(path)
         if finding:
             record = data["findings"].get(finding.group(1))
             if record is None:
@@ -81,6 +88,7 @@ class Handler(BaseHTTPRequestHandler):
         self._error(
             404,
             "Server-rendered routes are /cases/<id>/brief and /findings/<id>. "
+            "Add ?degraded=1 to either for the failed-lane fixture set. "
             "The dashboard and queue are client routes; run the Vite dev server "
             "for those.",
         )
@@ -103,6 +111,10 @@ def main(argv: list[str] | None = None) -> int:
     case_id = data["case"]["id"]
     server = ThreadingHTTPServer((args.host, args.port), Handler)
     print(f"[subsystem-m] http://{args.host}:{args.port}/cases/{case_id}/brief")
+    print(
+        f"[subsystem-m] http://{args.host}:{args.port}/cases/{case_id}/brief?degraded=1"
+        "  (trials lane timed out)"
+    )
     for finding_id in sorted(data["findings"]):
         print(f"[subsystem-m] http://{args.host}:{args.port}/findings/{finding_id}")
     try:

@@ -2,6 +2,8 @@ import { Link, useParams } from 'react-router-dom'
 import useAsync from '../api/useAsync.js'
 import { getQueue } from '../api/client.js'
 import { Failure } from './CaseDashboard.jsx'
+import DegradeNotice from '../components/DegradeNotice.jsx'
+import EmptyState from '../components/EmptyState.jsx'
 
 // §9 — Research Queue. Open questions by priority, and "N suppressed as
 // already answered" as a VISIBLE count.
@@ -19,7 +21,11 @@ export default function ResearchQueue() {
   if (queue.loading) return <p className="muted">Loading queue…</p>
   if (queue.error) return <Failure what="research queue" error={queue.error} />
 
-  const { counts = {}, open = [], suppressed = [] } = queue.data
+  const { counts = {}, open = [], suppressed = [], failures = [] } = queue.data
+  // Which lanes could not be reached this run. A question in one of them has
+  // no findings for a different reason than a question we actually answered,
+  // and the two must not render the same way.
+  const degradedLanes = new Map(failures.filter((f) => f.lane).map((f) => [f.lane, f]))
   const byPriority = [...open].sort((a, b) => b.priority - a.priority || a.id.localeCompare(b.id))
 
   return (
@@ -31,9 +37,20 @@ export default function ResearchQueue() {
         {counts.suppressed ?? suppressed.length} suppressed
       </p>
 
+      {failures.length ? (
+        <>
+          <h2>Coverage</h2>
+          {/* Rendered before the questions, not after: a reader who stops
+              scrolling must still know the run was incomplete. */}
+          {failures.map((f, i) => (
+            <DegradeNotice key={`${f.lane}-${i}`} failure={f} />
+          ))}
+        </>
+      ) : null}
+
       <h2>Open questions</h2>
       {byPriority.length === 0 ? (
-        <p className="muted">No open questions. Every question raised by the last change set has been answered.</p>
+        <EmptyState reason="No open questions. Every question raised by the last change set has been answered." />
       ) : (
         byPriority.map((q) => (
           <div className="q" key={q.id}>
@@ -51,8 +68,13 @@ export default function ResearchQueue() {
                   </span>
                 ))}
               </div>
+            ) : degradedLanes.has(q.lane) ? (
+              // Not "no findings" -- we never got to look. Saying the former
+              // here would report a failed lookup as a searched-and-empty
+              // result, which is the defect #88 exists to remove.
+              <DegradeNotice failure={degradedLanes.get(q.lane)} />
             ) : (
-              <div className="small muted">No findings recorded against this question yet.</div>
+              <EmptyState reason="No findings recorded against this question yet. The lanes it dispatches to were reached and returned nothing." />
             )}
           </div>
         ))
