@@ -242,3 +242,25 @@ infrastructure:
       because it currently blocks anything: Athena's own license claims
       are about Athena's own code, not about every infrastructure
       component it happens to run alongside.
+
+# Open-weight model checkpoints a deployer can choose to self-host behind
+# synthesis/llm_client.py's OpenAICompatibleClient (issue #122). Not a
+# pip/npm dependency and not shipped by default -- audited here for the
+# same transparency reason the infrastructure section above exists: it's
+# part of what a real deployment actually runs if a deployer opts in.
+models:
+  biomistral-7b:
+    license: Apache-2.0
+    source: https://huggingface.co/BioMistral/BioMistral-7B
+    checked_via: Hugging Face model card
+    checked_on: "2026-09-07"
+    note: >
+      Fully permissive license -- no legal restriction on clinical
+      deployment. The model card nonetheless carries the publisher's own
+      explicit advisory against production clinical/medical use without
+      further alignment and testing; see
+      docs/deployment/biomistral-deployment.md for that advisory in full
+      and for what issue #124's citation-integrity eval is meant to
+      establish before this backend is trusted with real output. Base
+      model Mistral-7B-Instruct-v0.1 (Apache-2.0), further pre-trained on
+      PubMed Central Open Access text.
