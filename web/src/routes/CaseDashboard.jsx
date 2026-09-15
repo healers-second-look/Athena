@@ -33,6 +33,8 @@ export default function CaseDashboard() {
         {' · '}
         <Link to={`/cases/${id}/timeline`}>Patient timeline</Link>
         {' · '}
+        <Link to="/chat">Research chat</Link>
+        {' · '}
         {/* A normal link, not a client route: the brief is server-rendered
             and print-ready, and routing it through the SPA would replace a
             5 KB no-JS page with the whole bundle. */}

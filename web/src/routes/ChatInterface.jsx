@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
+import { DEMO_CASE_ID } from '../api/client.js'
 import {
   createSession,
   getAttachments,
@@ -383,6 +384,14 @@ export default function ChatInterface() {
             )}
           </div>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <Link
+              to={`/cases/${DEMO_CASE_ID}`}
+              className="btn-view-graph"
+              style={{ width: 'auto', margin: 0, padding: '4px 10px', textDecoration: 'none', color: 'inherit' }}
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: 14 }}>arrow_back</span>
+              Case Review
+            </Link>
             <button
               className="btn-view-graph"
               style={{ width: 'auto', margin: 0, padding: '4px 10px' }}
