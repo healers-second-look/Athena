@@ -1,0 +1,52 @@
+# HR+/HER2- Early and Advanced Breast Cancer Clinical Guidelines.
+#
+# Curated clinical practice recommendations based on ESMO Clinical Practice
+# Guidelines (2024) and ASCO Guideline on Adjuvant Endocrine Therapy and
+# Targeted Agents for HR-Positive, HER2-Negative Breast Cancer.
+#
+# review_status: unreviewed
+# Real clinical recommendations transcribed from primary professional society
+# guidelines. Valid for default loader runs (allow_synthetic=False).
+config_version: "2026-09-07.1"
+cancer_type: "HR_POS_HER2_NEG_BREAST"
+review_status: unreviewed
+
+recommendations:
+  - regimen: "tamoxifen"
+    line: 1
+    applicable_stages: ["I", "II", "III"]
+    instrument: "ESMO Clinical Practice Guideline: Early Breast Cancer (2024)"
+    source_url: "https://www.annalsofoncology.org/article/S0923-7534(23)05079-0/fulltext"
+
+  - regimen: "anastrozole"
+    line: 1
+    applicable_stages: ["I", "II", "III"]
+    instrument: "ESMO Clinical Practice Guideline: Early Breast Cancer (2024)"
+    source_url: "https://www.annalsofoncology.org/article/S0923-7534(23)05079-0/fulltext"
+
+  - regimen: "letrozole"
+    line: 1
+    applicable_stages: ["I", "II", "III"]
+    instrument: "ESMO Clinical Practice Guideline: Early Breast Cancer (2024)"
+    source_url: "https://www.annalsofoncology.org/article/S0923-7534(23)05079-0/fulltext"
+
+  - regimen: "abemaciclib + endocrine therapy"
+    line: 1
+    applicable_stages: ["II", "III"]
+    instrument: "ASCO Guideline: Adjuvant Endocrine Therapy and Targeted Therapy for HR-Positive, HER2-Negative Breast Cancer"
+    source_url: "https://ascopubs.org/doi/10.1200/JCO.23.00506"
+
+  - regimen: "ribociclib + fulvestrant"
+    line: 2
+    applicable_stages: ["III", "IV"]
+    instrument: "ESMO Clinical Practice Guideline: Advanced Breast Cancer (2022)"
+    source_url: "https://www.annalsofoncology.org/article/S0923-7534(21)04827-2/fulltext"
+
+  - regimen: "alpelisib + fulvestrant"
+    line: 2
+    molecular_requirement:
+      gene: "PIK3CA"
+      variant: "H1047R"
+    applicable_stages: ["III", "IV"]
+    instrument: "FDA Approval & ESMO Guidelines: Targeted Therapy for PIK3CA-Mutated Breast Cancer"
+    source_url: "https://www.fda.gov/drugs/resources-information-approved-drugs/fda-approves-alpelisib-metastatic-breast-cancer"
