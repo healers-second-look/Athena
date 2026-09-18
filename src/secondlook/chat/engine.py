@@ -11,14 +11,19 @@
 
 from __future__ import annotations
 
+import logging
 import re
 import time
 import uuid
+from collections.abc import Callable
 from dataclasses import asdict, dataclass, field
 
+from secondlook.chat.case_context import CaseSnapshot, describe_case
 from secondlook.chat.knowledge import describe_context, retrieve_evidence_for_turn
 from secondlook.chat.models import CONTEXT_MARKER, DEFAULT_MODEL_ID, SOURCE_MARKER, build_client
 from secondlook.chat.plugins import Turn, apply_attachments
+
+logger = logging.getLogger(__name__)
 
 DEFAULT_SYSTEM = (
     "You are Athena, a clinical evidence synthesis assistant. You ground "
@@ -120,6 +125,8 @@ def run_turn(
     model_id: str = DEFAULT_MODEL_ID,
     attachment_ids: list[str] | None = None,
     context_id: str | None = None,
+    case_id: str | None = None,
+    case_state_loader: Callable[[str], CaseSnapshot | None] | None = None,
     system: str | None = None,
 ) -> TurnResult:
     """Execute one chat turn end-to-end (Phases 1-6)."""
@@ -136,6 +143,10 @@ def run_turn(
     if context_id:
         kg_lines = describe_context(context_id)
         turn.context_lines.extend(kg_lines)
+
+    # Patient case facts -- CONTEXT, never sources (issue #107).
+    if case_id:
+        _attach_case_context(turn, case_id, case_state_loader)
 
     # Phase 6: Live FalkorDB evidence retrieval
     retrieved_sources = retrieve_evidence_for_turn(
@@ -194,6 +205,30 @@ def run_turn(
         sources=turn.sources,
         sources_count=len(turn.sources),
     )
+
+
+_CASE_LOAD_NOTE = "case record could not be loaded"
+
+
+def _attach_case_context(
+    turn: Turn,
+    case_id: str,
+    case_state_loader: Callable[[str], CaseSnapshot | None] | None,
+) -> None:
+    """Fold current case state into `turn.context_lines`, or note the miss.
+
+    Mirrors `GraphUnavailable` handling in `chat/knowledge.py`: a missing
+    or unreachable case must not raise out of `run_turn`.
+    """
+    try:
+        snapshot = case_state_loader(case_id) if case_state_loader is not None else None
+        if snapshot is None:
+            turn.notes.append(_CASE_LOAD_NOTE)
+            return
+        turn.context_lines.extend(describe_case(snapshot))
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("case %s unavailable: %s", case_id, exc)
+        turn.notes.append(f"{_CASE_LOAD_NOTE}: {exc}")
 
 
 __all__ = ["DEFAULT_SYSTEM", "TurnResult", "build_prompt", "citation_overclaim", "run_turn"]

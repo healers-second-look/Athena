@@ -16,9 +16,15 @@ Endpoints:
 
 from __future__ import annotations
 
+import uuid
+
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
+from sqlalchemy.exc import SQLAlchemyError
 
+from secondlook.api.deps import get_session as get_db_session
+from secondlook.case.store import CaseStore
+from secondlook.chat.case_context import CaseSnapshot, CaseUnavailable, Diagnosis
 from secondlook.chat.engine import run_turn
 from secondlook.chat.knowledge import GraphUnavailable, fetch_subgraph, list_contexts
 from secondlook.chat.models import list_models
@@ -41,12 +47,14 @@ class CreateSessionRequest(BaseModel):
     model_id: str | None = None
     attachment_ids: list[str] | None = None
     context_id: str | None = None
+    case_id: str | None = None
 
 
 class UpdateSessionRequest(BaseModel):
     model_id: str | None = None
     attachment_ids: list[str] | None = None
     context_id: str | None = None
+    case_id: str | None = None
 
 
 class TurnRequest(BaseModel):
@@ -66,6 +74,8 @@ def create_session_endpoint(req: CreateSessionRequest | None = None):
             kwargs["attachment_ids"] = req.attachment_ids
         if req.context_id is not None:
             kwargs["context_id"] = req.context_id
+        if req.case_id is not None:
+            kwargs["case_id"] = req.case_id
     session = create_session(**kwargs)
     return session.as_dict()
 
@@ -117,6 +127,8 @@ def send_turn(session_id: str, req: TurnRequest):
         model_id=session.model_id,
         attachment_ids=session.attachment_ids,
         context_id=session.context_id,
+        case_id=session.case_id,
+        case_state_loader=_load_case_state if session.case_id else None,
     )
 
     # Record assistant message with metadata and retrieved sources
@@ -136,6 +148,42 @@ def send_turn(session_id: str, req: TurnRequest):
         "assistant_message": assistant_msg,
         "turn": result.as_dict(),
     }
+
+
+def _load_case_state(case_id: str) -> CaseSnapshot | None:
+    """Resolve `case_id` through CaseStore -- the same seam as `get_store`.
+
+    Called only when a session actually carries a case_id, so existing
+    chat paths never open Postgres. Returns None for a missing or malformed
+    id -- a case that genuinely is not there. Anything else (Postgres down,
+    a bad fold) raises `CaseUnavailable` at this call site rather than
+    surfacing as a bare exception, per `ARCHITECTURE.md` SS8.2; `run_turn`
+    turns that into a visible note.
+    """
+    try:
+        cid = uuid.UUID(case_id)
+    except ValueError:
+        return None
+    db_iter = get_db_session()
+    try:
+        db = next(db_iter)
+        store = CaseStore(db)
+        case = store.get_case(cid)
+        if case is None:
+            return None
+        return CaseSnapshot(
+            state=store.derive_state(cid),
+            diagnosis=Diagnosis(
+                cancer_type=case.cancer_type,
+                primary_site=case.primary_site,
+                histology=case.histology,
+                stage=getattr(case, "stage", None),
+            ),
+        )
+    except SQLAlchemyError as exc:
+        raise CaseUnavailable(f"case store unreachable: {exc}") from exc
+    finally:
+        db_iter.close()
 
 
 # --- Catalog endpoints ---
