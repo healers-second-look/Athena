@@ -197,24 +197,39 @@ Point `.env` at the running BioMistral endpoint (as above), then:
 # stated dependency on #121.
 python validation/llm_eval_run.py --subsystem synthesis --cases breast_cancer
 
+# Citation-gate accepted-sentence rate (pre-committed threshold in
+# harness/adapters/citation_acceptance.py). Same EvalResult shape as
+# every other subsystem; lands in validation/llm_eval_results.md.
+python validation/llm_eval_run.py --subsystem citation_acceptance
+
 # Also run the existing general eval set for broader regression coverage,
 # and the grounded-vs-ungrounded comparison (Ferber 2025's pattern,
 # already used elsewhere in this harness) to check retrieval is actually
 # changing this specific model's behavior, not just decorating it:
 python validation/llm_eval_run.py --subsystem synthesis --cases both --grounded-comparison
+
+# Live pytest path (deselected by default; CI stays mock-only).
+# Skips with an explanatory reason when ATHENA_LLM_ENABLED is off or
+# ATHENA_LLM_BASE_URL / ATHENA_LLM_MODEL are unset. Requires:
+#   ATHENA_LLM_ENABLED=true
+#   ATHENA_LLM_PROVIDER=openai_compatible
+#   ATHENA_LLM_BASE_URL=http://localhost:8000/v1   # or 8001/v1 for the Docker recipe
+#   ATHENA_LLM_MODEL=<the name the server exposes -- never hardcoded in Python>
+pytest -m integration tests/harness/test_live_llm_eval.py
 ```
 
 Results land in `validation/llm_eval_results.md`, labeled by which eval
 set produced them (`synthesis.generate` vs. `synthesis.generate
-(breast_cancer eval set)`) so the report stays self-documenting about
-what was actually evaluated — see `validation/llm_eval_run.py`'s
-`_CASE_SETS` mapping.
+(breast_cancer eval set)` vs. `synthesis.citation_acceptance`) so the
+report stays self-documenting about what was actually evaluated — see
+`validation/llm_eval_run.py`'s `_CASE_SETS` mapping.
 
 **Do not treat a PASS here as clinical validation.** This harness checks
 citation-grounding discipline (does the model cite what it was actually
-given, does it avoid asserting a treatment recommendation) against a
-small, hand-labeled held-out set — it is not, and does not claim to be,
-a comprehensive clinical-accuracy evaluation. That distinction matters
+given, does it avoid asserting a treatment recommendation, what fraction
+of generated sentences survive `citation_gate.py`) against a small,
+hand-labeled held-out set — it is not, and does not claim to be, a
+comprehensive clinical-accuracy evaluation. That distinction matters
 doubly for this specific model given its publisher's own disclaimer
 above.
 
@@ -240,12 +255,18 @@ Stated plainly, per this project's own standing discipline
   published documentation (2026-09-07), not observed directly.
 - **The hardware-sizing table above is vendor-typical, not measured**, as
   stated in that section.
-- **The harness has not actually been run against this backend.** The
-  `--cases breast_cancer` flag and the breast-cancer eval set
-  (`tests/harness/eval_sets/synthesis_breast_cancer.py`) are built,
-  tested offline against a mocked client, and ready to run — but no one
-  has run them against real BioMistral-7B output yet, so there is no
-  real pass/fail verdict to report for this backend today.
+- **The harness has not actually been run against this backend in the
+  environment that last edited this document, unless
+  `validation/llm_eval_results.md` shows a dated live-model section.**
+  The `--cases breast_cancer` flag, the breast-cancer eval set
+  (`tests/harness/eval_sets/synthesis_breast_cancer.py`), the
+  `citation_acceptance` subsystem, and
+  `pytest -m integration tests/harness/test_live_llm_eval.py` are built
+  and ready to run — a missing live-model section in the results file
+  means no one has recorded a real pass/fail verdict for this backend
+  yet. Do not invent one. Run the commands in "Running the LLM
+  Decision-Quality & Safety Monitoring Harness" above against a real
+  endpoint, then replace this bullet with the dated numbers.
 - **The Ollama GGUF path names no specific quantization repo/tag**,
   deliberately — see that section for why.
 

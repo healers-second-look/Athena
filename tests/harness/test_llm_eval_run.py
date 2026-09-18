@@ -125,6 +125,72 @@ def test_cases_flag_is_ignored_for_non_synthesis_subsystems(tmp_path, monkeypatc
     assert code == 0
 
 
+def test_citation_acceptance_subsystem_runs_the_adapter(tmp_path, monkeypatch):
+    runner = _load_runner()
+    monkeypatch.setattr(runner, "RESULTS_PATH", tmp_path / "results.md")
+    called: list[str] = []
+
+    def fake_run_citation_acceptance():
+        called.append("ran")
+        return _fake_result(runner, "synthesis.citation_acceptance")
+
+    monkeypatch.setattr(runner, "run_citation_acceptance_eval", fake_run_citation_acceptance)
+    code = runner.main(["--subsystem", "citation_acceptance"])
+    assert code == 0
+    assert called == ["ran"]
+    report = (tmp_path / "results.md").read_text()
+    assert "synthesis.citation_acceptance" in report
+
+
+def test_all_includes_citation_acceptance(tmp_path, monkeypatch):
+    runner = _load_runner()
+    monkeypatch.setattr(runner, "RESULTS_PATH", tmp_path / "results.md")
+    called: list[str] = []
+
+    monkeypatch.setattr(
+        runner,
+        "run_synthesis_eval",
+        lambda cases_key="general": _fake_result(runner, "synthesis"),
+    )
+    monkeypatch.setattr(
+        runner,
+        "run_criteria_extraction",
+        lambda: _fake_result(runner, "criteria_extraction"),
+    )
+    monkeypatch.setattr(
+        runner,
+        "run_intake_eval",
+        lambda: _fake_result(runner, "intake"),
+    )
+
+    def fake_run_citation_acceptance():
+        called.append("ran")
+        return _fake_result(runner, "synthesis.citation_acceptance")
+
+    monkeypatch.setattr(runner, "run_citation_acceptance_eval", fake_run_citation_acceptance)
+    code = runner.main(["--subsystem", "all"])
+    assert code == 0
+    assert called == ["ran"]
+
+
+def test_grounded_comparison_with_citation_acceptance_exits_with_clear_error(capsys, monkeypatch):
+    runner = _load_runner()
+    called: list[str] = []
+
+    def boom(*args, **kwargs):
+        called.append("ran")
+        raise AssertionError("must not run citation acceptance when the flag is invalid")
+
+    monkeypatch.setattr(runner, "run_citation_acceptance_eval", boom)
+    code = runner.main(["--subsystem", "citation_acceptance", "--grounded-comparison"])
+    captured = capsys.readouterr()
+    combined = (captured.err + captured.out).lower()
+    assert code != 0
+    assert called == []
+    assert "grounded-comparison" in combined or "ungrounded" in combined
+    assert "citation_acceptance" in combined
+
+
 def test_breast_cancer_subsystem_label_is_distinguishable_in_the_report(monkeypatch):
     """validation/llm_eval_results.md must say which eval set a result
     came from -- an auditable report that doesn't say what it evaluated
