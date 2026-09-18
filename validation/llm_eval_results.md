@@ -9,14 +9,14 @@ intake extraction have no ungrounded variant by design.
 
 ## Run provenance
 
-- Run at: 2026-09-18T05:18:30+00:00
+- Run at: 2026-09-18T06:14:17+00:00
 - Provider: `openai_compatible`
-- Model (`ATHENA_LLM_MODEL`): `qwen2.5:7b`
+- Model (`ATHENA_LLM_MODEL`): `cniongolo/biomistral:latest`
 - Endpoint: `http://127.0.0.1:11434/v1`
 
 ## synthesis.generate (breast_cancer eval set) (`synthesis/v1`)
 
-- **Pass rate:** 100% — threshold 70% (pre-committed)
+- **Pass rate:** 0% — threshold 70% (pre-committed)
 - **Safety violations:** none
-- **Verdict:** PASS
+- **Verdict:** FAIL
 
