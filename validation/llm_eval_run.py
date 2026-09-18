@@ -30,7 +30,9 @@ Exit status is 0 only when every `EvalResult.verdict` is PASS (and, with
 from __future__ import annotations
 
 import argparse
+import os
 import sys
+from datetime import UTC, datetime
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -143,6 +145,28 @@ def run_citation_acceptance_eval() -> EvalResult:
     return evaluate_citation_acceptance(llm_client=client)
 
 
+def _run_provenance() -> tuple[str, ...]:
+    """What actually answered, so a recorded rate can be reproduced.
+
+    Reads the same env vars `get_llm_client()` does. The endpoint URL is
+    recorded but the API key never is.
+    """
+    enabled = os.environ.get("ATHENA_LLM_ENABLED", "").strip().lower() in {"1", "true", "yes"}
+    if not enabled:
+        return (
+            f"Run at: {datetime.now(UTC).isoformat(timespec='seconds')}",
+            "Backend: **none — offline mock/template path** "
+            "(ATHENA_LLM_ENABLED is not set). These rates do not describe "
+            "any served model.",
+        )
+    return (
+        f"Run at: {datetime.now(UTC).isoformat(timespec='seconds')}",
+        f"Provider: `{os.environ.get('ATHENA_LLM_PROVIDER') or 'anthropic'}`",
+        f"Model (`ATHENA_LLM_MODEL`): `{os.environ.get('ATHENA_LLM_MODEL') or 'unset'}`",
+        f"Endpoint: `{os.environ.get('ATHENA_LLM_BASE_URL') or 'provider default'}`",
+    )
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -213,7 +237,13 @@ def main(argv: list[str] | None = None) -> int:
         return 2
 
     RESULTS_PATH.parent.mkdir(parents=True, exist_ok=True)
-    RESULTS_PATH.write_text(render_markdown(results, comparisons=tuple(comparisons)))
+    RESULTS_PATH.write_text(
+        render_markdown(
+            results,
+            comparisons=tuple(comparisons),
+            provenance=_run_provenance(),
+        )
+    )
     print(f"Wrote {RESULTS_PATH}")
     for result in results:
         print(f"{result.subsystem}: {result.verdict} ({result.pass_rate:.0%})")
