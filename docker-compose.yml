@@ -101,6 +101,8 @@ services:
       ATHENA_LLM_BASE_URL: ${ATHENA_LLM_BASE_URL:-}
       ATHENA_LLM_API_KEY: ${ATHENA_LLM_API_KEY:-}
       ATHENA_CORS_ORIGINS: ${ATHENA_CORS_ORIGINS:-http://localhost:8080}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     ports:
       - "8000:8000"
     depends_on:

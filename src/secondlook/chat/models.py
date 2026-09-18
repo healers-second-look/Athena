@@ -222,7 +222,7 @@ def list_models() -> list[ModelSpec]:
         ),
         ModelSpec(
             id="anthropic",
-            label=f"Anthropic ({os.environ.get('ATHENA_LLM_MODEL') or DEFAULT_ANTHROPIC_MODEL})",
+            label=f"Anthropic ({DEFAULT_ANTHROPIC_MODEL if not anthropic_ok else (os.environ.get('ATHENA_LLM_MODEL') or DEFAULT_ANTHROPIC_MODEL)})",
             provider="anthropic",
             description="Hosted Claude via the Anthropic API.",
             available=anthropic_ok,
@@ -243,6 +243,19 @@ def list_models() -> list[ModelSpec]:
 
 
 DEFAULT_MODEL_ID = "mock-outline"
+
+
+def default_model_id() -> str:
+    """Session default: the configured self-hosted model when reachable.
+
+    Falls back to the offline mock so an unconfigured deployment still
+    opens a working chat. Does not name any open-weight checkpoint —
+    that stays in ATHENA_LLM_MODEL.
+    """
+    spec = get_model_spec("openai-compatible")
+    if spec is not None and spec.available:
+        return spec.id
+    return DEFAULT_MODEL_ID
 
 
 def get_model_spec(model_id: str) -> ModelSpec | None:
@@ -273,6 +286,7 @@ def build_client(model_id: str) -> LLMClient:
 __all__ = [
     "CONTEXT_MARKER",
     "DEFAULT_MODEL_ID",
+    "default_model_id",
     "ModelSpec",
     "MockOutlineClient",
     "MockTerseClient",

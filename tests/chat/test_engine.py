@@ -11,6 +11,16 @@ from secondlook.chat.session import (
 )
 
 
+def test_create_session_defaults_to_self_hosted_when_configured(monkeypatch):
+    monkeypatch.setenv("ATHENA_LLM_BASE_URL", "http://127.0.0.1:11434/v1")
+    monkeypatch.setenv("ATHENA_LLM_MODEL", "candidate-model")
+    sess = create_session()
+    try:
+        assert sess.model_id == "openai-compatible"
+    finally:
+        delete_session(sess.id)
+
+
 def test_session_store_crud():
     sess = create_session(model_id="mock-terse", attachment_ids=["variant-normalizer"])
     assert sess.id is not None

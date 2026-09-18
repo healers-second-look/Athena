@@ -13,7 +13,7 @@ import time
 import uuid
 from dataclasses import dataclass, field
 
-from secondlook.chat.models import DEFAULT_MODEL_ID
+from secondlook.chat.models import DEFAULT_MODEL_ID, default_model_id
 
 
 @dataclass
@@ -56,6 +56,7 @@ _sessions: dict[str, Session] = {}
 
 def create_session(**kwargs) -> Session:
     session_id = str(uuid.uuid4())
+    kwargs.setdefault("model_id", default_model_id())
     session = Session(id=session_id, **kwargs)
     _sessions[session_id] = session
     return session
