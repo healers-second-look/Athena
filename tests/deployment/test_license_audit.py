@@ -100,7 +100,13 @@ def test_every_javascript_dependency_has_an_audited_license():
 def test_no_audited_license_is_denylisted():
     audit = _load_audit()
     offenders = []
-    for ecosystem in ("python", "javascript"):
+    # All four audited categories, not just python/javascript -- an
+    # infrastructure image or a self-hostable model checkpoint (issue
+    # #122's `models:` section) can carry a non-commercial or proprietary
+    # license just as easily as a pip/npm package can, and this check
+    # existing only for the two dependency-manager-tracked ecosystems was
+    # itself a gap worth closing while touching this file.
+    for ecosystem in ("python", "javascript", "infrastructure", "models"):
         for name, entry in audit[ecosystem].items():
             license_text = entry["license"]
             if any(p.search(license_text) for p in DENYLIST_PATTERNS):
@@ -121,7 +127,20 @@ def test_audit_file_has_no_stale_entries():
 
 def test_every_entry_has_required_fields():
     audit = _load_audit()
-    for ecosystem in ("python", "javascript", "infrastructure"):
+    for ecosystem in ("python", "javascript", "infrastructure", "models"):
         for name, entry in audit[ecosystem].items():
             for field in ("license", "checked_on"):
                 assert field in entry, f"{ecosystem}/{name} is missing required field {field!r}"
+
+
+# --- issue #122: self-hostable model checkpoints -----------------------
+
+
+def test_biomistral_7b_is_recorded_and_permissively_licensed():
+    """The specific check issue #122's "License check recorded (not just
+    assumed)" deliverable asks for."""
+    audit = _load_audit()
+    assert "biomistral-7b" in audit["models"]
+    entry = audit["models"]["biomistral-7b"]
+    assert entry["license"] == "Apache-2.0"
+    assert "huggingface.co/BioMistral" in entry["source"]

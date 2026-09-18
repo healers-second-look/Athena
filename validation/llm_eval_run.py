@@ -12,6 +12,14 @@ Usage::
     python validation/llm_eval_run.py --subsystem criteria_extraction
     python validation/llm_eval_run.py --subsystem intake
 
+    # issue #122: run against the MVP cancer type's vocabulary (issue #121)
+    # instead of (or alongside) the general NSCLC/melanoma/mastocytosis set --
+    # useful when validating a new backend (e.g. a self-hosted model) against
+    # the actual vocabulary the MVP demo will use, per that issue's own
+    # dependency note.
+    python validation/llm_eval_run.py --subsystem synthesis --cases breast_cancer
+    python validation/llm_eval_run.py --subsystem synthesis --cases both
+
 Output: `validation/llm_eval_results.md`
 
 Exit status is 0 only when every `EvalResult.verdict` is PASS (and, with
@@ -29,6 +37,9 @@ sys.path.insert(0, str(REPO_ROOT / "src"))
 sys.path.insert(0, str(REPO_ROOT / "tests"))
 
 from harness.eval_sets.synthesis import SYNTHESIS_EVAL_CASES  # noqa: E402
+from harness.eval_sets.synthesis_breast_cancer import (  # noqa: E402
+    SYNTHESIS_BREAST_CANCER_EVAL_CASES,
+)
 
 from secondlook.harness.adapters.criteria_extraction import (  # noqa: E402
     evaluate_existing_corpus,
@@ -60,16 +71,28 @@ def run_criteria_extraction() -> EvalResult:
     return evaluate_existing_corpus()
 
 
-def run_synthesis_eval() -> EvalResult:
+#: Maps the CLI's --cases value to (label, cases). label is folded into
+#: the reported subsystem name so validation/llm_eval_results.md stays
+#: self-documenting about which vocabulary a given run actually used --
+#: an auditable report that doesn't say what it evaluated is not
+#: auditable.
+_CASE_SETS: dict[str, tuple[str, list]] = {
+    "general": ("", SYNTHESIS_EVAL_CASES),
+    "breast_cancer": (" (breast_cancer eval set)", SYNTHESIS_BREAST_CANCER_EVAL_CASES),
+}
+
+
+def run_synthesis_eval(cases_key: str = "general") -> EvalResult:
     client = get_llm_client()
     if client is None:
         raise RuntimeError(
             "synthesis eval needs a configured LLM client "
             "(ATHENA_LLM_ENABLED is off, or provider config is missing)"
         )
+    label, cases = _CASE_SETS[cases_key]
     return run_eval_set(
-        SYNTHESIS_EVAL_CASES,
-        subsystem=SYNTHESIS_SUBSYSTEM,
+        cases,
+        subsystem=SYNTHESIS_SUBSYSTEM + label,
         prompt_template_id=SYNTHESIS_PROMPT_TEMPLATE_ID,
         completion_fn=grounded_completion_fn(llm_client=client),
         score_fn=score_synthesis,
@@ -77,16 +100,17 @@ def run_synthesis_eval() -> EvalResult:
     )
 
 
-def run_synthesis_comparison() -> GroundingComparison:
+def run_synthesis_comparison(cases_key: str = "general") -> GroundingComparison:
     client = get_llm_client()
     if client is None:
         raise RuntimeError(
             "synthesis grounding comparison needs a configured LLM client "
             "(ATHENA_LLM_ENABLED is off, or provider config is missing)"
         )
+    label, cases = _CASE_SETS[cases_key]
     return run_grounded_vs_ungrounded(
-        SYNTHESIS_EVAL_CASES,
-        subsystem=SYNTHESIS_SUBSYSTEM,
+        cases,
+        subsystem=SYNTHESIS_SUBSYSTEM + label,
         prompt_template_id=SYNTHESIS_PROMPT_TEMPLATE_ID,
         grounded_completion_fn=grounded_completion_fn(llm_client=client),
         ungrounded_completion_fn=ungrounded_completion_fn(llm_client=client),
@@ -117,6 +141,18 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="run synthesis with and without retrieval (synthesis only)",
     )
+    parser.add_argument(
+        "--cases",
+        choices=["general", "breast_cancer", "both"],
+        default="general",
+        help=(
+            "which eval-case set(s) to run for --subsystem synthesis "
+            "(synthesis only; ignored for other subsystems). 'general' is "
+            "the existing NSCLC/melanoma/mastocytosis set; 'breast_cancer' "
+            "is issue #121's MVP cancer type; 'both' runs each separately "
+            "and reports both."
+        ),
+    )
     args = parser.parse_args(argv)
 
     if args.grounded_comparison and args.subsystem in {"criteria_extraction", "intake"}:
@@ -128,17 +164,20 @@ def main(argv: list[str] | None = None) -> int:
         )
         return 2
 
+    cases_keys = ["general", "breast_cancer"] if args.cases == "both" else [args.cases]
+
     results: list[EvalResult] = []
     comparisons: list[GroundingComparison] = []
 
     try:
         if args.subsystem in {"synthesis", "all"}:
-            if args.grounded_comparison:
-                comparison = run_synthesis_comparison()
-                comparisons.append(comparison)
-                results.append(comparison.grounded)
-            else:
-                results.append(run_synthesis_eval())
+            for cases_key in cases_keys:
+                if args.grounded_comparison:
+                    comparison = run_synthesis_comparison(cases_key)
+                    comparisons.append(comparison)
+                    results.append(comparison.grounded)
+                else:
+                    results.append(run_synthesis_eval(cases_key))
         if args.subsystem in {"criteria_extraction", "all"}:
             results.append(run_criteria_extraction())
         if args.subsystem in {"intake", "all"}:

@@ -6,10 +6,12 @@
 - Live FalkorDB retrieval grounding (Phase 6)
 - Plugin transformations (Phase 3)
 - Model execution (Phase 2)
+- Citation-count enforcement on the model's own output (issue #124)
 """
 
 from __future__ import annotations
 
+import re
 import time
 import uuid
 from dataclasses import asdict, dataclass, field
@@ -24,6 +26,49 @@ DEFAULT_SYSTEM = (
     "like [1], [2]. Never fabricate citations. When no source exists for a "
     "claim, you state that explicitly."
 )
+
+# Issue #124: DEFAULT_SYSTEM above is only an instruction. Issue #107's fix
+# (SOURCE_MARKER/CONTEXT_MARKER, `models._split_prompt`) makes it
+# structurally impossible for the two mock clients to conflate context with
+# sources -- they just template the prompt back. A real generative model has
+# no such structural guarantee; it can still state a source count, or cite a
+# bracket index, that the turn never actually retrieved. `citation_overclaim`
+# below is the real backstop -- checked against `run_turn`'s output, not
+# trusted from the prompt. `synthesis/citation_gate.py` plays the same role
+# for the other pipeline, but its rule ("every sentence must carry a
+# resolvable [ref:id] marker or be dropped") assumes the model never writes a
+# legitimate uncited sentence -- chat's system prompt explicitly wants an
+# honest, uncited "no source exists for this" disclaimer, so a per-sentence
+# drop would shred that disclaimer along with any real fabrication. This
+# checks the claim itself instead: did the model ever state or cite more
+# sources than `turn.sources` actually holds. `harness/adapters/
+# chat_citation.py`'s eval harness imports this exact function, not a
+# lookalike copy, so the eval and the real enforcement can never drift apart.
+_BRACKET_INDEX = re.compile(r"\[(\d+)\]")
+_STATED_SOURCE_COUNT = re.compile(
+    r"\b(\d+)\s+(?:retrieved\s+|attached\s+)?sources?\b", re.IGNORECASE
+)
+
+
+def citation_overclaim(content: str, source_count: int) -> str | None:
+    """None if `content` never claims more sources than `source_count`,
+    else a human-readable description of the overclaim.
+
+    Two independent checks, either one enough to flag: a stated count
+    ("3 retrieved sources") higher than `source_count`, or a cited bracket
+    index (`[4]`) higher than `source_count`. A blunt regex check, not NLP
+    -- same posture `harness/adapters/synthesis.py`'s
+    SAFETY_LANGUAGE_PATTERNS documents for its own keyword check. It exists
+    to catch the known #107-class failure mode cheaply, not to parse
+    arbitrary prose perfectly.
+    """
+    stated = [int(n) for n in _STATED_SOURCE_COUNT.findall(content)]
+    if stated and max(stated) > source_count:
+        return f"stated {max(stated)} source(s) but only {source_count} were retrieved"
+    cited = [int(n) for n in _BRACKET_INDEX.findall(content)]
+    if cited and max(cited) > source_count:
+        return f"cited [{max(cited)}] but only {source_count} source(s) were retrieved"
+    return None
 
 
 @dataclass
@@ -122,6 +167,21 @@ def run_turn(
     client = build_client(model_id)
     content = client.complete(prompt, system=turn.system_prompt)
 
+    # Issue #124: the real enforcement backstop, not just DEFAULT_SYSTEM's
+    # instruction. A model that overclaims has its answer withheld -- never
+    # shown as if it were trustworthy -- and the violation is recorded,
+    # never silently dropped, mirroring citation_gate.py's own "count and
+    # return" rule for the other pipeline.
+    violation = citation_overclaim(content, len(turn.sources))
+    if violation:
+        turn.notes.append(f"citation gate withheld model output -- {violation}")
+        content = (
+            f"This model's answer overstated the retrieved evidence ({violation}) "
+            "and was withheld rather than shown. "
+            f"Only {len(turn.sources)} source(s) were actually retrieved for this "
+            "turn -- see the sources panel for what's real."
+        )
+
     return TurnResult(
         id=str(uuid.uuid4()),
         role="assistant",
@@ -136,4 +196,4 @@ def run_turn(
     )
 
 
-__all__ = ["DEFAULT_SYSTEM", "TurnResult", "build_prompt", "run_turn"]
+__all__ = ["DEFAULT_SYSTEM", "TurnResult", "build_prompt", "citation_overclaim", "run_turn"]

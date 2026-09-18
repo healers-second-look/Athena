@@ -1,6 +1,6 @@
 """Tests for session store, engine, and KG integration (Phases 1, 4)."""
 
-from secondlook.chat.engine import build_prompt, run_turn
+from secondlook.chat.engine import build_prompt, citation_overclaim, run_turn
 from secondlook.chat.knowledge import describe_context
 from secondlook.chat.session import (
     create_session,
@@ -92,3 +92,88 @@ def test_describe_context_graceful_handling():
     assert isinstance(lines, list)
     if lines:
         assert any("EGFR" in line or "UNAVAILABLE" in line for line in lines)
+
+
+# --- Issue #124: citation_overclaim() and its wiring into run_turn() ------
+
+
+def test_citation_overclaim_none_when_stated_count_matches_reality():
+    text = "Across 2 retrieved source(s): [1] one item. [2] another item."
+    assert citation_overclaim(text, source_count=2) is None
+
+
+def test_citation_overclaim_flags_a_stated_count_higher_than_reality():
+    text = "Across 3 retrieved source(s), the strongest is..."
+    violation = citation_overclaim(text, source_count=0)
+    assert violation is not None
+    assert "3" in violation and "0" in violation
+
+
+def test_citation_overclaim_flags_a_cited_bracket_index_higher_than_reality():
+    text = "EGFR T790M confers sensitivity to osimertinib.[2]"
+    violation = citation_overclaim(text, source_count=1)
+    assert violation is not None
+
+
+def test_citation_overclaim_ignores_a_non_numeric_bracket():
+    # A bracketed entity label like "[Q999Z]" is not a citation index --
+    # only "[<digits>]" counts, matching the system prompt's own [1], [2]
+    # convention.
+    text = "The variant [Q999Z] was mentioned in the question."
+    assert citation_overclaim(text, source_count=0) is None
+
+
+def test_citation_overclaim_none_for_an_honest_zero_source_disclaimer():
+    # The exact shape the mock clients produce when nothing was retrieved
+    # -- no bracket markers, no inflated count -- must not be flagged.
+    text = (
+        "No grounded answer available for 'What is XYZ?': zero sources "
+        "were attached to this turn."
+    )
+    assert citation_overclaim(text, source_count=0) is None
+
+
+class _OverclaimingClient:
+    """A fake real model that ignores DEFAULT_SYSTEM's instruction and
+    states more sources than were actually retrieved -- exactly the
+    failure mode #107 found in the mocks, reproduced here for a client
+    that (unlike the mocks) has no structural reason not to do it."""
+
+    model = "fake-overclaiming-model"
+
+    def complete(self, prompt: str, *, system: str | None = None) -> str:
+        del prompt, system
+        return "Across 5 retrieved source(s), osimertinib is well documented.[3]"
+
+
+def test_run_turn_withholds_output_that_overclaims_and_records_it(monkeypatch):
+    """The actual regression guard for issue #124: a client free to ignore
+    DEFAULT_SYSTEM's instruction (unlike the two structurally-bound mocks)
+    must still have its overclaiming answer caught and withheld by
+    run_turn, not shown to the user as if it were trustworthy."""
+    monkeypatch.setattr(
+        "secondlook.chat.engine.build_client",
+        lambda model_id: _OverclaimingClient(),
+    )
+    result = run_turn("What evidence exists for ZZFAKE1 Z999Z?", model_id="fake-overclaiming-model")
+    assert result.sources_count == 0
+    assert "overstated the retrieved evidence" in result.content
+    assert "Across 5" not in result.content  # the fabricated text was not shown
+    assert any(n.startswith("citation gate withheld model output") for n in result.notes)
+
+
+def test_run_turn_does_not_touch_honest_output(monkeypatch):
+    """A client that stays within what was actually retrieved must pass
+    through unmodified -- the gate should never rewrite a truthful answer."""
+
+    class HonestClient:
+        model = "fake-honest-model"
+
+        def complete(self, prompt: str, *, system: str | None = None) -> str:
+            del prompt, system
+            return "No sources were retrieved for this question."
+
+    monkeypatch.setattr("secondlook.chat.engine.build_client", lambda model_id: HonestClient())
+    result = run_turn("What evidence exists for ZZFAKE1 Z999Z?", model_id="fake-honest-model")
+    assert result.content == "No sources were retrieved for this question."
+    assert not any(n.startswith("citation gate withheld model output") for n in result.notes)

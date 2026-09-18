@@ -23,6 +23,7 @@ from typing import Protocol
 
 import httpx
 
+from secondlook.http_retry import with_retry
 from secondlook.tier1.graph_schema import assert_valid
 
 LLM_PROVIDERS: frozenset[str] = frozenset({"anthropic", "openai_compatible"})
@@ -127,7 +128,12 @@ class OpenAICompatibleClient:
         if self._api_key:
             headers["Authorization"] = f"Bearer {self._api_key}"
         url = f"{self.base_url}/chat/completions"
-        try:
+
+        # Both the request and the status check live inside `attempt`, so
+        # connection resets and timeouts -- which are raised by the request
+        # call, not by raise_for_status() -- are retried and then converted
+        # to LLMClientError rather than escaping as raw httpx errors.
+        def attempt() -> httpx.Response:
             if self._client is not None:
                 response = self._client.post(
                     url,
@@ -143,6 +149,10 @@ class OpenAICompatibleClient:
                     timeout=180.0,
                 )
             response.raise_for_status()
+            return response
+
+        try:
+            response = with_retry(attempt)
             payload = response.json()
             return payload["choices"][0]["message"]["content"]
         except (httpx.HTTPError, ValueError, KeyError, IndexError, TypeError) as exc:
