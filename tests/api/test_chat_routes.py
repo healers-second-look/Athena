@@ -122,3 +122,55 @@ def test_phase6_retrieval_grounding_in_turn():
         for s in sources
     )
     assert any(s.get("citation_url") for s in sources)
+
+
+def test_session_case_id_round_trips_create_get_update():
+    app = create_app()
+    client = TestClient(app)
+
+    create_res = client.post(
+        "/api/chat/sessions",
+        json={"model_id": "mock-terse", "case_id": "case-alpha"},
+    )
+    assert create_res.status_code == 200
+    created = create_res.json()
+    session_id = created["id"]
+    assert created["case_id"] == "case-alpha"
+
+    get_res = client.get(f"/api/chat/sessions/{session_id}")
+    assert get_res.status_code == 200
+    assert get_res.json()["case_id"] == "case-alpha"
+
+    patch_res = client.patch(
+        f"/api/chat/sessions/{session_id}",
+        json={"case_id": "case-beta"},
+    )
+    assert patch_res.status_code == 200
+    assert patch_res.json()["case_id"] == "case-beta"
+
+    again = client.get(f"/api/chat/sessions/{session_id}")
+    assert again.json()["case_id"] == "case-beta"
+
+    client.delete(f"/api/chat/sessions/{session_id}")
+
+
+def test_send_turn_unknown_case_id_returns_a_turn_with_a_note():
+    app = create_app()
+    client = TestClient(app)
+
+    create_res = client.post(
+        "/api/chat/sessions",
+        json={"model_id": "mock-terse", "case_id": "not-a-uuid"},
+    )
+    session_id = create_res.json()["id"]
+
+    turn_res = client.post(
+        f"/api/chat/sessions/{session_id}/turns",
+        json={"message": "What is EGFR T790M?"},
+    )
+    assert turn_res.status_code == 200
+    notes = turn_res.json()["turn"]["notes"]
+    assert any("case record could not be loaded" in n for n in notes)
+    assert turn_res.json()["turn"]["content"]
+
+    client.delete(f"/api/chat/sessions/{session_id}")

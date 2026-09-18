@@ -1,8 +1,9 @@
 """In-memory session store -- issue #103, Phase 1 and 3.
 
 Sessions live in memory for the demo. Each session holds its model choice,
-active attachments, KG context, and the message history. The frontend
-mirrors this in localStorage for persistence across refreshes.
+active attachments, KG context, optional patient `case_id`, and the message
+history. The frontend mirrors this in localStorage for persistence across
+refreshes.
 
 No database dependency -- the chat surface is standalone.
 """
@@ -22,6 +23,7 @@ class Session:
     model_id: str = DEFAULT_MODEL_ID
     attachment_ids: list[str] = field(default_factory=list)
     context_id: str | None = None
+    case_id: str | None = None
     history: list[dict] = field(default_factory=list)
     created_at: float = field(default_factory=time.time)
     updated_at: float = field(default_factory=time.time)
@@ -44,6 +46,7 @@ class Session:
             "model_id": self.model_id,
             "attachment_ids": self.attachment_ids,
             "context_id": self.context_id,
+            "case_id": self.case_id,
             "history": self.history,
             "created_at": self.created_at,
             "updated_at": self.updated_at,
