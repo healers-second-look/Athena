@@ -126,7 +126,10 @@ class TestScope:
             scope_conditions({}, civic_scope_path=tmp_path / "absent.yaml")
 
     def test_shipped_scope_derives_a_non_empty_term_list(self):
-        assert len(scope_conditions()) > 10
+        terms = scope_conditions()
+        assert len(terms) > 10
+        assert "Breast Cancer" in terms
+        assert "HR+/HER2- breast cancer" in terms
 
 
 class TestRunLoad:
