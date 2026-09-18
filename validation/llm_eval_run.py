@@ -11,6 +11,7 @@ Usage::
     python validation/llm_eval_run.py --subsystem synthesis --grounded-comparison
     python validation/llm_eval_run.py --subsystem criteria_extraction
     python validation/llm_eval_run.py --subsystem intake
+    python validation/llm_eval_run.py --subsystem citation_acceptance
 
     # issue #122: run against the MVP cancer type's vocabulary (issue #121)
     # instead of (or alongside) the general NSCLC/melanoma/mastocytosis set --
@@ -41,6 +42,9 @@ from harness.eval_sets.synthesis_breast_cancer import (  # noqa: E402
     SYNTHESIS_BREAST_CANCER_EVAL_CASES,
 )
 
+from secondlook.harness.adapters.citation_acceptance import (  # noqa: E402
+    evaluate_citation_acceptance,
+)
 from secondlook.harness.adapters.criteria_extraction import (  # noqa: E402
     evaluate_existing_corpus,
 )
@@ -129,11 +133,27 @@ def run_intake_eval() -> EvalResult:
     return evaluate_intake_eval_set(llm_client=client)
 
 
+def run_citation_acceptance_eval() -> EvalResult:
+    client = get_llm_client()
+    if client is None:
+        raise RuntimeError(
+            "citation-acceptance eval needs a configured LLM client "
+            "(ATHENA_LLM_ENABLED is off, or provider config is missing)"
+        )
+    return evaluate_citation_acceptance(llm_client=client)
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--subsystem",
-        choices=["synthesis", "criteria_extraction", "intake", "all"],
+        choices=[
+            "synthesis",
+            "criteria_extraction",
+            "intake",
+            "citation_acceptance",
+            "all",
+        ],
         default="all",
     )
     parser.add_argument(
@@ -155,7 +175,11 @@ def main(argv: list[str] | None = None) -> int:
     )
     args = parser.parse_args(argv)
 
-    if args.grounded_comparison and args.subsystem in {"criteria_extraction", "intake"}:
+    if args.grounded_comparison and args.subsystem in {
+        "criteria_extraction",
+        "intake",
+        "citation_acceptance",
+    }:
         print(
             f"error: --grounded-comparison is not valid with "
             f"--subsystem {args.subsystem}. {args.subsystem} has no "
@@ -182,6 +206,8 @@ def main(argv: list[str] | None = None) -> int:
             results.append(run_criteria_extraction())
         if args.subsystem in {"intake", "all"}:
             results.append(run_intake_eval())
+        if args.subsystem in {"citation_acceptance", "all"}:
+            results.append(run_citation_acceptance_eval())
     except RuntimeError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 2
