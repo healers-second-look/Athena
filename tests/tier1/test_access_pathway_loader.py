@@ -142,6 +142,23 @@ class TestShippedSeeds:
         assert summary.rejected == []
         assert summary.pathways_written >= 4
 
+    def test_hr_pos_her2_neg_entries_are_present_and_theoretical(self):
+        from secondlook.tier1.access_pathway_loader import PATHWAYS_DIR
+
+        instruments = []
+        for path in PATHWAYS_DIR.glob("*.yaml"):
+            _, pathways = read_seed_file(path)
+            for pathway in pathways:
+                instruments.append(pathway["instrument"])
+                assert pathway["precedent_strength"] == "theoretical"
+                assert pathway["precedent_examples"] == []
+        joined = " ".join(instruments)
+        assert "palbociclib" in joined
+        assert "alpelisib" in joined
+        assert "olaparib" in joined
+        assert "elacestrant" in joined
+        assert "targeted HR+/HER2- agents" in joined
+
     def test_every_shipped_entry_is_flagged_unreviewed(self):
         """These were transcribed from the issue, not verified against the
         primary source by anyone with regulatory-affairs training."""

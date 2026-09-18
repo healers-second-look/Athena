@@ -15,7 +15,7 @@
 # cases. An invented precedent is the single most damaging thing that could be
 # added to this file: "expanded access has been granted for this agent before"
 # is a claim a clinician would act on.
-config_version: "2026-08-23.1"
+config_version: "2026-09-18.1"
 country: IN
 regulator: CDSCO
 review_status: unreviewed
@@ -36,6 +36,27 @@ pathways:
     description: >-
       Import of an unapproved drug for the treatment of a named individual
       patient, applied for by the treating institution.
+    precedent_strength: theoretical
+    precedent_examples: []
+    source_url: "https://cdsco.gov.in/opencms/opencms/en/Home/"
+
+  - pathway_type: named_patient_import
+    instrument: "CDSCO New Drugs and Clinical Trials Rules, 2019 — Rule 36 (targeted HR+/HER2- agents)"
+    description: >-
+      Theoretical named-patient import route for targeted agents used in
+      HR+/HER2- breast cancer (for example CDK4/6 inhibitors, alpelisib,
+      PARP inhibitors, elacestrant) when the product is not commercially
+      available in India. No citable grant is recorded here.
+    precedent_strength: theoretical
+    precedent_examples: []
+    source_url: "https://cdsco.gov.in/opencms/opencms/en/Home/"
+
+  - pathway_type: manufacturer_programme
+    instrument: "CDSCO New Drugs and Clinical Trials Rules, 2019 — manufacturer post-trial / assistance access (theoretical)"
+    description: >-
+      Theoretical manufacturer-sponsored access for HR+/HER2- targeted
+      therapy when commercial supply or named-patient import is not
+      available. Listed as theoretical until a real programme is cited.
     precedent_strength: theoretical
     precedent_examples: []
     source_url: "https://cdsco.gov.in/opencms/opencms/en/Home/"
