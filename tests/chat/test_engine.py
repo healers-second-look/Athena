@@ -167,3 +167,33 @@ def test_run_turn_does_not_touch_honest_output(monkeypatch):
     result = run_turn("What evidence exists for ZZFAKE1 Z999Z?", model_id="fake-honest-model")
     assert result.content == "No sources were retrieved for this question."
     assert not any(n.startswith("citation gate withheld model output") for n in result.notes)
+
+
+def test_run_turn_can_use_supplied_sources_instead_of_the_graph(monkeypatch):
+    """The study's chat arm (issue #136) supplies the case's findings as the
+    turn's sources; graph retrieval must not run at all."""
+
+    def boom(*args, **kwargs):
+        raise AssertionError("retrieval must be skipped when sources are supplied")
+
+    monkeypatch.setattr("secondlook.chat.engine.retrieve_evidence_for_turn", boom)
+    sources = [
+        {
+            "id": "study:f1",
+            "citation_index": 1,
+            "title": "A finding",
+            "summary": "A finding",
+            "evidence_level": "B",
+            "pmid": "SYN-1",
+            "citation_url": "https://example.org/x",
+        }
+    ]
+    result = run_turn(
+        "What changed?",
+        model_id="mock-outline",
+        sources_override=sources,
+        extra_context_lines=["2026-01-01: something happened"],
+    )
+    assert result.sources_count == 1
+    assert "2026-01-01: something happened" in result.context_lines
+    assert "A finding" in result.content

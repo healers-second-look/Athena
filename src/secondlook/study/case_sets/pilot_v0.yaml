@@ -20,6 +20,9 @@ cases:
     cancer_type: "HR+/HER2- breast cancer"
     age_years: 58
     stage: "IV"
+    recall_distractors:
+      - "New brain metastasis identified"
+      - "Adjuvant chemotherapy completed"
     synthetic: true
     citations_verified: false
     baseline_events:
@@ -75,6 +78,9 @@ cases:
     cancer_type: "HR+/HER2- breast cancer"
     age_years: 64
     stage: "IV"
+    recall_distractors:
+      - "HER2 status changed to positive"
+      - "Germline BRCA1 pathogenic variant found"
     synthetic: true
     citations_verified: false
     baseline_events:
@@ -126,6 +132,9 @@ cases:
     cancer_type: "HR+/HER2- breast cancer"
     age_years: 49
     stage: "IV"
+    recall_distractors:
+      - "ESR1 mutation detected on ctDNA"
+      - "Patient switched to a different CDK4/6 inhibitor"
     synthetic: true
     citations_verified: false
     baseline_events:
@@ -178,6 +187,9 @@ cases:
     cancer_type: "HR+/HER2- breast cancer"
     age_years: 71
     stage: "II"
+    recall_distractors:
+      - "New lung nodule on imaging"
+      - "Anastrozole changed to tamoxifen"
     synthetic: true
     citations_verified: false
     baseline_events:
@@ -218,6 +230,9 @@ cases:
     cancer_type: "HR+/HER2- breast cancer"
     age_years: 55
     stage: "IV"
+    recall_distractors:
+      - "PIK3CA mutation detected on ctDNA"
+      - "HER2 IHC 3+ on repeat biopsy"
     synthetic: true
     citations_verified: false
     baseline_events:

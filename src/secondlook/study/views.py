@@ -15,6 +15,8 @@ The whole study rests on two things this module enforces by construction:
 
 from __future__ import annotations
 
+import hashlib
+
 from pydantic import BaseModel
 
 from secondlook.study.cases import StudyCase
@@ -68,6 +70,11 @@ class DecisionOptionView(BaseModel):
     text: str
 
 
+class RecallOptionView(BaseModel):
+    id: str
+    text: str
+
+
 class ReviewerCaseView(BaseModel):
     """The same shape for every arm; the diff fields are simply empty outside arm A."""
 
@@ -85,6 +92,33 @@ class ReviewerCaseView(BaseModel):
     reported_changes: list[ChangeView] = []
     reported_supersessions: list[SupersessionView] = []
     questions: list[QuestionView] = []
+
+
+def recall_option_id(case_id: str, text: str) -> str:
+    """Opaque id for a recall-probe option.
+
+    Derived from the text so offline scoring can recompute it, and opaque so it
+    does not reveal whether the option is a real update event or a distractor.
+    """
+    return hashlib.sha1(f"{case_id}|{text}".encode()).hexdigest()[:8]
+
+
+def recall_truth_ids(case: StudyCase) -> set[str]:
+    """Ids of the recall options that are real changes -- for offline scoring only."""
+    return {recall_option_id(case.case_id, e.summary) for e in case.update_events}
+
+
+def recall_options(case: StudyCase) -> list[RecallOptionView]:
+    texts = [e.summary for e in case.update_events] + list(case.recall_distractors)
+    options = [RecallOptionView(id=recall_option_id(case.case_id, t), text=t) for t in texts]
+    # Deterministic shuffle so the true items are not always listed first.
+    return sorted(options, key=lambda o: hashlib.sha1(f"order|{o.id}".encode()).hexdigest())
+
+
+# Deliberately NOT part of ReviewerCaseView: the recall probe is asked after the
+# reviewer has left the case screen (protocol section 6), so its options are
+# served by their own endpoint at that step rather than sitting in the payload
+# for the whole review, where they would prime the reviewer.
 
 
 def _event(e) -> EventView:

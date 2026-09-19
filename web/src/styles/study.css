@@ -1,0 +1,138 @@
+/* Diff-first evaluation study runner (issue #136). Reuses app.css tokens. */
+
+.study-shell {
+  min-height: 100vh;
+}
+
+.study-bar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 56px;
+  padding: 0 1rem;
+  background: var(--paper);
+  border-bottom: 1px solid var(--rule);
+}
+
+.study-button {
+  border: 1px solid var(--ink);
+  background: var(--ink);
+  color: var(--paper);
+  border-radius: 6px;
+  padding: 0.45rem 0.9rem;
+  font: inherit;
+  cursor: pointer;
+}
+.study-button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.study-debug-banner {
+  background: var(--alarm);
+  color: #fff;
+  text-align: center;
+  padding: 0.35rem 1rem;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.study-log-error {
+  background: var(--alarm-wash);
+  border: 1px solid var(--alarm);
+  color: var(--alarm);
+  padding: 0.5rem 1rem;
+  font-size: 0.85rem;
+}
+
+/* The chat arm is the real chat UI; fit it under the study bar. */
+.study-chat-frame .chat-layout {
+  height: calc(100vh - 56px);
+}
+
+.study-findings {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.study-finding {
+  cursor: default;
+}
+.study-finding-label {
+  margin-bottom: 0.2rem;
+}
+.study-superseded-chip {
+  margin-left: 0.5rem;
+  padding: 0 0.4rem;
+  border: 1px solid var(--alarm);
+  color: var(--alarm);
+  border-radius: 999px;
+  font-size: 0.75rem;
+}
+/* A literal line-through, same reason as .superseded-claim in app.css: it must
+   still read as struck in a monochrome screenshot. */
+.study-finding--superseded .claim {
+  text-decoration: line-through;
+  text-decoration-thickness: 2px;
+}
+
+.study-questions {
+  margin: 0;
+  padding-left: 1.25rem;
+}
+
+.study-assessment fieldset {
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  margin: 0 0 1rem;
+  padding: 0.75rem 1rem;
+}
+.study-assess-finding legend {
+  font-weight: 600;
+  padding: 0 0.35rem;
+}
+.study-choice {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin: 0.3rem 0;
+}
+.study-rationale {
+  display: block;
+  margin-top: 0.75rem;
+  font-size: 0.85rem;
+}
+.study-rationale textarea {
+  display: block;
+  width: 100%;
+  margin-top: 0.25rem;
+  font: inherit;
+}
+
+.rating {
+  margin: 0.75rem 0;
+}
+.rating-label {
+  display: block;
+  font-size: 0.9rem;
+  margin-bottom: 0.25rem;
+}
+.rating-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.rating-row input[type='range'] {
+  flex: 1;
+}
+.rating-untouched {
+  opacity: 0.45;
+}
+.rating-value {
+  min-width: 2.5ch;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}

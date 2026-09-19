@@ -12,8 +12,22 @@ import {
 import GraphViewer from '../components/GraphViewer.jsx'
 import TimelineModal from '../components/timeline/TimelineModal.jsx'
 
-export default function ChatInterface() {
-  const { id } = useParams()
+// `studySessionId` / `studyClient` / `onStudyEvent` are set only by the diff-first
+// study's chat arm (issue #136, routes/StudyRunner.jsx). In that mode this is
+// still the real chat UI -- the comparator has to be the shipped chat -- but
+// pointed at a study session, with the controls a reviewer could use to change
+// the experiment (model picker, plugins, KG context, graph and timeline
+// shortcuts, new chat) removed, and reviewer actions reported to the study log.
+export default function ChatInterface({
+  studySessionId = null,
+  studyClient = null,
+  onStudyEvent = null,
+}) {
+  const params = useParams()
+  const inStudy = Boolean(studySessionId)
+  const id = studySessionId || params.id
+  const api = studyClient || { createSession, getSession, sendTurn, updateSession }
+  const logStudy = onStudyEvent || (() => {})
   const navigate = useNavigate()
   const messagesEndRef = useRef(null)
   const inputRef = useRef(null)
@@ -40,6 +54,7 @@ export default function ChatInterface() {
 
   // Load catalogs on mount
   useEffect(() => {
+    if (inStudy) return // the study fixes model, plugins and context server-side
     Promise.all([getModels(), getAttachments(), getContexts()])
       .then(([m, a, c]) => {
         setModels(m)
@@ -57,7 +72,7 @@ export default function ChatInterface() {
           { id: 'evidence-grader', label: 'Evidence grader', kind: 'skill' },
         ])
       })
-  }, [])
+  }, [inStudy])
 
   // Create or load session
   useEffect(() => {
@@ -66,7 +81,8 @@ export default function ChatInterface() {
         .then((s) => navigate(`/chat/${s.id}`, { replace: true }))
         .catch((err) => setError(err.message))
     } else if (id) {
-      getSession(id)
+      api
+        .getSession(id)
         .then((s) => {
           setSession(s)
           // Pre-select latest assistant turn for right drawer if history exists
@@ -106,8 +122,9 @@ export default function ChatInterface() {
       ],
     }))
 
+    logStudy('chat_message_sent', { text: msg.slice(0, 1000) })
     try {
-      const result = await sendTurn(session.id, msg)
+      const result = await api.sendTurn(session.id, msg)
       setSession((prev) => ({
         ...prev,
         history: [
@@ -117,6 +134,13 @@ export default function ChatInterface() {
         ],
       }))
       setSelectedTurn(result.turn)
+      logStudy('chat_response_shown', {
+        model_id: result.assistant_message.model_id,
+        sources_count: result.assistant_message.sources_count,
+        withheld: (result.assistant_message.notes || []).some((n) =>
+          n.startsWith('citation gate withheld'),
+        ),
+      })
     } catch (err) {
       setError(err.message)
       setSession((prev) => ({
@@ -126,7 +150,7 @@ export default function ChatInterface() {
     } finally {
       setLoading(false)
     }
-  }, [input, session, loading])
+  }, [input, session, loading, api, logStudy])
 
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -220,6 +244,12 @@ export default function ChatInterface() {
               title={src ? `${src.title} (${src.evidence_level})` : `Citation ${citationIdx}`}
               onClick={(e) => {
                 e.stopPropagation()
+                logStudy('citation_opened', {
+                  source: 'pill',
+                  citation_index: citationIdx,
+                  finding_id: src?.finding_id,
+                  url: src?.citation_url,
+                })
                 if (src?.citation_url) window.open(src.citation_url, '_blank')
               }}
             >
@@ -267,7 +297,8 @@ export default function ChatInterface() {
 
   return (
     <div className="chat-layout">
-      {/* Left Sidebar */}
+      {/* Left Sidebar (hidden in the study: every control here changes the experiment) */}
+      {!inStudy && (
       <aside className="chat-sidebar">
         <div className="sidebar-brand" onClick={() => navigate('/chat')} style={{ cursor: 'pointer' }}>
           <span className="material-symbols-outlined" style={{ fontSize: 28, color: 'var(--sage-deep)' }}>
@@ -367,15 +398,20 @@ export default function ChatInterface() {
           </button>
         </div>
       </aside>
+      )}
 
       {/* Main Chat Area */}
       <main className="chat-main">
         <header className="chat-topbar">
           <div style={{ display: 'flex', alignItems: 'center' }}>
             <span className="topbar-title">Synthesis</span>
-            <span className="topbar-model">
-              {models.find((m) => m.id === session?.model_id)?.label || 'Athena Outline'}
-            </span>
+            {/* Hidden in the study: the pinned model is logged, and showing its name could
+                sway trust independently of the interface being compared. */}
+            {!inStudy && (
+              <span className="topbar-model">
+                {models.find((m) => m.id === session?.model_id)?.label || 'Athena Outline'}
+              </span>
+            )}
             {session?.context_id && (
               <span className="topbar-model" style={{ background: 'var(--apricot-wash)', color: '#5d412c' }}>
                 KG: {session.context_id}
@@ -383,22 +419,26 @@ export default function ChatInterface() {
             )}
           </div>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            <button
-              className="btn-view-graph"
-              style={{ width: 'auto', margin: 0, padding: '4px 10px' }}
-              onClick={() => setActiveGraphContext(session?.context_id || 'graph:secondlook_tier1')}
-            >
-              <span className="material-symbols-outlined" style={{ fontSize: 14 }}>account_tree</span>
-              Explore Graph
-            </button>
-            <button
-              className="btn-view-graph"
-              style={{ width: 'auto', margin: 0, padding: '4px 10px' }}
-              onClick={() => setShowTimeline(true)}
-            >
-              <span className="material-symbols-outlined" style={{ fontSize: 14 }}>timeline</span>
-              Patient Timeline
-            </button>
+            {!inStudy && (
+              <>
+                <button
+                  className="btn-view-graph"
+                  style={{ width: 'auto', margin: 0, padding: '4px 10px' }}
+                  onClick={() => setActiveGraphContext(session?.context_id || 'graph:secondlook_tier1')}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: 14 }}>account_tree</span>
+                  Explore Graph
+                </button>
+                <button
+                  className="btn-view-graph"
+                  style={{ width: 'auto', margin: 0, padding: '4px 10px' }}
+                  onClick={() => setShowTimeline(true)}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: 14 }}>timeline</span>
+                  Patient Timeline
+                </button>
+              </>
+            )}
             {activeMode && (
               <span className="material-symbols-outlined" style={{ fontSize: 20, color: 'var(--sage)' }} title={activeMode.label}>
                 verified_user
@@ -570,6 +610,14 @@ export default function ChatInterface() {
                           target="_blank"
                           rel="noreferrer"
                           className="source-link"
+                          onClick={() =>
+                            logStudy('citation_opened', {
+                              source: 'panel',
+                              citation_index: src.citation_index,
+                              finding_id: src.finding_id,
+                              url: src.citation_url,
+                            })
+                          }
                         >
                           PMID {src.pmid} ↗
                         </a>

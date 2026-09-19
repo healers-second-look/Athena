@@ -215,3 +215,17 @@ def test_reference_decision_must_name_real_options(pilot):
 def test_duplicate_case_ids_are_rejected(pilot):
     dup = replace(pilot, cases=(pilot.cases[0], pilot.cases[0]))
     assert any("not unique" in e for e in validate_case_set(dup))
+
+
+def test_recall_distractor_that_is_a_real_event_is_rejected(pilot):
+    case = _case(pilot, "pilot-001")
+    real = case.update_events[0].summary
+    errs = validate_case(replace(case, recall_distractors=(real,)))
+    assert any("actually an event" in e for e in errs)
+
+
+def test_duplicate_or_empty_recall_distractors_are_rejected(pilot):
+    case = _case(pilot, "pilot-001")
+    errs = validate_case(replace(case, recall_distractors=("Same thing", "same thing", " ")))
+    assert any("listed twice" in e for e in errs)
+    assert any("is empty" in e for e in errs)

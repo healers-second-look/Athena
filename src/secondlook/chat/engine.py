@@ -121,8 +121,18 @@ def run_turn(
     attachment_ids: list[str] | None = None,
     context_id: str | None = None,
     system: str | None = None,
+    sources_override: list[dict] | None = None,
+    extra_context_lines: list[str] | None = None,
 ) -> TurnResult:
-    """Execute one chat turn end-to-end (Phases 1-6)."""
+    """Execute one chat turn end-to-end (Phases 1-6).
+
+    `sources_override` / `extra_context_lines` exist for the diff-first study's
+    chat arm (issue #136): the "retrieved" sources are the case's own findings
+    rather than a FalkorDB lookup, so the reviewer chats about exactly the
+    content the other arms show. Passing `sources_override` skips graph
+    retrieval entirely; `citation_overclaim` below still checks the model's
+    output against those sources, so the #124 backstop applies unchanged.
+    """
     turn = Turn(
         message=message,
         system_prompt=system or DEFAULT_SYSTEM,
@@ -137,12 +147,18 @@ def run_turn(
         kg_lines = describe_context(context_id)
         turn.context_lines.extend(kg_lines)
 
+    if extra_context_lines:
+        turn.context_lines.extend(extra_context_lines)
+
     # Phase 6: Live FalkorDB evidence retrieval
-    retrieved_sources = retrieve_evidence_for_turn(
-        entities=turn.entities,
-        context_id=context_id,
-        limit=turn.max_sources,
-    )
+    if sources_override is not None:
+        retrieved_sources = list(sources_override)
+    else:
+        retrieved_sources = retrieve_evidence_for_turn(
+            entities=turn.entities,
+            context_id=context_id,
+            limit=turn.max_sources,
+        )
     turn.sources = retrieved_sources
 
     # Numbered citation lines for genuinely retrieved sources -- kept out of
