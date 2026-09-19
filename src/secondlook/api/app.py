@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import warnings
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -10,6 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from secondlook.api.auth import configure_auth
 from secondlook.api.routes import cases, findings
 from secondlook.api.routes import chat as chat_routes
+from secondlook.api.routes import study as study_routes
 from secondlook.api.routes import timeline as timeline_routes
 
 DEFAULT_BIND_HOST = "127.0.0.1"
@@ -64,6 +66,16 @@ def create_app() -> FastAPI:
     app.include_router(findings.router)
     app.include_router(chat_routes.router)
     app.include_router(timeline_routes.router)
+    if study_routes.study_enabled():
+        # Issue #136. Off by default: two study routes are reachable from a
+        # browser with no API key (see routes/study.py's docstring).
+        warnings.warn(
+            f"Study routes are enabled ({study_routes.ENABLED_ENV}=true): fetching a study "
+            "case and logging study events need no API key. Closed, supervised study "
+            "deployments on synthetic cases only -- do not expose this on a reachable network.",
+            stacklevel=2,
+        )
+        app.include_router(study_routes.router)
     return app
 
 
