@@ -5,6 +5,7 @@ import App from './App.jsx'
 import './styles/app.css'
 import './styles/chat.css'
 import './styles/timeline.css'
+import './styles/study.css'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>

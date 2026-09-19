@@ -3,6 +3,7 @@ import CaseDashboard from './routes/CaseDashboard.jsx'
 import ResearchQueue from './routes/ResearchQueue.jsx'
 import FindingDetail from './routes/FindingDetail.jsx'
 import PatientTimeline from './routes/PatientTimeline.jsx'
+import StudyRunner from './routes/StudyRunner.jsx'
 import ChatLanding from './routes/ChatLanding.jsx'
 import ChatInterface from './routes/ChatInterface.jsx'
 import { DEMO_CASE_ID, isFixtureBacked } from './api/client.js'
@@ -11,6 +12,7 @@ import { useEffect } from 'react'
 export default function App() {
   const location = useLocation()
   const isChat = location.pathname.startsWith('/chat')
+  const isStudy = location.pathname.startsWith('/study')
 
   // Toggle body class for chat-specific styles
   useEffect(() => {
@@ -18,8 +20,8 @@ export default function App() {
   }, [isChat])
 
   return (
-    <div className={isChat ? '' : 'wrap'}>
-      {!isChat && isFixtureBacked() ? (
+    <div className={isChat || isStudy ? '' : 'wrap'}>
+      {!isChat && !isStudy && isFixtureBacked() ? (
         <p className="nojs-note">
           Fixture-backed: Subsystem L (the REST API, issue #13) is not wired in.
           Set <code>VITE_API_BASE</code> to point these screens at a live API.
@@ -34,6 +36,8 @@ export default function App() {
         {/* Chat surface (issue #103) */}
         <Route path="/chat" element={<ChatLanding />} />
         <Route path="/chat/:id" element={<ChatInterface />} />
+        {/* Diff-first evaluation study (issue #136) -- needs ATHENA_STUDY_ENABLED on the API */}
+        <Route path="/study/:reviewerIndex" element={<StudyRunner />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </div>
@@ -46,7 +50,8 @@ function NotFound() {
       <h1>Not found</h1>
       <p className="muted">
         Client routes are <code>/cases/:id</code>, <code>/cases/:id/queue</code>,{' '}
-        <code>/cases/:id/timeline</code>, <code>/findings/:id</code>, and <code>/chat</code>.
+        <code>/cases/:id/timeline</code>, <code>/findings/:id</code>, <code>/chat</code>, and{' '}
+        <code>/study/:reviewerIndex</code>.
       </p>
     </>
   )

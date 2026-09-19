@@ -1,0 +1,284 @@
+# HARNESS-DEBUG ONLY. NOT A STUDY CASE SET.
+#
+# Five synthetic HR+/HER2- breast cancer cases that exercise every seeded-issue
+# type (and a no-issue control) so the study harness can be built and tested.
+# They have NOT been reviewed by a clinician, every citation is a placeholder
+# under example.org, and nothing here is clinical guidance. The loader's
+# assert_eligible_for_study() refuses this set on purpose; tests pin that.
+#
+# The real case set replaces this file's role once a clinician has reviewed the
+# medicine and the citations have been verified as real and supporting their
+# claims (protocol section 5).
+set_id: pilot_v0
+version: 1
+review_status: unreviewed
+notes: "Harness-debug pilot. Unreviewed clinical content; placeholder citations."
+cases:
+  # ---------------------------------------------------------------- 001
+  - case_id: pilot-001
+    label: "Pilot 001 - synthetic"
+    cancer_type: "HR+/HER2- breast cancer"
+    age_years: 58
+    stage: "IV"
+    recall_distractors:
+      - "New brain metastasis identified"
+      - "Adjuvant chemotherapy completed"
+    synthetic: true
+    citations_verified: false
+    baseline_events:
+      - {id: p1-b1, occurred_on: "2023-03-10", event_type: BIOMARKER_MEASURED, summary: "ER 95% positive, PR 60% positive, HER2 IHC 1+ (negative)", source_document: "Pathology report 2023-03-10", payload: {name: ER, value: 95, unit: "% positive"}}
+      - {id: p1-b2, occurred_on: "2023-04-02", event_type: TREATMENT_LINE, summary: "Adjuvant letrozole started", payload: {regimen: letrozole, line: 1, action: started}}
+    update_events:
+      - {id: p1-u1, occurred_on: "2026-01-15", event_type: ALTERATION_OBSERVED, summary: "ESR1 Y537S detected on ctDNA", source_document: "ctDNA report 2026-01-15", payload: {gene: ESR1, variant: Y537S}}
+      - {id: p1-u2, occurred_on: "2026-01-15", event_type: DISEASE_ASSESSMENT, summary: "Bone-predominant recurrence on imaging", source_document: "Imaging report 2026-01-15", payload: {status: progression, sites: [bone]}}
+    system_output:
+      findings:
+        - id: p1-f1
+          claim: "Continue aromatase-inhibitor endocrine therapy: the tumour is ER-positive and HER2-negative."
+          evidence_class: documented
+          evidence_level: "B"
+          citation: {id: SYN-P1-F1, url: "https://example.org/synthetic/p1-f1", name: "Synthetic placeholder"}
+          valid: false
+          invalidated_by: p1-u1
+        - id: p1-f2
+          claim: "A CDK4/6 inhibitor plus endocrine therapy is a standard first-line option in HR+/HER2- advanced breast cancer."
+          evidence_class: documented
+          evidence_level: "A"
+          citation: {id: SYN-P1-F2, url: "https://example.org/synthetic/p1-f2", name: "Synthetic placeholder"}
+          valid: true
+        - id: p1-f3
+          claim: "ESR1 ligand-binding-domain mutations are associated with acquired resistance to aromatase inhibitors."
+          evidence_class: documented
+          evidence_level: "B"
+          citation: {id: SYN-P1-F3, url: "https://example.org/synthetic/p1-f3", name: "Synthetic placeholder"}
+          valid: true
+      reported_changes:
+        - {kind: new_alteration, summary: "ESR1 Y537S newly observed", triggering_event: p1-u1}
+        - {kind: disease_progression, summary: "disease progression recorded (bone)", triggering_event: p1-u2}
+      reported_supersessions:
+        - finding_id: p1-f1
+          broken_assumption: "no known alteration in ESR1"
+          triggering_event: p1-u1
+          note: "This finding assumed no known alteration in ESR1. That is no longer true."
+      questions:
+        - {id: p1-q1, text: "What endocrine options remain after an ESR1 mutation on an aromatase inhibitor?"}
+    seeded_issues:
+      - {id: p1-i1, type: change_visible, finding_id: p1-f1, description: "The new ESR1 mutation invalidates the aromatase-inhibitor continuation finding; the system reports the supersession."}
+    reference_decision:
+      prompt: "Recommended next step?"
+      options:
+        - {id: a, text: "Continue the same aromatase inhibitor unchanged"}
+        - {id: b, text: "Change the endocrine partner and add a CDK4/6 inhibitor"}
+        - {id: c, text: "Stop endocrine therapy and start single-agent chemotherapy"}
+        - {id: d, text: "Observe without treatment"}
+      concordant: [b]
+  # ---------------------------------------------------------------- 002
+  - case_id: pilot-002
+    label: "Pilot 002 - synthetic"
+    cancer_type: "HR+/HER2- breast cancer"
+    age_years: 64
+    stage: "IV"
+    recall_distractors:
+      - "HER2 status changed to positive"
+      - "Germline BRCA1 pathogenic variant found"
+    synthetic: true
+    citations_verified: false
+    baseline_events:
+      - {id: p2-b1, occurred_on: "2024-05-02", event_type: ALTERATION_OBSERVED, summary: "PIK3CA not detected on tissue NGS", source_document: "NGS report 2024-05-02", payload: {gene: PIK3CA, variant: none-detected}}
+      - {id: p2-b2, occurred_on: "2024-06-01", event_type: TREATMENT_LINE, summary: "First-line CDK4/6 inhibitor plus endocrine therapy started", payload: {regimen: cdk46-plus-endocrine, line: 1, action: started}}
+    update_events:
+      - {id: p2-u1, occurred_on: "2025-09-20", event_type: ALTERATION_OBSERVED, summary: "PIK3CA H1047R detected on ctDNA at progression", source_document: "ctDNA report 2025-09-20", payload: {gene: PIK3CA, variant: H1047R}}
+      - {id: p2-u2, occurred_on: "2025-09-20", event_type: DISEASE_ASSESSMENT, summary: "Progression on first-line therapy", source_document: "Imaging report 2025-09-20", payload: {status: progression, sites: [liver]}}
+    system_output:
+      findings:
+        - id: p2-f1
+          claim: "No PIK3CA-directed option applies: the tumour is PIK3CA wild-type."
+          evidence_class: documented
+          evidence_level: "B"
+          citation: {id: SYN-P2-F1, url: "https://example.org/synthetic/p2-f1", name: "Synthetic placeholder"}
+          valid: false
+          invalidated_by: p2-u1
+        - id: p2-f2
+          claim: "Progression on first-line CDK4/6 inhibitor plus endocrine therapy calls for a change in regimen."
+          evidence_class: documented
+          evidence_level: "B"
+          citation: {id: SYN-P2-F2, url: "https://example.org/synthetic/p2-f2", name: "Synthetic placeholder"}
+          valid: true
+        - id: p2-f3
+          claim: "In PIK3CA-mutant HR+/HER2- advanced disease, a PI3K-alpha inhibitor plus fulvestrant is an option after endocrine-based therapy."
+          evidence_class: documented
+          evidence_level: "A"
+          citation: {id: SYN-P2-F3, url: "https://example.org/synthetic/p2-f3", name: "Synthetic placeholder"}
+          valid: true
+      reported_changes:
+        - {kind: new_alteration, summary: "PIK3CA H1047R newly observed", triggering_event: p2-u1}
+        - {kind: disease_progression, summary: "disease progression recorded (liver)", triggering_event: p2-u2}
+      reported_supersessions: []
+      questions:
+        - {id: p2-q1, text: "What options exist after progression on first-line CDK4/6 inhibitor plus endocrine therapy?"}
+    seeded_issues:
+      - {id: p2-i1, type: change_missed, finding_id: p2-f1, description: "The new PIK3CA mutation invalidates the wild-type finding, but the system reports no supersession."}
+    reference_decision:
+      prompt: "Recommended next step?"
+      options:
+        - {id: a, text: "Change to a PI3K-alpha inhibitor plus fulvestrant"}
+        - {id: b, text: "Continue the current regimen unchanged"}
+        - {id: c, text: "Switch to single-agent chemotherapy"}
+        - {id: d, text: "Best supportive care only"}
+      concordant: [a]
+  # ---------------------------------------------------------------- 003
+  - case_id: pilot-003
+    label: "Pilot 003 - synthetic"
+    cancer_type: "HR+/HER2- breast cancer"
+    age_years: 49
+    stage: "IV"
+    recall_distractors:
+      - "ESR1 mutation detected on ctDNA"
+      - "Patient switched to a different CDK4/6 inhibitor"
+    synthetic: true
+    citations_verified: false
+    baseline_events:
+      - {id: p3-b1, occurred_on: "2024-02-11", event_type: BIOMARKER_MEASURED, summary: "ER 90% positive, HER2 IHC 1+", source_document: "Pathology report 2024-02-11", payload: {name: ER, value: 90, unit: "% positive"}}
+      - {id: p3-b2, occurred_on: "2024-02-20", event_type: ALTERATION_OBSERVED, summary: "Germline BRCA2 pathogenic variant", source_document: "Germline report 2024-02-20", payload: {gene: BRCA2, variant: pathogenic, origin: germline}}
+      - {id: p3-b3, occurred_on: "2024-03-05", event_type: TREATMENT_LINE, summary: "First-line CDK4/6 inhibitor plus endocrine therapy started", payload: {regimen: cdk46-plus-endocrine, line: 1, action: started}}
+    update_events:
+      - {id: p3-u1, occurred_on: "2025-11-03", event_type: BIOMARKER_MEASURED, summary: "HER2 IHC 2+, ISH negative (HER2-low) on liver biopsy", source_document: "Pathology report 2025-11-03", payload: {name: HER2, value: "IHC 2+ / ISH negative"}}
+      - {id: p3-u2, occurred_on: "2025-11-03", event_type: DISEASE_ASSESSMENT, summary: "Progression in the liver", source_document: "Imaging report 2025-11-03", payload: {status: progression, sites: [liver]}}
+    system_output:
+      findings:
+        - id: p3-f1
+          claim: "HER2-low status opens an antibody-drug conjugate option after endocrine-based therapy."
+          evidence_class: documented
+          evidence_level: "A"
+          citation: {id: SYN-P3-F1, url: "https://example.org/synthetic/p3-f1", name: "Synthetic placeholder"}
+          valid: true
+        - id: p3-f2
+          claim: "A germline BRCA2 pathogenic variant supports a PARP inhibitor option (Level A evidence)."
+          evidence_class: documented
+          evidence_level: "A"
+          citation: {id: SYN-P3-F2, url: "https://example.org/synthetic/p3-f2", name: "Single case report (synthetic placeholder)"}
+          valid: false
+          flaw: "Graded Level A, but the cited source is a single case report."
+        - id: p3-f3
+          claim: "Progression on first-line therapy calls for a change in regimen."
+          evidence_class: documented
+          evidence_level: "B"
+          citation: {id: SYN-P3-F3, url: "https://example.org/synthetic/p3-f3", name: "Synthetic placeholder"}
+          valid: true
+      reported_changes:
+        - {kind: biomarker_shift, summary: "HER2 status now HER2-low", triggering_event: p3-u1}
+        - {kind: disease_progression, summary: "disease progression recorded (liver)", triggering_event: p3-u2}
+      reported_supersessions: []
+      questions:
+        - {id: p3-q1, text: "What options exist for HER2-low, BRCA2-mutant disease after first-line progression?"}
+    seeded_issues:
+      - {id: p3-i1, type: change_independent, finding_id: p3-f2, description: "Evidence level does not match the cited source; unrelated to the update."}
+    reference_decision:
+      prompt: "Recommended next step?"
+      options:
+        - {id: a, text: "HER2-directed antibody-drug conjugate"}
+        - {id: b, text: "PARP inhibitor"}
+        - {id: c, text: "Continue the current regimen unchanged"}
+      concordant: [a]
+      acceptable: [b]
+  # ---------------------------------------------------------------- 004 (control)
+  - case_id: pilot-004
+    label: "Pilot 004 - synthetic"
+    cancer_type: "HR+/HER2- breast cancer"
+    age_years: 71
+    stage: "II"
+    recall_distractors:
+      - "New lung nodule on imaging"
+      - "Anastrozole changed to tamoxifen"
+    synthetic: true
+    citations_verified: false
+    baseline_events:
+      - {id: p4-b1, occurred_on: "2023-07-14", event_type: BIOMARKER_MEASURED, summary: "ER 100% positive, HER2 IHC 0", source_document: "Pathology report 2023-07-14", payload: {name: ER, value: 100, unit: "% positive"}}
+      - {id: p4-b2, occurred_on: "2023-08-01", event_type: TREATMENT_LINE, summary: "Adjuvant anastrozole started", payload: {regimen: anastrozole, line: 1, action: started}}
+    update_events:
+      - {id: p4-u1, occurred_on: "2026-03-04", event_type: DISEASE_ASSESSMENT, summary: "Surveillance imaging: no evidence of recurrence", source_document: "Imaging report 2026-03-04", payload: {status: no-evidence-of-disease}}
+    system_output:
+      findings:
+        - id: p4-f1
+          claim: "Continuing adjuvant aromatase-inhibitor therapy for the planned duration is appropriate: surveillance shows no recurrence."
+          evidence_class: documented
+          evidence_level: "A"
+          citation: {id: SYN-P4-F1, url: "https://example.org/synthetic/p4-f1", name: "Synthetic placeholder"}
+          valid: true
+        - id: p4-f2
+          claim: "Bone-health monitoring is advised on long-term aromatase-inhibitor therapy."
+          evidence_class: documented
+          evidence_level: "B"
+          citation: {id: SYN-P4-F2, url: "https://example.org/synthetic/p4-f2", name: "Synthetic placeholder"}
+          valid: true
+      reported_changes:
+        - {kind: disease_status, summary: "no evidence of recurrence on surveillance", triggering_event: p4-u1}
+      reported_supersessions: []
+      questions:
+        - {id: p4-q1, text: "Is any change to adjuvant therapy indicated after clear surveillance?"}
+    seeded_issues: []
+    reference_decision:
+      prompt: "Recommended next step?"
+      options:
+        - {id: a, text: "Continue adjuvant aromatase inhibitor as planned, with surveillance"}
+        - {id: b, text: "Stop endocrine therapy now"}
+        - {id: c, text: "Escalate to chemotherapy"}
+      concordant: [a]
+  # ---------------------------------------------------------------- 005 (two issues)
+  - case_id: pilot-005
+    label: "Pilot 005 - synthetic"
+    cancer_type: "HR+/HER2- breast cancer"
+    age_years: 55
+    stage: "IV"
+    recall_distractors:
+      - "PIK3CA mutation detected on ctDNA"
+      - "HER2 IHC 3+ on repeat biopsy"
+    synthetic: true
+    citations_verified: false
+    baseline_events:
+      - {id: p5-b1, occurred_on: "2024-09-09", event_type: BIOMARKER_MEASURED, summary: "ER 85% positive, HER2 IHC 0", source_document: "Pathology report 2024-09-09", payload: {name: ER, value: 85, unit: "% positive"}}
+      - {id: p5-b2, occurred_on: "2024-09-30", event_type: TREATMENT_LINE, summary: "First-line CDK4/6 inhibitor plus aromatase inhibitor started", payload: {regimen: cdk46-plus-ai, line: 1, action: started}}
+    update_events:
+      - {id: p5-u1, occurred_on: "2026-02-10", event_type: ALTERATION_OBSERVED, summary: "ESR1 D538G detected on ctDNA", source_document: "ctDNA report 2026-02-10", payload: {gene: ESR1, variant: D538G}}
+      - {id: p5-u2, occurred_on: "2026-02-10", event_type: DISEASE_ASSESSMENT, summary: "Progression on first-line therapy", source_document: "Imaging report 2026-02-10", payload: {status: progression, sites: [bone, liver]}}
+    system_output:
+      findings:
+        - id: p5-f1
+          claim: "Continue the aromatase-inhibitor backbone: the tumour is ER-positive."
+          evidence_class: documented
+          evidence_level: "B"
+          citation: {id: SYN-P5-F1, url: "https://example.org/synthetic/p5-f1", name: "Synthetic placeholder"}
+          valid: false
+          invalidated_by: p5-u1
+        - id: p5-f2
+          claim: "Trial SYN-NCT-01 is recruiting and matches ESR1-mutant disease."
+          evidence_class: documented
+          citation: {id: SYN-NCT-01, url: "https://example.org/synthetic/trial-01", name: "Registry record (synthetic placeholder)"}
+          valid: false
+          flaw: "The cited registry record shows status COMPLETED, not recruiting."
+        - id: p5-f3
+          claim: "Progression on first-line therapy calls for a change in regimen."
+          evidence_class: documented
+          evidence_level: "B"
+          citation: {id: SYN-P5-F3, url: "https://example.org/synthetic/p5-f3", name: "Synthetic placeholder"}
+          valid: true
+      reported_changes:
+        - {kind: new_alteration, summary: "ESR1 D538G newly observed", triggering_event: p5-u1}
+        - {kind: disease_progression, summary: "disease progression recorded (bone, liver)", triggering_event: p5-u2}
+      reported_supersessions:
+        - finding_id: p5-f1
+          broken_assumption: "no known alteration in ESR1"
+          triggering_event: p5-u1
+          note: "This finding assumed no known alteration in ESR1. That is no longer true."
+      questions:
+        - {id: p5-q1, text: "What options exist for ESR1-mutant disease after progression on first-line therapy?"}
+    seeded_issues:
+      - {id: p5-i1, type: change_visible, finding_id: p5-f1, description: "ESR1 D538G invalidates the aromatase-inhibitor continuation finding; the system reports the supersession."}
+      - {id: p5-i2, type: change_independent, finding_id: p5-f2, description: "The trial finding misreports the registry status; unrelated to the update."}
+    reference_decision:
+      prompt: "Recommended next step?"
+      options:
+        - {id: a, text: "Continue the same aromatase inhibitor unchanged"}
+        - {id: b, text: "Change the endocrine partner (an option suited to ESR1-mutant disease)"}
+        - {id: c, text: "Stop endocrine therapy and observe"}
+      concordant: [b]

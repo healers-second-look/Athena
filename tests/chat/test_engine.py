@@ -262,3 +262,33 @@ def test_unknown_case_id_notes_and_still_returns_a_turn(monkeypatch):
     )
     assert any("case record could not be loaded" in n for n in failed.notes)
     assert failed.content
+
+
+def test_run_turn_can_use_supplied_sources_instead_of_the_graph(monkeypatch):
+    """The study's chat arm (issue #136) supplies the case's findings as the
+    turn's sources; graph retrieval must not run at all."""
+
+    def boom(*args, **kwargs):
+        raise AssertionError("retrieval must be skipped when sources are supplied")
+
+    monkeypatch.setattr("secondlook.chat.engine.retrieve_evidence_for_turn", boom)
+    sources = [
+        {
+            "id": "study:f1",
+            "citation_index": 1,
+            "title": "A finding",
+            "summary": "A finding",
+            "evidence_level": "B",
+            "pmid": "SYN-1",
+            "citation_url": "https://example.org/x",
+        }
+    ]
+    result = run_turn(
+        "What changed?",
+        model_id="mock-outline",
+        sources_override=sources,
+        extra_context_lines=["2026-01-01: something happened"],
+    )
+    assert result.sources_count == 1
+    assert "2026-01-01: something happened" in result.context_lines
+    assert "A finding" in result.content
