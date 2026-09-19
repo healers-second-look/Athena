@@ -9,14 +9,32 @@ intake extraction have no ungrounded variant by design.
 
 ## Run provenance
 
-- Run at: 2026-09-18T06:14:17+00:00
+- Run at: 2026-09-19T07:36:21+00:00
 - Provider: `openai_compatible`
-- Model (`ATHENA_LLM_MODEL`): `cniongolo/biomistral:latest`
-- Endpoint: `http://127.0.0.1:11434/v1`
+- Model (`ATHENA_LLM_MODEL`): `deepseek/deepseek-v4-flash-0731:free`
+- Endpoint: `https://openrouter.ai/api/v1`
 
 ## synthesis.generate (breast_cancer eval set) (`synthesis/v1`)
 
-- **Pass rate:** 0% — threshold 70% (pre-committed)
+- **Pass rate:** 71% — threshold 70% (pre-committed)
 - **Safety violations:** none
-- **Verdict:** FAIL
+- **Verdict:** PASS
+
+## criteria_extraction (`criteria_extraction/rule_based`)
+
+- **Pass rate:** 75% — threshold 70% (pre-committed)
+- **Safety violations:** none
+- **Verdict:** PASS
+
+## intake.extract (`intake/extraction/json-v1`)
+
+- **Pass rate:** 0% — threshold 70% (pre-committed)
+- **Safety violations:** fabricated_field_value
+- **Verdict:** BLOCKED_BY_SAFETY_VIOLATION
+
+## synthesis.citation_acceptance (`synthesis/v1`)
+
+- **Pass rate:** 100% — threshold 70% (pre-committed)
+- **Safety violations:** none
+- **Verdict:** PASS
 
