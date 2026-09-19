@@ -50,9 +50,11 @@ def chat_context_lines(case: StudyCase) -> list[str]:
 
 def briefing_text(case: StudyCase) -> str:
     """The first assistant message: the same findings the other arms list."""
-    lines = [f"## {case.label}", "", "I reviewed this case. My current findings:"]
+    lines = [f"## {case.label}", "", "I reviewed this case. My current findings:", ""]
+    # Plain lines, not "- " bullets: the chat UI renders a bulleted line with its
+    # own bullet, so a leading "- " would show up doubled.
     lines += [
-        f"- {finding.claim} [{index}]"
+        f"Finding {index}: {finding.claim} [{index}]"
         for index, finding in enumerate(case.system_output.findings, start=1)
     ]
     lines += ["", "Ask me anything about the case."]
