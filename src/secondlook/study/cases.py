@@ -156,6 +156,11 @@ class StudyCase:
     reference_decision: ReferenceDecision
     age_years: int | None = None
     stage: str | None = None
+    # Plausible changes that did NOT happen in this case, mixed with the real
+    # update events for the post-review "what changed?" recall probe
+    # (protocol section 6, memory burden). Authored per case, like everything
+    # else a reviewer sees.
+    recall_distractors: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -286,7 +291,7 @@ def _parse_case(raw: Any, where: str) -> StudyCase:
             "seeded_issues",
             "reference_decision",
         ),
-        ("age_years", "stage"),
+        ("age_years", "stage", "recall_distractors"),
     )
     for flag in ("synthetic", "citations_verified"):
         if not isinstance(d[flag], bool):
@@ -333,6 +338,9 @@ def _parse_case(raw: Any, where: str) -> StudyCase:
         ),
         age_years=d.get("age_years"),
         stage=d.get("stage"),
+        recall_distractors=tuple(
+            str(x) for x in _seq(d.get("recall_distractors"), f"{where}.recall_distractors")
+        ),
     )
 
 
@@ -488,6 +496,18 @@ def validate_case(case: StudyCase) -> list[str]:
     flawed = {f.id for f in findings if not f.valid}
     for orphan in sorted(flawed - set(issue_targets)):
         errs.append(f"{p}: finding {orphan} is flawed in ground truth but has no seeded issue")
+
+    real_changes = {e.summary.strip().lower() for e in all_events}
+    seen_distractors: set[str] = set()
+    for text in case.recall_distractors:
+        key = text.strip().lower()
+        if not key:
+            errs.append(f"{p}: a recall distractor is empty")
+        elif key in real_changes:
+            errs.append(f"{p}: recall distractor {text!r} is actually an event in this case")
+        elif key in seen_distractors:
+            errs.append(f"{p}: recall distractor {text!r} is listed twice")
+        seen_distractors.add(key)
 
     rd = case.reference_decision
     option_ids = [o.id for o in rd.options]

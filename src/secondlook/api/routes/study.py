@@ -30,6 +30,10 @@ from sqlalchemy.orm import Session
 
 from secondlook.api.auth import require_api_key
 from secondlook.api.deps import get_session
+from secondlook.chat.engine import run_turn
+from secondlook.chat.session import create_session
+from secondlook.chat.session import get_session as get_chat_session
+from secondlook.study.assignment import build_schedule
 from secondlook.study.cases import (
     DEFAULT_CASE_SET_DIR,
     STUDY_ELIGIBLE_STATUS,
@@ -40,6 +44,7 @@ from secondlook.study.cases import (
     load_case_set,
     validate_case_set,
 )
+from secondlook.study.chat import briefing_text, chat_context_lines, chat_sources
 from secondlook.study.events import (
     ARMS,
     MAX_BATCH,
@@ -47,11 +52,18 @@ from secondlook.study.events import (
     NewStudyEvent,
     StudyEventStore,
 )
-from secondlook.study.views import ReviewerCaseView, reviewer_view
+from secondlook.study.views import (
+    RecallOptionView,
+    ReviewerCaseView,
+    recall_options,
+    reviewer_view,
+)
 
 ENABLED_ENV = "ATHENA_STUDY_ENABLED"
 CASE_SET_ENV = "ATHENA_STUDY_CASE_SET"
 ALLOW_UNREVIEWED_ENV = "ATHENA_STUDY_ALLOW_UNREVIEWED"
+CHAT_MODEL_ENV = "ATHENA_STUDY_CHAT_MODEL"
+DEFAULT_CHAT_MODEL = "mock-outline"
 
 router = APIRouter(prefix="/api/study", tags=["study"])
 
@@ -117,6 +129,24 @@ class StudyCaseResponse(BaseModel):
     case: ReviewerCaseView
 
 
+class RecallResponse(BaseModel):
+    case_id: str
+    options: list[RecallOptionView]
+
+
+class ScheduleItem(BaseModel):
+    case_id: str
+    arm: str
+    label: str
+
+
+class ScheduleResponse(BaseModel):
+    reviewer_index: int
+    participant_id: str
+    unreviewed: bool
+    items: list[ScheduleItem]
+
+
 class StudyEventIn(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -174,6 +204,138 @@ def read_case(
     if case is None:
         raise HTTPException(status_code=404, detail=f"no study case {case_id!r}")
     return StudyCaseResponse(unreviewed=loaded.unreviewed, case=reviewer_view(case, arm))
+
+
+@router.get("/cases/{case_id}/recall", response_model=RecallResponse)
+def read_recall_options(
+    case_id: str, loaded: LoadedCaseSet = Depends(get_case_set)
+) -> RecallResponse:
+    case = next((c for c in loaded.case_set.cases if c.case_id == case_id), None)
+    if case is None:
+        raise HTTPException(status_code=404, detail=f"no study case {case_id!r}")
+    return RecallResponse(case_id=case_id, options=recall_options(case))
+
+
+@router.get("/schedule/{reviewer_index}", response_model=ScheduleResponse)
+def read_schedule(
+    reviewer_index: int,
+    cases_per_arm: int | None = Query(None, ge=1, le=20),
+    loaded: LoadedCaseSet = Depends(get_case_set),
+) -> ScheduleResponse:
+    """The reviewer's ordered (case, arm) list -- see study/assignment.py.
+
+    `cases_per_arm` defaults to the protocol's 3, or fewer if the pool is too
+    small (a dry run on the pilot set); a real run passes it explicitly.
+    """
+    if reviewer_index < 0:
+        raise HTTPException(status_code=422, detail="reviewer_index must be >= 0")
+    cases = loaded.case_set.cases
+    per_arm = cases_per_arm or max(1, min(3, len(cases) // 3))
+    try:
+        pairs = build_schedule(reviewer_index, [c.case_id for c in cases], cases_per_arm=per_arm)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    labels = {c.case_id: c.label for c in cases}
+    return ScheduleResponse(
+        reviewer_index=reviewer_index,
+        participant_id=f"P{reviewer_index + 1:02d}",
+        unreviewed=loaded.unreviewed,
+        items=[ScheduleItem(case_id=c, arm=a, label=labels[c]) for c, a in pairs],
+    )
+
+
+# --- chat arm (arm C) -----------------------------------------------------------
+
+# chat session id -> study case id. The chat session itself lives in the shared
+# in-memory chat store; this records which sessions belong to the study so the
+# study turn route can refuse an ordinary chat session.
+_STUDY_CHAT_SESSIONS: dict[str, str] = {}
+
+
+class StudyChatSessionIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    case_id: str
+
+
+class StudyChatTurnIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    message: str = Field(min_length=1, max_length=4000)
+
+
+def _find_case(loaded: LoadedCaseSet, case_id: str):
+    case = next((c for c in loaded.case_set.cases if c.case_id == case_id), None)
+    if case is None:
+        raise HTTPException(status_code=404, detail=f"no study case {case_id!r}")
+    return case
+
+
+@router.post("/chat/sessions")
+def create_study_chat_session(
+    body: StudyChatSessionIn, loaded: LoadedCaseSet = Depends(get_case_set)
+) -> dict:
+    """A chat session about one study case, opened with the shared findings.
+
+    The model is fixed by `ATHENA_STUDY_CHAT_MODEL` (the protocol pins it), not
+    chosen by the reviewer.
+    """
+    case = _find_case(loaded, body.case_id)
+    session = create_session(
+        model_id=os.environ.get(CHAT_MODEL_ENV) or DEFAULT_CHAT_MODEL, attachment_ids=[]
+    )
+    session.add_message(
+        "assistant",
+        briefing_text(case),
+        sources=chat_sources(case),
+        sources_count=len(case.system_output.findings),
+        entities={},
+        notes=[],
+        context_lines=[],
+        model_id=session.model_id,
+    )
+    _STUDY_CHAT_SESSIONS[session.id] = case.case_id
+    return session.as_dict()
+
+
+@router.get("/chat/sessions/{session_id}")
+def read_study_chat_session(session_id: str) -> dict:
+    session = get_chat_session(session_id)
+    if session is None or session_id not in _STUDY_CHAT_SESSIONS:
+        raise HTTPException(status_code=404, detail="no such study chat session")
+    return session.as_dict()
+
+
+@router.post("/chat/sessions/{session_id}/turns")
+def send_study_chat_turn(
+    session_id: str,
+    body: StudyChatTurnIn,
+    loaded: LoadedCaseSet = Depends(get_case_set),
+) -> dict:
+    session = get_chat_session(session_id)
+    case_id = _STUDY_CHAT_SESSIONS.get(session_id)
+    if session is None or case_id is None:
+        raise HTTPException(status_code=404, detail="no such study chat session")
+    case = _find_case(loaded, case_id)
+    user_msg = session.add_message("user", body.message)
+    result = run_turn(
+        body.message,
+        model_id=session.model_id,
+        attachment_ids=[],
+        sources_override=chat_sources(case),
+        extra_context_lines=chat_context_lines(case),
+    )
+    assistant_msg = session.add_message(
+        "assistant",
+        result.content,
+        entities=result.entities,
+        notes=result.notes,
+        context_lines=result.context_lines,
+        sources=result.sources,
+        sources_count=result.sources_count,
+        model_id=result.model_id,
+    )
+    return {"user_message": user_msg, "assistant_message": assistant_msg, "turn": result.as_dict()}
 
 
 @router.post("/events", response_model=StudyEventsAccepted, status_code=201)
