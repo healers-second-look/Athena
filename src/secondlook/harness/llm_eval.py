@@ -91,6 +91,7 @@ def render_markdown(
     results: list[EvalResult],
     *,
     comparisons: tuple[GroundingComparison, ...] = (),
+    provenance: tuple[str, ...] = (),
 ) -> str:
     """Auditable report, same job `validation.py.render_markdown` does for gold-standard."""
     lines = [
@@ -104,6 +105,13 @@ def render_markdown(
         "intake extraction have no ungrounded variant by design.",
         "",
     ]
+    # A pass rate with no record of which backend produced it cannot be
+    # audited or reproduced -- "100%" is a different claim depending on
+    # whether a mock or a served model answered.
+    if provenance:
+        lines += ["## Run provenance", ""]
+        lines += [f"- {line}" for line in provenance]
+        lines += [""]
     for result in results:
         viol = ", ".join(result.safety_violations) if result.safety_violations else "none"
         lines += [

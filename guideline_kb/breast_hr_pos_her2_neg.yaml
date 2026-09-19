@@ -1,0 +1,132 @@
+# UNREVIEWED — pending clinician review.
+#
+# Derived decision logic for the MVP cancer type (issue #121), cited against
+# ASCO and ESMO open-access guideline instruments. This is not a claim of
+# clinical validity and has not been signed off by a named clinician.
+# review_status stays `unreviewed` until that happens.
+#
+# Do not treat this file as guidance for patient care.
+#
+# Schema notes (enforced by guideline_kb_loader.py):
+# - cancer_type is matched by exact string in exhaustion.py. The spelling
+#   below is the one already committed in
+#   tests/harness/eval_sets/synthesis_breast_cancer.py.
+# - `line` is a YAML integer, not a quoted string.
+# - A single malformed recommendation rejects the whole file.
+#
+# Stage handling (deliberate, pinned by tests):
+# Issue #51: a non-empty applicable_stages list plus stage=None forces
+# status="unknown". Most callers still omit stage. Adjuvant-only entries
+# therefore carry applicable_stages (I/II/III). Advanced-disease and
+# molecularly directed entries omit the field so they remain evaluable
+# when stage is unknown, and the MVP exhaustion loop can still run.
+config_version: "2026-09-18.1"
+cancer_type: "HR+/HER2- breast cancer"
+review_status: unreviewed
+
+recommendations:
+  # --- Advanced disease, stage-agnostic (evaluable when stage is omitted) ---
+  - regimen: "palbociclib + aromatase inhibitor"
+    line: 1
+    instrument: "ASCO Guideline Update: Endocrine Treatment and Targeted Therapy for HR-Positive, HER2-Negative Metastatic Breast Cancer (JCO 2021)"
+    source_url: "https://doi.org/10.1200/JCO.21.01392"
+
+  - regimen: "ribociclib + aromatase inhibitor"
+    line: 1
+    instrument: "ASCO Guideline Update: Endocrine Treatment and Targeted Therapy for HR-Positive, HER2-Negative Metastatic Breast Cancer (JCO 2021)"
+    source_url: "https://doi.org/10.1200/JCO.21.01392"
+
+  - regimen: "abemaciclib + aromatase inhibitor"
+    line: 1
+    instrument: "ASCO Guideline Update: Endocrine Treatment and Targeted Therapy for HR-Positive, HER2-Negative Metastatic Breast Cancer (JCO 2021)"
+    source_url: "https://doi.org/10.1200/JCO.21.01392"
+
+  - regimen: "fulvestrant + CDK4/6 inhibitor"
+    line: 1
+    instrument: "ASCO Guideline Update: Endocrine Treatment and Targeted Therapy for HR-Positive, HER2-Negative Metastatic Breast Cancer (JCO 2021)"
+    source_url: "https://doi.org/10.1200/JCO.21.01392"
+
+  - regimen: "aromatase inhibitor"
+    line: 1
+    instrument: "ESMO Clinical Practice Guideline: metastatic breast cancer (Ann Oncol 2021)"
+    source_url: "https://doi.org/10.1016/j.annonc.2021.09.019"
+
+  - regimen: "fulvestrant"
+    line: 2
+    instrument: "ESMO Clinical Practice Guideline: metastatic breast cancer (Ann Oncol 2021)"
+    source_url: "https://doi.org/10.1016/j.annonc.2021.09.019"
+
+  - regimen: "alpelisib + fulvestrant"
+    line: 2
+    molecular_requirement:
+      gene: "PIK3CA"
+      variant: "H1047R"
+    instrument: "ASCO Guideline Update: Endocrine Treatment and Targeted Therapy for HR-Positive, HER2-Negative Metastatic Breast Cancer (JCO 2021)"
+    source_url: "https://doi.org/10.1200/JCO.21.01392"
+
+  - regimen: "alpelisib + fulvestrant"
+    line: 2
+    molecular_requirement:
+      gene: "PIK3CA"
+      variant: "E545K"
+    instrument: "ASCO Guideline Update: Endocrine Treatment and Targeted Therapy for HR-Positive, HER2-Negative Metastatic Breast Cancer (JCO 2021)"
+    source_url: "https://doi.org/10.1200/JCO.21.01392"
+
+  - regimen: "olaparib"
+    line: 2
+    molecular_requirement:
+      gene: "BRCA1"
+      variant: "pathogenic"
+    instrument: "ASCO Guideline Update: Endocrine Treatment and Targeted Therapy for HR-Positive, HER2-Negative Metastatic Breast Cancer (JCO 2021)"
+    source_url: "https://doi.org/10.1200/JCO.21.01392"
+
+  - regimen: "olaparib"
+    line: 2
+    molecular_requirement:
+      gene: "BRCA2"
+      variant: "pathogenic"
+    instrument: "ASCO Guideline Update: Endocrine Treatment and Targeted Therapy for HR-Positive, HER2-Negative Metastatic Breast Cancer (JCO 2021)"
+    source_url: "https://doi.org/10.1200/JCO.21.01392"
+
+  - regimen: "talazoparib"
+    line: 2
+    molecular_requirement:
+      gene: "BRCA1"
+      variant: "pathogenic"
+    instrument: "ASCO Guideline Update: Endocrine Treatment and Targeted Therapy for HR-Positive, HER2-Negative Metastatic Breast Cancer (JCO 2021)"
+    source_url: "https://doi.org/10.1200/JCO.21.01392"
+
+  - regimen: "elacestrant"
+    line: 2
+    molecular_requirement:
+      gene: "ESR1"
+      variant: "Y537S"
+    instrument: "ASCO Rapid Recommendation Update: Testing for ESR1 Mutations to Guide Therapy for HR-Positive, HER2-Negative Metastatic Breast Cancer (JCO 2023)"
+    source_url: "https://doi.org/10.1200/JCO.23.00638"
+
+  - regimen: "elacestrant"
+    line: 2
+    molecular_requirement:
+      gene: "ESR1"
+      variant: "D538G"
+    instrument: "ASCO Rapid Recommendation Update: Testing for ESR1 Mutations to Guide Therapy for HR-Positive, HER2-Negative Metastatic Breast Cancer (JCO 2023)"
+    source_url: "https://doi.org/10.1200/JCO.23.00638"
+
+  # --- Adjuvant / early disease: stage-gated (unknown when stage is omitted) ---
+  - regimen: "tamoxifen"
+    line: 1
+    applicable_stages: ["I", "II", "III"]
+    instrument: "ASCO Clinical Practice Guideline Focused Update: Adjuvant Endocrine Therapy for Women With HR-Positive Breast Cancer (JCO 2018)"
+    source_url: "https://doi.org/10.1200/JCO.18.01160"
+
+  - regimen: "adjuvant aromatase inhibitor"
+    line: 1
+    applicable_stages: ["I", "II", "III"]
+    instrument: "ASCO Clinical Practice Guideline Focused Update: Adjuvant Endocrine Therapy for Women With HR-Positive Breast Cancer (JCO 2018)"
+    source_url: "https://doi.org/10.1200/JCO.18.01160"
+
+  - regimen: "adjuvant tamoxifen"
+    line: 1
+    applicable_stages: ["I", "II", "III"]
+    instrument: "ESMO Clinical Practice Guideline: early breast cancer (Ann Oncol 2024)"
+    source_url: "https://doi.org/10.1016/j.annonc.2023.11.016"

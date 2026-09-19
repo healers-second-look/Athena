@@ -20,11 +20,13 @@
 # `evidence_item_count` is the count CIViC reported when this entry was added.
 # It is documentation of why the entry is here, not a value the loader reads.
 
-config_version: "2026-08-21.1"
+config_version: "2026-09-18.1"
 description: >-
-  V1 scope: soft-tissue and bone sarcomas. Sarcoma is the intended focus per
-  tier1-implementation-spec.md SS1 -- it ties back to RareCure's own validation
-  cohort and is the source for the Tier 2 demo case in validation-plan.md.
+  Evidence-graph disease scope. Soft-tissue and bone sarcomas remain in scope
+  (RareCure validation cohort / Tier 2 demo). Widened for the MVP cancer type
+  (issue #121) with breast-cancer DOIDs: parent breast cancer (DOID:1612) and
+  the HR+/HER2- receptor-defined subtype family. Entries are added alongside
+  sarcoma, not as a replacement.
 
 # Only ACCEPTED, PREDICTIVE evidence is loaded (see civic_loader.py).
 # SUBMITTED and REJECTED evidence is excluded: it has not cleared CIViC's own
@@ -84,3 +86,13 @@ diseases:
   - doid: "5363"
     name: Myxoid Liposarcoma
     evidence_item_count: 6
+  # Breast cancer family (MVP, issue #121). Matched by DOID only.
+  # evidence_item_count omitted: not recorded at the time of addition.
+  - doid: "1612"
+    name: Breast Cancer
+  - doid: "0060075"
+    name: Estrogen-Receptor Positive Breast Cancer
+  - doid: "0060080"
+    name: HER2 Negative Breast Cancer
+  - doid: "0070780"
+    name: Hormone Receptor-Positive/HER2-Negative Breast Cancer

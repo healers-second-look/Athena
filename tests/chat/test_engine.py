@@ -1,5 +1,7 @@
 """Tests for session store, engine, and KG integration (Phases 1, 4)."""
 
+from secondlook.case.state import Alteration, CaseState
+from secondlook.chat.case_context import CaseSnapshot, Diagnosis
 from secondlook.chat.engine import build_prompt, citation_overclaim, run_turn
 from secondlook.chat.knowledge import describe_context
 from secondlook.chat.session import (
@@ -11,11 +13,23 @@ from secondlook.chat.session import (
 )
 
 
+def test_create_session_defaults_to_self_hosted_when_configured(monkeypatch):
+    monkeypatch.setenv("ATHENA_LLM_BASE_URL", "http://127.0.0.1:11434/v1")
+    monkeypatch.setenv("ATHENA_LLM_MODEL", "candidate-model")
+    sess = create_session()
+    try:
+        assert sess.model_id == "openai-compatible"
+    finally:
+        delete_session(sess.id)
+
+
 def test_session_store_crud():
     sess = create_session(model_id="mock-terse", attachment_ids=["variant-normalizer"])
     assert sess.id is not None
     assert sess.model_id == "mock-terse"
     assert sess.attachment_ids == ["variant-normalizer"]
+    assert sess.case_id is None
+    assert sess.as_dict()["case_id"] is None
 
     fetched = get_session(sess.id)
     assert fetched is not None
@@ -25,8 +39,10 @@ def test_session_store_crud():
     assert msg["content"] == "Hello world"
     assert len(sess.history) == 1
 
-    updated = update_session(sess.id, context_id="gene:EGFR")
+    updated = update_session(sess.id, context_id="gene:EGFR", case_id="case-1")
     assert updated.context_id == "gene:EGFR"
+    assert updated.case_id == "case-1"
+    assert sess.as_dict()["case_id"] == "case-1"
 
     all_sessions = list_sessions()
     assert any(s.id == sess.id for s in all_sessions)
@@ -167,6 +183,85 @@ def test_run_turn_does_not_touch_honest_output(monkeypatch):
     result = run_turn("What evidence exists for ZZFAKE1 Z999Z?", model_id="fake-honest-model")
     assert result.content == "No sources were retrieved for this question."
     assert not any(n.startswith("citation gate withheld model output") for n in result.notes)
+
+
+_FAKE_SOURCES = [
+    {
+        "id": "civic:1",
+        "citation_index": 1,
+        "title": "EGFR T790M → osimertinib",
+        "evidence_level": "A",
+        "summary": "documented sensitivity",
+        "citation_url": "http://civicdb.org",
+        "pmid": "1",
+    }
+]
+
+
+def _stub_retrieval(monkeypatch) -> None:
+    monkeypatch.setattr(
+        "secondlook.chat.engine.retrieve_evidence_for_turn",
+        lambda *args, **kwargs: list(_FAKE_SOURCES),
+    )
+
+
+def test_case_context_does_not_change_sources_or_sources_count(monkeypatch):
+    """Issue #107: patient facts are CONTEXT, never citable sources."""
+    _stub_retrieval(monkeypatch)
+    state = CaseState(
+        case_id="case-1",
+        alterations=(
+            Alteration(
+                gene="EGFR",
+                variant="T790M",
+                variant_type="missense",
+                assay=None,
+                tested_on=None,
+                event_id="e1",
+            ),
+        ),
+    )
+    without = run_turn("What is EGFR T790M?", model_id="mock-terse")
+    with_case = run_turn(
+        "What is EGFR T790M?",
+        model_id="mock-terse",
+        case_id="case-1",
+        case_state_loader=lambda _cid: CaseSnapshot(
+            state=state, diagnosis=Diagnosis(cancer_type="NSCLC")
+        ),
+    )
+    assert without.sources == with_case.sources
+    assert without.sources_count == with_case.sources_count
+    assert with_case.sources_count == len(_FAKE_SOURCES)
+    assert any("EGFR" in line and "T790M" in line for line in with_case.context_lines)
+    case_fact_lines = [line for line in with_case.context_lines if "T790M" in line]
+    assert case_fact_lines
+    assert not any(line in without.context_lines for line in case_fact_lines)
+
+
+def test_unknown_case_id_notes_and_still_returns_a_turn(monkeypatch):
+    _stub_retrieval(monkeypatch)
+    missing = run_turn(
+        "What is EGFR T790M?",
+        model_id="mock-terse",
+        case_id="missing-case",
+        case_state_loader=lambda _cid: None,
+    )
+    assert any("case record could not be loaded" in n for n in missing.notes)
+    assert missing.content
+    assert missing.sources_count == len(_FAKE_SOURCES)
+
+    def boom(_cid: str):
+        raise RuntimeError("postgres unreachable")
+
+    failed = run_turn(
+        "What is EGFR T790M?",
+        model_id="mock-terse",
+        case_id="missing-case",
+        case_state_loader=boom,
+    )
+    assert any("case record could not be loaded" in n for n in failed.notes)
+    assert failed.content
 
 
 def test_run_turn_can_use_supplied_sources_instead_of_the_graph(monkeypatch):

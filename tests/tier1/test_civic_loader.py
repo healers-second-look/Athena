@@ -502,6 +502,8 @@ class TestScopeConfig:
         assert config["diseases"]
         doids = {str(d["doid"]) for d in config["diseases"]}
         assert "1115" in doids, "sarcoma (DOID:1115) must be in scope"
+        assert "1612" in doids, "breast cancer (DOID:1612) must be in scope"
+        assert "0070780" in doids, "HR+/HER2- breast cancer (DOID:0070780) must be in scope"
 
     def test_missing_file_raises_civic_api_error(self, tmp_path):
         with pytest.raises(CivicApiError, match="not found"):

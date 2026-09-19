@@ -4,7 +4,7 @@
 # `review_status: unreviewed` until checked against the primary source by
 # someone with regulatory-affairs familiarity, and `precedent_examples` stays
 # empty until real citable cases are found.
-config_version: "2026-08-23.1"
+config_version: "2026-09-18.1"
 country: US
 regulator: FDA
 review_status: unreviewed
@@ -28,3 +28,43 @@ pathways:
     precedent_strength: theoretical
     precedent_examples: []
     source_url: "https://www.fda.gov/news-events/expanded-access"
+
+  - pathway_type: on_label
+    instrument: "FDA NDA 207103 — palbociclib (Ibrance) for HR+/HER2- advanced breast cancer"
+    description: >-
+      Theoretical on-label US route for palbociclib combined with endocrine
+      therapy in HR+/HER2- advanced breast cancer, citing the 2015 NDA
+      approval package. Not a claim that a named patient has used this route.
+    precedent_strength: theoretical
+    precedent_examples: []
+    source_url: "https://www.accessdata.fda.gov/drugsatfda_docs/label/2015/207103s000lbl.pdf"
+
+  - pathway_type: on_label
+    instrument: "FDA NDA 212526 — alpelisib (Piqray) for PIK3CA-mutated HR+/HER2- advanced breast cancer"
+    description: >-
+      Theoretical on-label US route for alpelisib with fulvestrant in
+      PIK3CA-mutant HR+/HER2- advanced breast cancer. Check the current
+      label; this entry is unreviewed.
+    precedent_strength: theoretical
+    precedent_examples: []
+    source_url: "https://www.accessdata.fda.gov/drugsatfda_docs/nda/2019/212526Orig1s000Approv.pdf"
+
+  - pathway_type: on_label
+    instrument: "FDA sNDA 208558/S-001 — olaparib (Lynparza) for germline BRCA-mutated HER2-negative metastatic breast cancer"
+    description: >-
+      Theoretical on-label US route for olaparib in germline BRCA-mutated
+      HER2-negative metastatic breast cancer. Check the current label; this
+      entry is unreviewed.
+    precedent_strength: theoretical
+    precedent_examples: []
+    source_url: "https://www.accessdata.fda.gov/drugsatfda_docs/label/2018/208558s001lbl.pdf"
+
+  - pathway_type: on_label
+    instrument: "FDA NDA 217639 — elacestrant (Orserdu) for ESR1-mutated ER+/HER2- advanced breast cancer"
+    description: >-
+      Theoretical on-label US route for elacestrant in ESR1-mutated
+      ER-positive, HER2-negative advanced or metastatic breast cancer after
+      endocrine therapy.
+    precedent_strength: theoretical
+    precedent_examples: []
+    source_url: "https://www.fda.gov/drugs/resources-information-approved-drugs/fda-approves-elacestrant-er-positive-her2-negative-esr1-mutated-advanced-or-metastatic-breast-cancer"

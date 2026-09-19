@@ -118,3 +118,37 @@ def test_build_client_unavailable_raises():
     if not spec.available:
         with pytest.raises(LLMClientError, match="is not configured"):
             build_client("anthropic")
+
+
+def test_openai_compatible_available_when_url_and_model_set(monkeypatch):
+    monkeypatch.setenv("ATHENA_LLM_BASE_URL", "http://127.0.0.1:11434/v1")
+    monkeypatch.setenv("ATHENA_LLM_MODEL", "candidate-model")
+    spec = get_model_spec("openai-compatible")
+    assert spec is not None
+    assert spec.available is True
+    assert spec.label == "Self-hosted (candidate-model)"
+    client = build_client("openai-compatible")
+    assert client.model == "candidate-model"
+    assert client.base_url == "http://127.0.0.1:11434/v1"
+
+
+def test_default_model_id_uses_self_hosted_when_configured(monkeypatch):
+    from secondlook.chat.models import DEFAULT_MODEL_ID, default_model_id
+
+    monkeypatch.delenv("ATHENA_LLM_BASE_URL", raising=False)
+    monkeypatch.delenv("ATHENA_LLM_MODEL", raising=False)
+    assert default_model_id() == DEFAULT_MODEL_ID
+
+    monkeypatch.setenv("ATHENA_LLM_BASE_URL", "http://127.0.0.1:11434/v1")
+    monkeypatch.setenv("ATHENA_LLM_MODEL", "candidate-model")
+    assert default_model_id() == "openai-compatible"
+
+
+def test_anthropic_label_does_not_borrow_self_hosted_model_name(monkeypatch):
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.setenv("ATHENA_LLM_MODEL", "candidate-model")
+    spec = get_model_spec("anthropic")
+    assert spec is not None
+    assert spec.available is False
+    assert "candidate-model" not in spec.label
+    assert "claude-sonnet-5" in spec.label

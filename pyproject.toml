@@ -63,12 +63,12 @@ where = ["src"]
 testpaths = ["tests"]
 pythonpath = ["src"]
 # Integration tests hit live external services (Ensembl VEP, RCSB, AlphaFold DB,
-# UniProt, CIViC, PubMed) and a running FalkorDB. Deselected by default so a
-# plain `pytest` is fast, offline and deterministic; run them explicitly with
-# `pytest -m integration`.
+# UniProt, CIViC, PubMed), a running FalkorDB, or a configured self-hosted LLM
+# endpoint. Deselected by default so a plain `pytest` is fast, offline and
+# deterministic; run them explicitly with `pytest -m integration`.
 addopts = "-m 'not integration'"
 markers = [
-    "integration: hits live external APIs or a running FalkorDB",
+    "integration: hits live external APIs, a running FalkorDB, or a configured LLM endpoint",
 ]
 
 [tool.ruff]

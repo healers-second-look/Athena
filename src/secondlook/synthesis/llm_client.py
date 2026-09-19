@@ -139,14 +139,14 @@ class OpenAICompatibleClient:
                     url,
                     json={"model": self.model, "messages": messages},
                     headers=headers,
-                    timeout=60.0,
+                    timeout=180.0,
                 )
             else:
                 response = httpx.post(
                     url,
                     json={"model": self.model, "messages": messages},
                     headers=headers,
-                    timeout=60.0,
+                    timeout=180.0,
                 )
             response.raise_for_status()
             return response

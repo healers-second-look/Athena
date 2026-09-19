@@ -7,6 +7,8 @@ guidance.
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 import yaml
 
@@ -19,6 +21,8 @@ from secondlook.tier1.guideline_kb_loader import (
     read_seed_file,
     validate_recommendation,
 )
+
+SYNTHETIC_FIXTURE_DIR = Path(__file__).parent / "fixtures" / "guideline_kb"
 
 CANCER = "TEST_SARCOMA_SYNTHETIC"
 INSTRUMENT = "[SYNTHETIC EXAMPLE — NOT REAL GUIDANCE] Example Oncology Society Guidelines v0"
@@ -137,14 +141,29 @@ class TestSyntheticSafetyGate:
         assert "synthetic_placeholder" in summary.render()
         assert kb.recommendations_for(CANCER)[0].regimen == "synthetic-agent-alpha"
 
-    def test_shipped_seed_is_refused_on_the_default_path(self):
+    def test_synthetic_fixture_on_disk_still_trips_the_gate(self):
+        """The shipped synthetic file lives under tests/ so it cannot poison
+        the production directory, but it is still a real file on disk and the
+        gate must reject it exactly as it rejects a generated one."""
         with pytest.raises(GuidelineConfigError, match=SYNTHETIC_PLACEHOLDER):
-            load_guideline_kb(GUIDELINE_KB_DIR, allow_synthetic=False)
+            load_guideline_kb(SYNTHETIC_FIXTURE_DIR, allow_synthetic=False)
 
-    def test_shipped_seed_loads_only_with_allow_synthetic(self):
-        kb, summary = load_guideline_kb(GUIDELINE_KB_DIR, allow_synthetic=True)
+    def test_synthetic_fixture_on_disk_loads_with_allow_synthetic(self):
+        kb, summary = load_guideline_kb(SYNTHETIC_FIXTURE_DIR, allow_synthetic=True)
         assert summary.rejected == []
         recs = kb.recommendations_for(CANCER)
         assert recs
         assert all(r.review_status == SYNTHETIC_PLACEHOLDER for r in recs)
         assert all("[SYNTHETIC EXAMPLE" in r.instrument for r in recs)
+
+
+class TestShippedKnowledgeBase:
+    def test_shipped_kb_loads_on_the_default_path(self):
+        """guideline_kb/ holds only real, reviewable content. A synthetic file
+        placed there would fail this test rather than being silently tolerated
+        — that is the point of keeping the fixture under tests/."""
+        kb, summary = load_guideline_kb(GUIDELINE_KB_DIR, allow_synthetic=False)
+        assert summary.rejected == []
+        assert summary.synthetic_loaded == 0
+        assert summary.recommendations_loaded > 0
+        assert kb.by_cancer_type
