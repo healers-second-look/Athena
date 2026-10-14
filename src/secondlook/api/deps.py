@@ -5,8 +5,10 @@ from __future__ import annotations
 import os
 import uuid
 from collections.abc import Iterator
+from functools import cache
 
 from fastapi import Depends, HTTPException
+from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session
 
 from secondlook.case.store import CaseStore
@@ -15,16 +17,46 @@ from secondlook.signals.registry import dispatch
 DEFAULT_DATABASE_URL = "postgresql+psycopg://athena:athena@localhost:5432/athena"
 
 
-def get_session() -> Iterator[Session]:
+@cache
+def _engine(url: str) -> Engine:
+    """One engine per URL, for the life of the process.
+
+    `create_engine` builds a connection pool. Building one per request meant a
+    new pool -- and a new TCP connection to Postgres -- on every call, and
+    discarding it before it could be reused, which is the opposite of what a
+    pool is for.
+    """
     from sqlalchemy import create_engine
 
-    url = os.environ.get("ATHENA_DATABASE_URL", DEFAULT_DATABASE_URL)
-    engine = create_engine(url)
-    session = Session(engine)
+    return create_engine(url)
+
+
+def get_session() -> Iterator[Session]:
+    """A request-scoped session that COMMITS when the request succeeds.
+
+    The commit is load-bearing and must not be "simplified" away. `CaseStore`
+    flushes and never commits, by design -- it leaves transaction control to
+    its caller, which is this function. A version that went from `yield`
+    straight to `close()` therefore discarded every write through the API
+    (fixed in #102; this docstring exists so it does not come back).
+
+    That failure was invisible, which is why it survived. The flush had
+    already assigned the primary key and the server defaults, so the response
+    came back fully populated with a real id and a real `created_at`. The
+    caller saw a successful create; the row was never there, and the next
+    request for that id returned 404.
+
+    It is still untested on main: `tests/api/test_routes.py` overrides
+    `get_store` with a store built on its own session, so this function --
+    the only place the transaction boundary is decided -- never executes
+    under test. `tests/api/test_session_lifecycle.py` closes that gap.
+    """
+    session = Session(_engine(os.environ.get("ATHENA_DATABASE_URL", DEFAULT_DATABASE_URL)))
     try:
         yield session
         session.commit()
     except Exception:
+        # The handler already failed; the request must not half-persist.
         session.rollback()
         raise
     finally:
