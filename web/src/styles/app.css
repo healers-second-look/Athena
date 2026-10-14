@@ -194,3 +194,46 @@ h3 { font-size: .95rem; margin: 0 0 .35rem; }
   a[href]::after { content: " (" attr(href) ")"; font-size: 9pt; word-break: break-all; }
   .superseded-claim { text-decoration: line-through; }
 }
+
+/* --- Degraded lanes and explained empty states ------------------------- */
+
+/* A failed lookup must not look like a quiet absence, so it gets a visible
+ * treatment of its own -- amber, like `computed`, because both are claims
+ * about our own machinery rather than about the patient. It is NOT dashed:
+ * dashed is reserved for the computed evidence class, and reusing it here
+ * would blur a distinction ARCHITECTURE.md SS5 spends real effort keeping. */
+.degraded {
+  border: 2px solid var(--computed);
+  border-left-width: 6px;
+  background: #fff8ec;
+  padding: .7rem .9rem;
+  margin: .6rem 0;
+}
+
+.degraded-head {
+  font-weight: 700;
+  color: var(--computed);
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  font-size: .8rem;
+  margin-bottom: .3rem;
+}
+
+.degraded p { margin: .25rem 0; }
+
+/* An explained empty state is subordinate but never invisible: it carries a
+ * rule so the panel reads as deliberately empty rather than unfinished. */
+.empty-state {
+  border-left: 3px solid var(--rule);
+  padding: .35rem 0 .35rem .7rem;
+  color: var(--ink-soft);
+  font-size: .9rem;
+  margin: .5rem 0;
+}
+
+@media print {
+  /* A brief that silently omits a failed lane misrepresents its own coverage
+   * to a tumour board. Both survive to paper. */
+  .degraded, .empty-state { break-inside: avoid; }
+  .degraded { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}

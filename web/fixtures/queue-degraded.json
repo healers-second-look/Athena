@@ -1,0 +1,105 @@
+{
+  "case_id": "8c1d4e2a-0000-4000-8000-000000000a01",
+  "counts": {"open": 5, "answered": 3, "suppressed": 2, "rejected": 0},
+  "open": [
+    {
+      "id": "q0000000-0000-4000-8000-000000000001",
+      "text": "What resistance mechanisms are documented for osimertinib in Lung adenocarcinoma?",
+      "status": "open",
+      "priority": 4,
+      "kind": "disease_progression",
+      "triggered_by": {"summary": "disease progression recorded", "triggering_event_id": "e1000000-0000-4000-8000-000000000006"},
+      "created_at": "2026-02-16T08:30:00Z",
+      "finding_ids": [],
+      "lane": "local"
+    },
+    {
+      "id": "q0000000-0000-4000-8000-000000000002",
+      "text": "What documented evidence exists for EGFR T790M in Lung adenocarcinoma?",
+      "status": "open",
+      "priority": 3,
+      "kind": "new_alteration",
+      "triggered_by": {"summary": "EGFR T790M newly observed", "triggering_event_id": "e1000000-0000-4000-8000-000000000004"},
+      "created_at": "2026-02-16T08:30:00Z",
+      "finding_ids": ["f0000000-0000-4000-8000-000000000021"],
+      "lane": "local"
+    },
+    {
+      "id": "q0000000-0000-4000-8000-000000000003",
+      "text": "Are there recruiting trials matching EGFR T790M?",
+      "status": "open",
+      "priority": 3,
+      "kind": "new_alteration",
+      "triggered_by": {"summary": "EGFR T790M newly observed", "triggering_event_id": "e1000000-0000-4000-8000-000000000004"},
+      "created_at": "2026-02-16T08:30:00Z",
+      "finding_ids": [],
+      "lane": "trials"
+    },
+    {
+      "id": "q0000000-0000-4000-8000-000000000004",
+      "text": "Does EGFR T790M confer resistance to any component of the current regimen?",
+      "status": "open",
+      "priority": 3,
+      "kind": "new_alteration",
+      "triggered_by": {"summary": "EGFR T790M newly observed", "triggering_event_id": "e1000000-0000-4000-8000-000000000004"},
+      "created_at": "2026-02-16T08:30:00Z",
+      "finding_ids": ["f0000000-0000-4000-8000-000000000041"],
+      "lane": "local"
+    },
+    {
+      "id": "q0000000-0000-4000-8000-000000000005",
+      "text": "What does PD-L1 crossing 50.0 imply for treatment options in Lung adenocarcinoma?",
+      "status": "open",
+      "priority": 1,
+      "kind": "biomarker_shift",
+      "triggered_by": {"summary": "PD-L1 crossed 50.0 (35.0 -> 62.0)", "triggering_event_id": "e1000000-0000-4000-8000-000000000005"},
+      "created_at": "2026-02-16T08:30:00Z",
+      "finding_ids": ["f0000000-0000-4000-8000-000000000051"],
+      "lane": "local"
+    }
+  ],
+  "suppressed": [
+    {
+      "id": "q0000000-0000-4000-8000-000000000006",
+      "text": "What documented evidence exists for EGFR L858R in Lung adenocarcinoma?",
+      "status": "suppressed",
+      "priority": 3,
+      "kind": "new_alteration",
+      "suppressed_by": "q0000000-0000-4000-8000-000000000101",
+      "matched_prior_question": {
+        "id": "q0000000-0000-4000-8000-000000000101",
+        "text": "What documented evidence exists for EGFR L858R in lung adenocarcinoma?",
+        "status": "answered",
+        "answered_at": "2026-01-03T11:00:00Z"
+      },
+      "similarity": 0.97,
+      "created_at": "2026-02-16T08:30:00Z"
+    },
+    {
+      "id": "q0000000-0000-4000-8000-000000000007",
+      "text": "Are there recruiting trials matching EGFR L858R?",
+      "status": "suppressed",
+      "priority": 3,
+      "kind": "new_alteration",
+      "suppressed_by": "q0000000-0000-4000-8000-000000000102",
+      "matched_prior_question": {
+        "id": "q0000000-0000-4000-8000-000000000102",
+        "text": "Are there recruiting trials matching EGFR L858R?",
+        "status": "answered",
+        "answered_at": "2026-01-03T11:04:00Z"
+      },
+      "similarity": 1.0,
+      "created_at": "2026-02-16T08:30:00Z"
+    }
+  ],
+  "failures": [
+    {
+      "type": "failure",
+      "tier": "1",
+      "lane": "trials",
+      "reason": "ClinicalTrials.gov lookup failed: connection timed out after 3 attempts.",
+      "retryable": true,
+      "last_known_at": "2026-02-14T09:00:00Z"
+    }
+  ]
+}
