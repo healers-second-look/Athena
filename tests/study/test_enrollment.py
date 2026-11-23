@@ -12,7 +12,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 from sqlalchemy.pool import StaticPool
 
-from secondlook.case.models import Base
+from secondlook.study.enrollment import EnrollmentBase
 from secondlook.study.enrollment import (
     CONSENT_FILENAME,
     CONSENT_VERSION,
@@ -95,7 +95,7 @@ def test_migration_and_model_columns_match():
     for table in ("study_invites", "study_participants", "study_consents"):
         block = text.split(f'"{table}"')[1].split("op.create_table")[0]
         declared = set(re.findall(r'sa\.Column\("(\w+)"', block))
-        assert declared == {c.name for c in Base.metadata.tables[table].columns}
+        assert declared == {c.name for c in EnrollmentBase.metadata.tables[table].columns}
 
 
 def test_served_consent_matches_docs_duplicate():
@@ -127,3 +127,12 @@ def test_packaged_consent_matches_docs_copy():
 
     docs = Path(__file__).resolve().parents[2] / "docs/research/athena-vs-usual-care-consent-v0.1.md"
     assert consent_markdown_path().read_text() == docs.read_text()
+
+
+def test_participant_identity_tables_are_not_in_the_patient_schema():
+    """Doctor PII must stay off the case Base that POLICY.md 5.4 guards."""
+    from secondlook.case.models import Base
+
+    for table in ("study_invites", "study_participants", "study_consents"):
+        assert table not in Base.metadata.tables
+        assert table in EnrollmentBase.metadata.tables

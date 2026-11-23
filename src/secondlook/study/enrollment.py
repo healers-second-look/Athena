@@ -23,9 +23,19 @@ from typing import Any
 
 from sqlalchemy import JSON, TIMESTAMP, Boolean, Index, Integer, Text, Uuid, select
 from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.orm import Mapped, Session, mapped_column
+from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column
 
-from secondlook.case.models import Base
+
+class EnrollmentBase(DeclarativeBase):
+    """Metadata for study *participant* (clinician) records, kept apart on purpose.
+
+    POLICY.md section 5.4 forbids direct identifiers in the patient-record
+    schema (``secondlook.case.models.Base``), and a schema test enforces that.
+    Enrolled doctors must give their name, email and registration number to
+    consent, so those tables cannot live there -- they sit on this separate
+    metadata instead. Study events stay on the case Base and carry only the
+    pseudonymous participant id; nothing here may ever hold patient data.
+    """
 
 CODE_PEPPER_ENV = "STUDY_CODE_PEPPER"
 SESSION_SECRET_ENV = "STUDY_SESSION_SECRET"
@@ -134,7 +144,7 @@ def participant_id_for_index(reviewer_index: int) -> str:
     return f"P{reviewer_index + 1:02d}"
 
 
-class StudyInvite(Base):
+class StudyInvite(EnrollmentBase):
     __tablename__ = "study_invites"
     __table_args__ = (Index("ix_study_invites_code_hash", "code_hash", unique=True),)
 
@@ -148,7 +158,7 @@ class StudyInvite(Base):
     revoked: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
 
-class StudyParticipant(Base):
+class StudyParticipant(EnrollmentBase):
     __tablename__ = "study_participants"
 
     participant_id: Mapped[str] = mapped_column(Text, primary_key=True)
@@ -167,7 +177,7 @@ class StudyParticipant(Base):
     withdrawn_at: Mapped[datetime | None] = mapped_column(TIMESTAMP(timezone=True), nullable=True)
 
 
-class StudyConsent(Base):
+class StudyConsent(EnrollmentBase):
     __tablename__ = "study_consents"
 
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
