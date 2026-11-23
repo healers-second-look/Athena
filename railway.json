@@ -1,0 +1,14 @@
+{
+  "$schema": "https://railway.com/railway.schema.json",
+  "build": {
+    "builder": "DOCKERFILE",
+    "dockerfilePath": "Dockerfile"
+  },
+  "deploy": {
+    "startCommand": "sh -c 'alembic upgrade head && ATHENA_API_HOST=0.0.0.0 ATHENA_API_PORT=${PORT:-8000} python -m secondlook.api'",
+    "healthcheckPath": "/docs",
+    "healthcheckTimeout": 300,
+    "restartPolicyType": "ON_FAILURE",
+    "restartPolicyMaxRetries": 5
+  }
+}
