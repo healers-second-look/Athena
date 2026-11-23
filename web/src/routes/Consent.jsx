@@ -86,28 +86,35 @@ export default function Consent() {
 
       <form onSubmit={accept}>
         {required.map((c) => (
-          <label key={c.id} className="study-choice">
+          <label key={c.id} htmlFor={`consent-${c.id}`} className="study-choice">
             <input
+              id={`consent-${c.id}`}
               type="checkbox"
               disabled={!scrolled}
               checked={answers[c.id] === true}
               onChange={(e) => toggleRequired(c.id, e.target.checked)}
             />
-            {c.label}
+            <span>{c.label}</span>
           </label>
         ))}
-        <label className="study-choice">
+        <label htmlFor="consent-screen-recording" className="study-choice">
           <input
+            id="consent-screen-recording"
             type="checkbox"
             disabled={!scrolled}
             checked={screenRecording}
             onChange={(e) => setScreenRecording(e.target.checked)}
           />
-          I agree to optional screen recording in the usual-care condition
+          <span>I agree to optional screen recording in the usual-care condition</span>
         </label>
-        <label>
+        <label htmlFor="consent-signed-name">
           Type your full name to sign
-          <input value={signedName} onChange={(e) => setSignedName(e.target.value)} disabled={!scrolled} />
+          <input
+            id="consent-signed-name"
+            value={signedName}
+            onChange={(e) => setSignedName(e.target.value)}
+            disabled={!scrolled}
+          />
         </label>
         <button type="submit" className="study-button" disabled={!canAccept || busy}>
           Accept

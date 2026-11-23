@@ -81,11 +81,11 @@ By checking the boxes below and typing your full name, you confirm your consent.
 
 ### Required
 
-- **read_understood:** I have read and understood the participant information above.
-- **voluntary_withdraw:** I understand that participation is voluntary and I may withdraw at any time.
-- **synthetic_not_advice:** I understand that all cases are synthetic and that study outputs are not clinical advice.
-- **data_use:** I consent to the collection and use of my data as described above.
+- I have read and understood the participant information above.
+- I understand that participation is voluntary and I may withdraw at any time.
+- I understand that all cases are synthetic and that study outputs are not clinical advice.
+- I consent to the collection and use of my data as described above.
 
 ### Optional
 
-- **screen_recording:** I consent to optional screen recording during the study sessions.
+- I consent to optional screen recording during the study sessions.

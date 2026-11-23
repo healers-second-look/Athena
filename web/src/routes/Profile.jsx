@@ -94,26 +94,47 @@ export default function Profile() {
       <h1>Your profile</h1>
       <p className="small muted">These details help us describe the participant group. They are stored securely on the study server.</p>
       <form className="study-profile-form" onSubmit={submit}>
-        <label>
+        <label htmlFor="profile-full-name">
           Full name
-          <input value={form.full_name} onChange={(e) => set('full_name', e.target.value)} required />
+          <input
+            id="profile-full-name"
+            value={form.full_name}
+            onChange={(e) => set('full_name', e.target.value)}
+            required
+          />
         </label>
-        <label>
+        <label htmlFor="profile-email">
           Email
-          <input type="email" value={form.email} onChange={(e) => set('email', e.target.value)} required />
+          <input
+            id="profile-email"
+            type="email"
+            value={form.email}
+            onChange={(e) => set('email', e.target.value)}
+            required
+          />
           {!form.email || emailOk ? null : <span className="small muted">Enter a valid email.</span>}
         </label>
-        <label>
+        <label htmlFor="profile-phone">
           Phone (optional)
-          <input value={form.phone} onChange={(e) => set('phone', e.target.value)} />
+          <input id="profile-phone" value={form.phone} onChange={(e) => set('phone', e.target.value)} />
         </label>
-        <label>
+        <label htmlFor="profile-registration">
           Professional registration number
-          <input value={form.registration_number} onChange={(e) => set('registration_number', e.target.value)} required />
+          <input
+            id="profile-registration"
+            value={form.registration_number}
+            onChange={(e) => set('registration_number', e.target.value)}
+            required
+          />
         </label>
-        <label>
+        <label htmlFor="profile-specialty">
           Specialty
-          <select value={form.specialty} onChange={(e) => set('specialty', e.target.value)} required>
+          <select
+            id="profile-specialty"
+            value={form.specialty}
+            onChange={(e) => set('specialty', e.target.value)}
+            required
+          >
             <option value="">Select…</option>
             {SPECIALTIES.map((s) => (
               <option key={s.value} value={s.value}>
@@ -122,9 +143,10 @@ export default function Profile() {
             ))}
           </select>
         </label>
-        <label>
+        <label htmlFor="profile-years">
           Years in oncology practice
           <input
+            id="profile-years"
             type="number"
             min={0}
             max={60}
@@ -133,21 +155,37 @@ export default function Profile() {
             required
           />
         </label>
-        <label>
+        <label htmlFor="profile-institution">
           Institution
-          <input value={form.institution} onChange={(e) => set('institution', e.target.value)} required />
+          <input
+            id="profile-institution"
+            value={form.institution}
+            onChange={(e) => set('institution', e.target.value)}
+            required
+          />
         </label>
-        <label className="study-choice">
-          <input type="checkbox" checked={form.has_uptodate} onChange={(e) => set('has_uptodate', e.target.checked)} />
-          I have access to UpToDate
+        <label htmlFor="profile-uptodate" className="study-choice">
+          <input
+            id="profile-uptodate"
+            type="checkbox"
+            checked={form.has_uptodate}
+            onChange={(e) => set('has_uptodate', e.target.checked)}
+          />
+          <span>I have access to UpToDate</span>
         </label>
-        <label className="study-choice">
-          <input type="checkbox" checked={form.has_nccn} onChange={(e) => set('has_nccn', e.target.checked)} />
-          I have access to NCCN guidelines
+        <label htmlFor="profile-nccn" className="study-choice">
+          <input
+            id="profile-nccn"
+            type="checkbox"
+            checked={form.has_nccn}
+            onChange={(e) => set('has_nccn', e.target.checked)}
+          />
+          <span>I have access to NCCN guidelines</span>
         </label>
-        <label>
+        <label htmlFor="profile-ai-familiarity">
           Familiarity with clinical AI tools (1 = none, 5 = very familiar)
           <input
+            id="profile-ai-familiarity"
             type="number"
             min={1}
             max={5}

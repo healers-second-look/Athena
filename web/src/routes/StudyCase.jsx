@@ -30,6 +30,88 @@ function RecallStep({ caseId, onSubmit }) {
   return <RecallForm options={recall.data.options} onSubmit={onSubmit} />
 }
 
+function useNarrowViewport() {
+  const [narrow, setNarrow] = useState(() =>
+    typeof window !== 'undefined' ? window.matchMedia('(max-width: 899px)').matches : false,
+  )
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 899px)')
+    const onChange = () => setNarrow(mq.matches)
+    mq.addEventListener('change', onChange)
+    return () => mq.removeEventListener('change', onChange)
+  }, [])
+  return narrow
+}
+
+function EnrolledTasksPanel({ phase, data, tasks, assessmentSnapshot, setAssessmentSnapshot, setPhase, logger }) {
+  if (phase === 'review') {
+    return (
+      <div className="study-enrolled-tasks-idle">
+        <h2>Tasks</h2>
+        <p className="small muted">When you have reviewed the case, use <strong>Start tasks</strong> in the bar above.</p>
+      </div>
+    )
+  }
+
+  if (phase === 't1' && tasks) {
+    return (
+      <EvidenceLookupForm
+        question={tasks.evidence_lookup.question}
+        onEvent={logger.log}
+        onSubmit={() => setPhase('t2')}
+      />
+    )
+  }
+
+  if (phase === 't2' && tasks) {
+    return (
+      <TrialMatchForm
+        question={tasks.trial_match.question}
+        region={tasks.trial_match.region}
+        maxAnswers={tasks.trial_match.max_answers}
+        onEvent={logger.log}
+        onSubmit={() => setPhase('t3')}
+      />
+    )
+  }
+
+  if (phase === 't3') {
+    return (
+      <AssessmentFlagsStep
+        findings={data.findings}
+        onEvent={logger.log}
+        onSubmit={(snapshot) => {
+          setAssessmentSnapshot(snapshot)
+          setPhase('t4')
+        }}
+      />
+    )
+  }
+
+  if (phase === 't4') {
+    return (
+      <DecisionTaskStep
+        options={data.decision_options}
+        prompt={data.decision_prompt}
+        rationalePrompt={tasks?.decision_rationale?.prompt}
+        onEvent={logger.log}
+        onSubmit={({ decision, rationale }) => {
+          logger.log('decision_submitted', {
+            decision,
+            rationale,
+            flags: assessmentSnapshot?.flags,
+            confidence: assessmentSnapshot?.confidence,
+          })
+          logger.flush()
+          setPhase('tlx')
+        }}
+      />
+    )
+  }
+
+  return null
+}
+
 export default function StudyCase({
   participantId,
   item,
@@ -47,9 +129,14 @@ export default function StudyCase({
   const [saveError, setSaveError] = useState(null)
   const [chatSessionId, setChatSessionId] = useState(null)
   const [chatError, setChatError] = useState(null)
+  const [mobileTab, setMobileTab] = useState('case')
   const openedRef = useRef(false)
   const chatRequestedRef = useRef(false)
   const finalizedRef = useRef(false)
+  const narrow = useNarrowViewport()
+
+  const isEnrolledArm =
+    enrolled && (item.arm === 'usual_care' || item.arm === 'athena_full')
 
   const logger = useMemo(
     () =>
@@ -146,10 +233,124 @@ export default function StudyCase({
   const onCitationOpened = (findingId, url) =>
     logger.log('citation_opened', { source: 'card', finding_id: findingId, url })
 
-  const afterReview = () => {
-    if (enrolled && tasks) setPhase('t1')
-    else if (enrolled) setPhase('t3')
-    else setPhase('assess')
+  const startTasks = () => {
+    if (tasks) setPhase('t1')
+    else setPhase('t3')
+    setMobileTab('tasks')
+  }
+
+  const athenaForcedPanel =
+    narrow && item.arm === 'athena_full'
+      ? mobileTab === 'chat'
+        ? 'chat'
+        : 'athena'
+      : undefined
+
+  const mobileTabs =
+    item.arm === 'athena_full'
+      ? [
+          { id: 'case', label: 'Case' },
+          { id: 'chat', label: 'Athena chat' },
+          { id: 'tasks', label: 'Tasks' },
+        ]
+      : [
+          { id: 'case', label: 'Case' },
+          { id: 'tasks', label: 'Tasks' },
+        ]
+
+  const renderEnrolledCasePane = () => {
+    if (item.arm === 'athena_full') {
+      return (
+        <AthenaFullView
+          view={data}
+          caseId={item.case_id}
+          forcedPanel={athenaForcedPanel}
+          hideTabs={narrow}
+          onFindingOpened={onFindingOpened}
+          onCitationOpened={onCitationOpened}
+          onStudyEvent={logger.log}
+        />
+      )
+    }
+    return (
+      <UsualCareView
+        view={data}
+        onFindingOpened={onFindingOpened}
+        onCitationOpened={onCitationOpened}
+        onEvent={logger.log}
+      />
+    )
+  }
+
+  if (isEnrolledArm && phase !== 'tlx' && phase !== 'recall') {
+    const showCaseOnMobile = mobileTab === 'case' || mobileTab === 'chat'
+    const showTasksOnMobile = mobileTab === 'tasks'
+    const tasksOpen = phase !== 'review'
+
+    return (
+      <div className="study-shell study-enrolled-shell">
+        {banner}
+        <header className="study-bar">
+          <span>
+            Case {position} of {total}
+          </span>
+          {phase === 'review' ? (
+            <button type="button" className="study-button" onClick={startTasks}>
+              Start tasks →
+            </button>
+          ) : (
+            <span className="small muted study-bar-step">
+              {phase === 't1' ? 'Task 1 — Evidence' : null}
+              {phase === 't2' ? 'Task 2 — Trials' : null}
+              {phase === 't3' ? 'Task 3 — Assessment' : null}
+              {phase === 't4' ? 'Task 4 — Decision' : null}
+            </span>
+          )}
+        </header>
+
+        {narrow ? (
+          <div className="study-enrolled-mobile-tabs" role="tablist" aria-label="Case panels">
+            {mobileTabs.map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                role="tab"
+                aria-selected={mobileTab === tab.id}
+                className={mobileTab === tab.id ? 'is-active' : undefined}
+                onClick={() => setMobileTab(tab.id)}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        ) : null}
+
+        <div className="study-enrolled-layout" data-testid="enrolled-layout">
+          <div
+            className={`study-enrolled-case${narrow && !showCaseOnMobile ? ' study-enrolled-pane--hidden' : ''}`}
+            data-testid="enrolled-case-pane"
+          >
+            <div className="wrap study-enrolled-case-scroll">{renderEnrolledCasePane()}</div>
+          </div>
+          <aside
+            className={`study-enrolled-tasks${narrow && !showTasksOnMobile ? ' study-enrolled-pane--hidden' : ''}${
+              !tasksOpen ? ' study-enrolled-tasks--idle' : ''
+            }`}
+            data-testid="enrolled-tasks-pane"
+          >
+            <EnrolledTasksPanel
+              phase={phase}
+              data={data}
+              tasks={tasks}
+              assessmentSnapshot={assessmentSnapshot}
+              setAssessmentSnapshot={setAssessmentSnapshot}
+              setPhase={setPhase}
+              logger={logger}
+            />
+          </aside>
+        </div>
+      </div>
+    )
   }
 
   if (phase === 'review') {
@@ -160,7 +361,7 @@ export default function StudyCase({
           <span>
             Case {position} of {total}
           </span>
-          <button type="button" className="study-button" onClick={afterReview}>
+          <button type="button" className="study-button" onClick={() => setPhase('assess')}>
             Finish review →
           </button>
         </header>
@@ -170,7 +371,6 @@ export default function StudyCase({
               <AthenaFullView
                 view={data}
                 caseId={item.case_id}
-                phase={phase}
                 onFindingOpened={onFindingOpened}
                 onCitationOpened={onCitationOpened}
                 onStudyEvent={logger.log}
@@ -223,50 +423,7 @@ export default function StudyCase({
     )
   }
 
-  if (enrolled && phase === 't1' && tasks) {
-    return (
-      <div className="wrap">
-        {banner}
-        <EvidenceLookupForm
-          question={tasks.evidence_lookup.question}
-          onEvent={logger.log}
-          onSubmit={() => setPhase('t2')}
-        />
-      </div>
-    )
-  }
-
-  if (enrolled && phase === 't2' && tasks) {
-    return (
-      <div className="wrap">
-        {banner}
-        <TrialMatchForm
-          question={tasks.trial_match.question}
-          region={tasks.trial_match.region}
-          maxAnswers={tasks.trial_match.max_answers}
-          onEvent={logger.log}
-          onSubmit={() => setPhase('t3')}
-        />
-      </div>
-    )
-  }
-
-  if ((enrolled && phase === 't3') || (!enrolled && phase === 'assess')) {
-    if (enrolled) {
-      return (
-        <div className="wrap">
-          {banner}
-          <AssessmentFlagsStep
-            findings={data.findings}
-            onEvent={logger.log}
-            onSubmit={(snapshot) => {
-              setAssessmentSnapshot(snapshot)
-              setPhase('t4')
-            }}
-          />
-        </div>
-      )
-    }
+  if (!enrolled && phase === 'assess') {
     return (
       <div className="wrap">
         {banner}
@@ -277,30 +434,6 @@ export default function StudyCase({
           onEvent={logger.log}
           onSubmit={({ flags, confidence, decision, rationale }) => {
             logger.log('decision_submitted', { decision, rationale, flags, confidence })
-            logger.flush()
-            setPhase('tlx')
-          }}
-        />
-      </div>
-    )
-  }
-
-  if (enrolled && phase === 't4') {
-    return (
-      <div className="wrap">
-        {banner}
-        <DecisionTaskStep
-          options={data.decision_options}
-          prompt={data.decision_prompt}
-          rationalePrompt={tasks?.decision_rationale?.prompt}
-          onEvent={logger.log}
-          onSubmit={({ decision, rationale }) => {
-            logger.log('decision_submitted', {
-              decision,
-              rationale,
-              flags: assessmentSnapshot?.flags,
-              confidence: assessmentSnapshot?.confidence,
-            })
             logger.flush()
             setPhase('tlx')
           }}
