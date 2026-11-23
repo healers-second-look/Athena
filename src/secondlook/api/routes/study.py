@@ -24,11 +24,11 @@ from datetime import datetime
 from pathlib import Path
 
 import yaml
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Header, HTTPException, Query
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy.orm import Session
 
-from secondlook.api.auth import require_api_key
+from secondlook.api.auth import API_KEY_HEADER, require_api_key
 from secondlook.api.deps import get_session
 from secondlook.chat.engine import run_turn
 from secondlook.chat.session import create_session
@@ -45,6 +45,7 @@ from secondlook.study.cases import (
     validate_case_set,
 )
 from secondlook.study.chat import briefing_text, chat_context_lines, chat_sources
+from secondlook.study.enrollment import StudyParticipant, enrollment_required
 from secondlook.study.events import (
     ARMS,
     MAX_BATCH,
@@ -110,6 +111,33 @@ def get_case_set() -> LoadedCaseSet:
 
 def get_study_store(session: Session = Depends(get_session)) -> StudyEventStore:
     return StudyEventStore(session)
+
+
+def require_admin_when_enrollment_locked(
+    x_athena_api_key: str | None = Header(default=None, alias=API_KEY_HEADER),
+) -> str | None:
+    """When ``STUDY_REQUIRE_ENROLLMENT`` is on, legacy schedule export needs the admin key."""
+    if enrollment_required():
+        return require_api_key(x_athena_api_key)
+    return None
+
+
+def active_enrolled_participant(
+    authorization: str | None = Header(default=None),
+    session: Session = Depends(get_session),
+) -> str | None:
+    """Bearer token identifying the participant when enrollment is enforced."""
+    if not enrollment_required():
+        return None
+    from secondlook.api.routes.enroll import require_participant_token
+
+    participant_id = require_participant_token(authorization)
+    row = session.get(StudyParticipant, participant_id)
+    if row is None:
+        raise HTTPException(status_code=401, detail="invalid or expired token")
+    if row.withdrawn_at is not None:
+        raise HTTPException(status_code=403, detail="participant has withdrawn")
+    return participant_id
 
 
 class CaseListItem(BaseModel):
@@ -221,6 +249,7 @@ def read_schedule(
     reviewer_index: int,
     cases_per_arm: int | None = Query(None, ge=1, le=20),
     loaded: LoadedCaseSet = Depends(get_case_set),
+    _: str | None = Depends(require_admin_when_enrollment_locked),
 ) -> ScheduleResponse:
     """The reviewer's ordered (case, arm) list -- see study/assignment.py.
 
@@ -343,11 +372,17 @@ def write_events(
     body: StudyEventsIn,
     loaded: LoadedCaseSet = Depends(get_case_set),
     store: StudyEventStore = Depends(get_study_store),
+    token_participant: str | None = Depends(active_enrolled_participant),
 ) -> StudyEventsAccepted:
     known = {c.case_id for c in loaded.case_set.cases}
     for event in body.events:
         if event.case_id not in known:
             raise HTTPException(status_code=422, detail=f"unknown study case {event.case_id!r}")
+        if token_participant is not None and event.participant_id != token_participant:
+            raise HTTPException(
+                status_code=403,
+                detail="participant_id does not match session token",
+            )
     try:
         accepted = store.append_many(
             [

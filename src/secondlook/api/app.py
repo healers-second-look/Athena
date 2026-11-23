@@ -60,7 +60,7 @@ def create_app() -> FastAPI:
         allow_origins=_cors_origins(),
         allow_credentials=True,
         allow_methods=["GET", "POST", "PATCH", "DELETE"],
-        allow_headers=["Content-Type", "X-Athena-Api-Key"],
+        allow_headers=["Content-Type", "X-Athena-Api-Key", "Authorization"],
     )
     app.include_router(cases.router)
     app.include_router(findings.router)
@@ -75,7 +75,10 @@ def create_app() -> FastAPI:
             "deployments on synthetic cases only -- do not expose this on a reachable network.",
             stacklevel=2,
         )
+        from secondlook.api.routes import enroll as enroll_routes
+
         app.include_router(study_routes.router)
+        app.include_router(enroll_routes.router, prefix="/api/study")
     return app
 
 
