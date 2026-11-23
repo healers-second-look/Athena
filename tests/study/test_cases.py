@@ -21,6 +21,7 @@ from secondlook.study.cases import (
 )
 
 PILOT = DEFAULT_CASE_SET_DIR / "pilot_v0.yaml"
+ATHENA_VS = DEFAULT_CASE_SET_DIR / "athena_vs_usual_v1.yaml"
 
 
 @pytest.fixture
@@ -82,6 +83,41 @@ def test_content_hash_is_stable_and_sensitive_to_content(pilot):
     first = pilot.cases[0]
     changed = replace(pilot, cases=(replace(first, label="edited"),) + pilot.cases[1:])
     assert content_hash(changed) != content_hash(pilot)
+
+
+def test_athena_vs_usual_set_validates_and_is_refused_for_study():
+    case_set = load_case_set(ATHENA_VS)
+    assert validate_case_set(case_set) == []
+    with pytest.raises(IneligibleCaseSetError):
+        assert_eligible_for_study(case_set)
+
+
+def test_content_hash_includes_tasks():
+    case_set = load_case_set(ATHENA_VS)
+    first = case_set.cases[0]
+    assert first.tasks is not None
+    tasks = replace(
+        first.tasks,
+        evidence_lookup=replace(
+            first.tasks.evidence_lookup, gold_answer="different gold"
+        ),
+    )
+    changed = replace(case_set, cases=(replace(first, tasks=tasks),) + case_set.cases[1:])
+    assert content_hash(changed) != content_hash(case_set)
+
+
+def test_unknown_key_inside_tasks_is_rejected():
+    raw = yaml.safe_load(ATHENA_VS.read_text(encoding="utf-8"))
+    raw["cases"][0]["tasks"]["evidence_lookup"]["bogus"] = True
+    with pytest.raises(CaseSetError, match="unknown key"):
+        parse_case_set(raw)
+
+
+def test_missing_required_task_field_is_rejected():
+    raw = yaml.safe_load(ATHENA_VS.read_text(encoding="utf-8"))
+    del raw["cases"][0]["tasks"]["trial_match"]["eligible_trial_ids"]
+    with pytest.raises(CaseSetError, match="missing required"):
+        parse_case_set(raw)
 
 
 # --- structural parsing fails closed --------------------------------------------

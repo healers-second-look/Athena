@@ -22,16 +22,25 @@ ARM_ORDERS: tuple[tuple[str, str, str], ...] = (
     ("chat", "diff_first", "dashboard"),
 )
 
+USUAL_VS_ATHENA_ORDERS: tuple[tuple[str, str], ...] = (
+    ("usual_care", "athena_full"),
+    ("athena_full", "usual_care"),
+)
+
 
 def build_schedule(
-    reviewer_index: int, case_ids: list[str], *, cases_per_arm: int = 3
+    reviewer_index: int,
+    case_ids: list[str],
+    *,
+    cases_per_arm: int = 3,
+    arm_orders: tuple[tuple[str, ...], ...] = ARM_ORDERS,
 ) -> list[tuple[str, str]]:
     """Ordered (case_id, arm) pairs for one reviewer: block 1 in the first arm, etc."""
     if reviewer_index < 0:
         raise ValueError("reviewer_index must be >= 0")
     if cases_per_arm < 1:
         raise ValueError("cases_per_arm must be >= 1")
-    slots = cases_per_arm * len(ARM_ORDERS[0])
+    slots = cases_per_arm * len(arm_orders[0])
     pool = len(case_ids)
     if len(set(case_ids)) != pool:
         raise ValueError("case_ids must be unique")
@@ -39,7 +48,7 @@ def build_schedule(
         raise ValueError(
             f"need at least {slots} cases for {cases_per_arm} per arm, pool has {pool}"
         )
-    order = ARM_ORDERS[reviewer_index % len(ARM_ORDERS)]
+    order = arm_orders[reviewer_index % len(arm_orders)]
     start = (reviewer_index * slots) % pool
     return [
         (case_ids[(start + slot) % pool], order[slot // cases_per_arm]) for slot in range(slots)
@@ -47,10 +56,18 @@ def build_schedule(
 
 
 def arm_case_counts(
-    reviewer_count: int, case_ids: list[str], *, cases_per_arm: int = 3
+    reviewer_count: int,
+    case_ids: list[str],
+    *,
+    cases_per_arm: int = 3,
+    arm_orders: tuple[tuple[str, ...], ...] = ARM_ORDERS,
 ) -> Counter[tuple[str, str]]:
     """How often each (case, arm) pair occurs across reviewers 0..reviewer_count-1."""
     counts: Counter[tuple[str, str]] = Counter()
     for reviewer in range(reviewer_count):
-        counts.update(build_schedule(reviewer, case_ids, cases_per_arm=cases_per_arm))
+        counts.update(
+            build_schedule(
+                reviewer, case_ids, cases_per_arm=cases_per_arm, arm_orders=arm_orders
+            )
+        )
     return counts

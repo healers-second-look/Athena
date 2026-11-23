@@ -22,6 +22,9 @@ from pydantic import BaseModel
 from secondlook.study.cases import StudyCase
 
 DIFF_FIRST = "diff_first"
+ATHENA_FULL = "athena_full"
+USUAL_CARE = "usual_care"
+_DIFF_ARMS = frozenset({DIFF_FIRST, ATHENA_FULL})
 
 
 class CitationView(BaseModel):
@@ -70,6 +73,26 @@ class DecisionOptionView(BaseModel):
     text: str
 
 
+class EvidenceLookupQuestionView(BaseModel):
+    question: str
+
+
+class TrialMatchQuestionView(BaseModel):
+    question: str
+    region: str
+    max_answers: int
+
+
+class DecisionRationaleQuestionView(BaseModel):
+    prompt: str
+
+
+class CaseTasksQuestionView(BaseModel):
+    evidence_lookup: EvidenceLookupQuestionView
+    trial_match: TrialMatchQuestionView
+    decision_rationale: DecisionRationaleQuestionView | None = None
+
+
 class RecallOptionView(BaseModel):
     id: str
     text: str
@@ -92,6 +115,7 @@ class ReviewerCaseView(BaseModel):
     reported_changes: list[ChangeView] = []
     reported_supersessions: list[SupersessionView] = []
     questions: list[QuestionView] = []
+    tasks: CaseTasksQuestionView | None = None
 
 
 def recall_option_id(case_id: str, text: str) -> str:
@@ -164,7 +188,22 @@ def reviewer_view(case: StudyCase, arm: str) -> ReviewerCaseView:
             DecisionOptionView(id=o.id, text=o.text) for o in case.reference_decision.options
         ],
     )
-    if arm == DIFF_FIRST:
+    if case.tasks is not None:
+        t = case.tasks
+        view.tasks = CaseTasksQuestionView(
+            evidence_lookup=EvidenceLookupQuestionView(question=t.evidence_lookup.question),
+            trial_match=TrialMatchQuestionView(
+                question=t.trial_match.question,
+                region=t.trial_match.region,
+                max_answers=t.trial_match.max_answers,
+            ),
+            decision_rationale=(
+                DecisionRationaleQuestionView(prompt=t.decision_rationale.prompt)
+                if t.decision_rationale is not None
+                else None
+            ),
+        )
+    if arm in _DIFF_ARMS:
         view.reported_changes = [
             ChangeView(kind=c.kind, summary=c.summary, triggering_event=c.triggering_event)
             for c in out.reported_changes

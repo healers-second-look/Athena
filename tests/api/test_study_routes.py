@@ -94,8 +94,10 @@ def test_diff_is_present_in_arm_a_and_structurally_absent_elsewhere(client):
 
 def test_content_is_matched_across_arms(client):
     """Same events and same findings in every arm; only the diff differs."""
+    three_arm = ("diff_first", "dashboard", "chat")
     views = {
-        arm: client.get(f"/api/study/cases/pilot-002?arm={arm}").json()["case"] for arm in ARMS
+        arm: client.get(f"/api/study/cases/pilot-002?arm={arm}").json()["case"]
+        for arm in three_arm
     }
     for key in ("baseline_events", "update_events", "findings", "decision_options"):
         assert views["diff_first"][key] == views["dashboard"][key] == views["chat"][key]
@@ -274,3 +276,26 @@ def test_ordinary_chat_sessions_cannot_use_the_study_turn_route(client):
 
 def test_chat_session_for_an_unknown_case_is_404(client):
     assert client.post("/api/study/chat/sessions", json={"case_id": "nope"}).status_code == 404
+
+
+def test_athena_vs_usual_arms_return_case_payload(client, monkeypatch):
+    monkeypatch.setenv(
+        "ATHENA_STUDY_CASE_SET",
+        str(DEFAULT_CASE_SET_DIR / "athena_vs_usual_v1.yaml"),
+    )
+    case_id = "avu-001"
+    for arm in ("usual_care", "athena_full"):
+        response = client.get(f"/api/study/cases/{case_id}?arm={arm}")
+        assert response.status_code == 200
+        body = response.json()["case"]
+        assert body["tasks"] is not None
+        assert body["tasks"]["evidence_lookup"]["question"]
+        text = response.text
+        assert "NCT00000000-SYN1" not in text
+        assert "PALOMA and MONALEESA" not in text
+    athena = client.get(f"/api/study/cases/{case_id}?arm=athena_full").json()["case"]
+    usual = client.get(f"/api/study/cases/{case_id}?arm=usual_care").json()["case"]
+    assert athena["reported_changes"]
+    assert usual["reported_changes"] == []
+    for key in ("baseline_events", "update_events", "findings", "decision_options", "tasks"):
+        assert athena[key] == usual[key], key

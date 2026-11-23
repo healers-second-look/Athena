@@ -30,7 +30,13 @@ from sqlalchemy.orm import Mapped, Session, mapped_column
 
 from secondlook.case.models import Base
 
-ARMS: tuple[str, ...] = ("diff_first", "dashboard", "chat")
+ARMS: tuple[str, ...] = (
+    "diff_first",
+    "dashboard",
+    "chat",
+    "usual_care",
+    "athena_full",
+)
 
 # A closed vocabulary: an unknown type is rejected rather than stored, so a
 # typo in the client cannot silently create an outcome nobody analyses.
@@ -51,6 +57,9 @@ STUDY_EVENT_TYPES: frozenset[str] = frozenset(
         "tlx_submitted",  # raw NASA-TLX subscales
         "recall_submitted",  # "what changed?" recall probe
         "case_submitted",  # reviewer finished the case
+        "task_answer_submitted",  # per-case task response (payload: task id + answer)
+        "external_source_logged",  # usual_care: URL/type of source the doctor used
+        "sus_submitted",  # System Usability Scale (10 items, 1-5)
     }
 )
 

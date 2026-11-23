@@ -1,0 +1,156 @@
+# DRAFT — Athena vs usual care study case set (harness development only).
+#
+# NOT clinician-reviewed. Placeholder citations under example.org; trial registry
+# IDs (NCT00000000-SYN*) are synthetic placeholders. Requires clinician review
+# before any use with real participants. assert_eligible_for_study() refuses
+# this set on purpose.
+#
+# Two HR+/HER2- breast cancer cases for the 2-arm crossover (usual_care vs
+# athena_full). Each includes per-case task gold answers for offline scoring.
+set_id: athena_vs_usual_v1
+version: 1
+review_status: unreviewed
+notes: "Draft Athena vs usual-care set. Unreviewed; placeholder citations and trial IDs."
+cases:
+  # ---------------------------------------------------------------- avu-001 (change_independent seed)
+  - case_id: avu-001
+    label: "AVU 001 - synthetic"
+    cancer_type: "HR+/HER2- breast cancer"
+    age_years: 52
+    stage: "IV"
+    recall_distractors:
+      - "Germline BRCA1 pathogenic variant identified"
+      - "Switched from tamoxifen to anastrozole"
+    synthetic: true
+    citations_verified: false
+    baseline_events:
+      - {id: a1-b1, occurred_on: "2024-01-10", event_type: BIOMARKER_MEASURED, summary: "ER 90% positive, PR 70% positive, HER2 IHC 0", source_document: "Pathology 2024-01-10", payload: {name: ER, value: 90, unit: "% positive"}}
+      - {id: a1-b2, occurred_on: "2024-02-01", event_type: TREATMENT_LINE, summary: "First-line CDK4/6 inhibitor plus endocrine therapy started", payload: {regimen: cdk46-plus-endocrine, line: 1, action: started}}
+    update_events:
+      - {id: a1-u1, occurred_on: "2025-10-12", event_type: DISEASE_ASSESSMENT, summary: "Stable disease on imaging", source_document: "Imaging 2025-10-12", payload: {status: stable}}
+    system_output:
+      findings:
+        - id: a1-f1
+          claim: "Continue first-line CDK4/6 inhibitor plus endocrine therapy while disease is stable."
+          evidence_class: documented
+          evidence_level: "B"
+          citation: {id: SYN-A1-F1, url: "https://example.org/synthetic/a1-f1", name: "Synthetic placeholder"}
+          valid: true
+        - id: a1-f2
+          claim: "PARP inhibition is supported by Level A evidence for all HR+ breast cancers regardless of BRCA status."
+          evidence_class: documented
+          evidence_level: "A"
+          citation: {id: SYN-A1-F2, url: "https://example.org/synthetic/a1-f2", name: "Editorial opinion (synthetic placeholder)"}
+          valid: false
+          flaw: "Graded Level A, but the cited source is an editorial that does not support the claim."
+        - id: a1-f3
+          claim: "Monitor with routine imaging per standard surveillance intervals."
+          evidence_class: documented
+          evidence_level: "B"
+          citation: {id: SYN-A1-F3, url: "https://example.org/synthetic/a1-f3", name: "Synthetic placeholder"}
+          valid: true
+      reported_changes:
+        - {kind: disease_assessment, summary: "stable disease documented", triggering_event: a1-u1}
+      reported_supersessions: []
+      questions:
+        - {id: a1-q1, text: "Is any change in systemic therapy warranted while disease remains stable?"}
+    seeded_issues:
+      - {id: a1-i1, type: change_independent, finding_id: a1-f2, description: "Citation does not support the Level A claim; unrelated to the update."}
+    reference_decision:
+      prompt: "Recommended next step?"
+      options:
+        - {id: a, text: "Continue current regimen unchanged"}
+        - {id: b, text: "Add a PARP inhibitor"}
+        - {id: c, text: "Switch to single-agent chemotherapy"}
+        - {id: d, text: "Stop all therapy"}
+      concordant: [a]
+    tasks:
+      evidence_lookup:
+        question: "What is the evidence for continuing CDK4/6 inhibitor therapy when disease is stable on first-line?"
+        gold_answer: "Continuation until progression or intolerance is standard; PALOMA and MONALEESA trials support first-line use."
+        gold_sources:
+          - {id: SYN-A1-GL1, url: "https://example.org/synthetic/a1-gl1", name: "Synthetic trial summary placeholder"}
+        acceptable_answers:
+          - "Continue until progression"
+      trial_match:
+        question: "Which open trials might this patient qualify for at progression?"
+        region: both
+        snapshot_date: "2025-10-01"
+        eligible_trial_ids:
+          - NCT00000000-SYN1
+          - NCT00000001-SYN2
+          - NCT00000002-SYN3
+        max_answers: 2
+      decision_rationale:
+        prompt: "Briefly explain your management choice in one or two sentences."
+  # ---------------------------------------------------------------- avu-002 (change_visible seed)
+  - case_id: avu-002
+    label: "AVU 002 - synthetic"
+    cancer_type: "HR+/HER2- breast cancer"
+    age_years: 61
+    stage: "IV"
+    recall_distractors:
+      - "HER2 status upgraded to 3+"
+      - "Completed adjuvant radiotherapy"
+    synthetic: true
+    citations_verified: false
+    baseline_events:
+      - {id: a2-b1, occurred_on: "2023-06-15", event_type: BIOMARKER_MEASURED, summary: "ER 95% positive, HER2 IHC 1+", source_document: "Pathology 2023-06-15", payload: {name: ER, value: 95, unit: "% positive"}}
+      - {id: a2-b2, occurred_on: "2023-07-01", event_type: TREATMENT_LINE, summary: "Aromatase inhibitor monotherapy started", payload: {regimen: letrozole, line: 1, action: started}}
+    update_events:
+      - {id: a2-u1, occurred_on: "2026-02-20", event_type: ALTERATION_OBSERVED, summary: "ESR1 D538G detected on ctDNA", source_document: "ctDNA 2026-02-20", payload: {gene: ESR1, variant: D538G}}
+      - {id: a2-u2, occurred_on: "2026-02-20", event_type: DISEASE_ASSESSMENT, summary: "Bone metastases progressed", source_document: "Imaging 2026-02-20", payload: {status: progression, sites: [bone]}}
+    system_output:
+      findings:
+        - id: a2-f1
+          claim: "Continue aromatase inhibitor monotherapy: endocrine sensitivity is maintained."
+          evidence_class: documented
+          evidence_level: "B"
+          citation: {id: SYN-A2-F1, url: "https://example.org/synthetic/a2-f1", name: "Synthetic placeholder"}
+          valid: false
+          invalidated_by: a2-u1
+        - id: a2-f2
+          claim: "ESR1 mutations confer resistance to aromatase inhibitors; switch endocrine partner."
+          evidence_class: documented
+          evidence_level: "A"
+          citation: {id: SYN-A2-F2, url: "https://example.org/synthetic/a2-f2", name: "Synthetic placeholder"}
+          valid: true
+        - id: a2-f3
+          claim: "Consider a CDK4/6 inhibitor with the new endocrine backbone after progression."
+          evidence_class: documented
+          evidence_level: "B"
+          citation: {id: SYN-A2-F3, url: "https://example.org/synthetic/a2-f3", name: "Synthetic placeholder"}
+          valid: true
+      reported_changes:
+        - {kind: new_alteration, summary: "ESR1 D538G newly observed", triggering_event: a2-u1}
+        - {kind: disease_progression, summary: "bone progression recorded", triggering_event: a2-u2}
+      reported_supersessions:
+        - finding_id: a2-f1
+          broken_assumption: "no ESR1 resistance mutation on therapy"
+          triggering_event: a2-u1
+          note: "This finding assumed no ESR1 mutation. ctDNA now shows ESR1 D538G."
+      questions:
+        - {id: a2-q1, text: "Which endocrine options remain appropriate after an ESR1 mutation on an AI?"}
+    seeded_issues:
+      - {id: a2-i1, type: change_visible, finding_id: a2-f1, description: "ESR1 mutation invalidates AI continuation; system reports supersession."}
+    reference_decision:
+      prompt: "Recommended next step?"
+      options:
+        - {id: a, text: "Continue aromatase inhibitor unchanged"}
+        - {id: b, text: "Switch to fulvestrant-based endocrine therapy"}
+        - {id: c, text: "Start chemotherapy only"}
+        - {id: d, text: "Best supportive care"}
+      concordant: [b]
+    tasks:
+      evidence_lookup:
+        question: "What endocrine strategies are supported after ESR1 mutation emergence on an aromatase inhibitor?"
+        gold_answer: "Fulvestrant or oral SERDs are preferred over continuing an AI after ESR1 LBD mutations."
+        gold_sources:
+          - {id: SYN-A2-GL1, url: "https://example.org/synthetic/a2-gl1", name: "Synthetic literature placeholder"}
+      trial_match:
+        question: "List trials recruiting HR+/HER2- patients with ESR1 mutations in your region."
+        region: india
+        snapshot_date: "2026-02-01"
+        eligible_trial_ids:
+          - NCT00000010-SYN4
+          - NCT00000011-SYN5
