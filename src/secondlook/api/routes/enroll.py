@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import csv
 import io
 import uuid
@@ -16,7 +17,6 @@ from sqlalchemy.orm import Session
 from secondlook.api.auth import require_api_key
 from secondlook.api.deps import get_session
 from secondlook.api.routes.study import LoadedCaseSet, ScheduleItem, get_case_set
-from secondlook.study.assignment import USUAL_VS_ATHENA_ORDERS, build_schedule
 from secondlook.study.enrollment import (
     ALL_CHECKBOX_IDS,
     CONSENT_VERSION,
@@ -30,7 +30,6 @@ from secondlook.study.enrollment import (
     StudyConsent,
     StudyInvite,
     StudyParticipant,
-    cases_per_arm_for_usual_vs,
     consent_text_sha256,
     invite_from_code,
     invite_is_usable,
@@ -43,20 +42,24 @@ from secondlook.study.enrollment import (
     verify_token,
 )
 from secondlook.study.events import StudyEvent
+from secondlook.study.schedule import participant_case_schedule
 
 router = APIRouter(tags=["study-enrollment"])
 
 
+STUDY_TRUSTED_IP_HEADER_ENV = "STUDY_TRUSTED_IP_HEADER"
+
+
 def _client_ip(request: Request) -> str:
-    # The left-most X-Forwarded-For entry is client-supplied and spoofable, so
-    # a rate limit keyed on it can be bypassed. Prefer the proxy-set
-    # X-Real-IP, else the right-most hop the platform's edge appended.
-    real = request.headers.get("x-real-ip", "").strip()
-    if real:
-        return real
-    hops = [h.strip() for h in request.headers.get("x-forwarded-for", "").split(",") if h.strip()]
-    if hops:
-        return hops[-1]
+    trusted = os.environ.get(STUDY_TRUSTED_IP_HEADER_ENV, "").strip()
+    if trusted:
+        raw = request.headers.get(trusted, "").strip()
+        if trusted.lower() == "x-forwarded-for":
+            hops = [h.strip() for h in raw.split(",") if h.strip()]
+            if hops:
+                return hops[-1]
+        elif raw:
+            return raw
     return request.client.host if request.client else "unknown"
 
 
@@ -318,14 +321,8 @@ def enroll_me(
         raise HTTPException(status_code=401, detail="invalid or expired token")
 
     cases = loaded.case_set.cases
-    per_arm = cases_per_arm_for_usual_vs(len(cases))
     case_ids = [c.case_id for c in cases]
-    pairs = build_schedule(
-        participant.reviewer_index,
-        case_ids,
-        cases_per_arm=per_arm,
-        arm_orders=USUAL_VS_ATHENA_ORDERS,
-    )
+    pairs = participant_case_schedule(participant.reviewer_index, case_ids)
     labels = {c.case_id: c.label for c in cases}
 
     submitted = session.scalars(

@@ -48,6 +48,21 @@ def chat_context_lines(case: StudyCase) -> list[str]:
     return [header] + [f"{e.occurred_on}: {e.summary}" for e in events]
 
 
+def latest_gene_symbol(case: StudyCase) -> str | None:
+    """Gene symbol from the latest case event whose payload includes ``gene``."""
+    events = sorted(case.baseline_events + case.update_events, key=lambda e: e.occurred_on)
+    for event in reversed(events):
+        raw = event.payload.get("gene")
+        if raw is not None and str(raw).strip():
+            return str(raw).strip()
+    return None
+
+
+def gene_context_id(case: StudyCase) -> str | None:
+    symbol = latest_gene_symbol(case)
+    return f"gene:{symbol}" if symbol else None
+
+
 def briefing_text(case: StudyCase) -> str:
     """The first assistant message: the same findings the other arms list."""
     lines = [f"## {case.label}", "", "I reviewed this case. My current findings:", ""]

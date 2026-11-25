@@ -31,6 +31,7 @@ from sqlalchemy.orm import Session
 from secondlook.api.auth import API_KEY_HEADER, require_api_key
 from secondlook.api.deps import get_session
 from secondlook.chat.engine import run_turn
+from secondlook.chat.knowledge import graph_live_evidence_ready
 from secondlook.chat.session import create_session
 from secondlook.chat.session import get_session as get_chat_session
 from secondlook.study.assignment import build_schedule
@@ -44,7 +45,12 @@ from secondlook.study.cases import (
     load_case_set,
     validate_case_set,
 )
-from secondlook.study.chat import briefing_text, chat_context_lines, chat_sources
+from secondlook.study.chat import (
+    briefing_text,
+    chat_context_lines,
+    chat_sources,
+    gene_context_id,
+)
 from secondlook.study.enrollment import StudyParticipant, enrollment_required
 from secondlook.study.events import (
     ARMS,
@@ -60,17 +66,27 @@ from secondlook.study.views import (
     reviewer_view,
 )
 
+from secondlook.study.schedule import participant_case_schedule, schedule_contains
+
 ENABLED_ENV = "ATHENA_STUDY_ENABLED"
 CASE_SET_ENV = "ATHENA_STUDY_CASE_SET"
 ALLOW_UNREVIEWED_ENV = "ATHENA_STUDY_ALLOW_UNREVIEWED"
 CHAT_MODEL_ENV = "ATHENA_STUDY_CHAT_MODEL"
 DEFAULT_CHAT_MODEL = "mock-outline"
+STUDY_CHAT_MAX_TURNS_ENV = "STUDY_CHAT_MAX_TURNS"
+DEFAULT_STUDY_CHAT_MAX_TURNS = 40
+MOCK_STUDY_MODELS = frozenset({"mock-outline", "mock-terse"})
+ATHENA_FULL_ATTACHMENTS = ("variant-normalizer", "citation-guard")
 
 router = APIRouter(prefix="/api/study", tags=["study"])
 
 
 def _flag(name: str) -> bool:
     return os.environ.get(name, "").strip().lower() in {"1", "true", "yes"}
+
+
+def study_chat_allows_degraded() -> bool:
+    return _flag(ALLOW_UNREVIEWED_ENV)
 
 
 def study_enabled() -> bool:
@@ -120,6 +136,47 @@ def require_admin_when_enrollment_locked(
     if enrollment_required():
         return require_api_key(x_athena_api_key)
     return None
+
+
+def require_api_key_when_enrollment_locked(
+    x_athena_api_key: str | None = Header(default=None, alias=API_KEY_HEADER),
+) -> str | None:
+    if enrollment_required():
+        return require_api_key(x_athena_api_key)
+    return None
+
+
+def _schedule_for_participant(
+    participant: StudyParticipant,
+    loaded: LoadedCaseSet,
+) -> list[tuple[str, str]]:
+    case_ids = [c.case_id for c in loaded.case_set.cases]
+    return participant_case_schedule(participant.reviewer_index, case_ids)
+
+
+def _participant_row(
+    participant_id: str,
+    session: Session,
+) -> StudyParticipant | None:
+    return session.get(StudyParticipant, participant_id)
+
+
+def enrolled_participant_when_required(
+    authorization: str | None = Header(default=None),
+    session: Session = Depends(get_session),
+) -> StudyParticipant | None:
+    """Active participant row when enrollment is enforced; otherwise skipped."""
+    if not enrollment_required():
+        return None
+    from secondlook.api.routes.enroll import require_participant_token
+
+    participant_id = require_participant_token(authorization)
+    row = _participant_row(participant_id, session)
+    if row is None:
+        raise HTTPException(status_code=401, detail="invalid or expired token")
+    if row.withdrawn_at is not None:
+        raise HTTPException(status_code=403, detail="participant has withdrawn")
+    return row
 
 
 def active_enrolled_participant(
@@ -210,7 +267,10 @@ class StudyEventOut(BaseModel):
 
 
 @router.get("/cases", response_model=CaseListResponse)
-def list_cases(loaded: LoadedCaseSet = Depends(get_case_set)) -> CaseListResponse:
+def list_cases(
+    loaded: LoadedCaseSet = Depends(get_case_set),
+    _: str | None = Depends(require_api_key_when_enrollment_locked),
+) -> CaseListResponse:
     cs = loaded.case_set
     return CaseListResponse(
         set_id=cs.set_id,
@@ -225,7 +285,21 @@ def read_case(
     case_id: str,
     arm: str = Query(...),
     loaded: LoadedCaseSet = Depends(get_case_set),
+    db: Session = Depends(get_session),
+    authorization: str | None = Header(default=None),
 ) -> StudyCaseResponse:
+    if enrollment_required():
+        from secondlook.api.routes.enroll import require_participant_token
+
+        participant_id = require_participant_token(authorization)
+        participant = _participant_row(participant_id, db)
+        if participant is None:
+            raise HTTPException(status_code=401, detail="invalid or expired token")
+        if participant.withdrawn_at is not None:
+            raise HTTPException(status_code=403, detail="participant has withdrawn")
+        schedule = _schedule_for_participant(participant, loaded)
+        if not schedule_contains(schedule, case_id=case_id, arm=arm):
+            raise HTTPException(status_code=403, detail="case not in participant schedule")
     if arm not in ARMS:
         raise HTTPException(status_code=422, detail=f"arm must be one of {list(ARMS)}")
     case = next((c for c in loaded.case_set.cases if c.case_id == case_id), None)
@@ -236,8 +310,14 @@ def read_case(
 
 @router.get("/cases/{case_id}/recall", response_model=RecallResponse)
 def read_recall_options(
-    case_id: str, loaded: LoadedCaseSet = Depends(get_case_set)
+    case_id: str,
+    loaded: LoadedCaseSet = Depends(get_case_set),
+    participant: StudyParticipant | None = Depends(enrolled_participant_when_required),
 ) -> RecallResponse:
+    if participant is not None and case_id not in {
+        scheduled for scheduled, _ in _schedule_for_participant(participant, loaded)
+    }:
+        raise HTTPException(status_code=403, detail="case not in participant schedule")
     case = next((c for c in loaded.case_set.cases if c.case_id == case_id), None)
     if case is None:
         raise HTTPException(status_code=404, detail=f"no study case {case_id!r}")
@@ -275,22 +355,81 @@ def read_schedule(
 
 # --- chat arm (arm C) -----------------------------------------------------------
 
-# chat session id -> study case id. The chat session itself lives in the shared
-# in-memory chat store; this records which sessions belong to the study so the
-# study turn route can refuse an ordinary chat session.
-_STUDY_CHAT_SESSIONS: dict[str, str] = {}
+@dataclass(frozen=True)
+class StudyChatMeta:
+    case_id: str
+    participant_id: str | None
+    mode: str
+
+
+_STUDY_CHAT_SESSIONS: dict[str, StudyChatMeta] = {}
 
 
 class StudyChatSessionIn(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     case_id: str
+    arm: str | None = None
 
 
 class StudyChatTurnIn(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    message: str = Field(min_length=1, max_length=4000)
+    message: str = Field(max_length=4000)
+
+
+def _study_chat_max_turns() -> int:
+    raw = os.environ.get(STUDY_CHAT_MAX_TURNS_ENV, str(DEFAULT_STUDY_CHAT_MAX_TURNS)).strip()
+    try:
+        return max(1, int(raw))
+    except ValueError:
+        return DEFAULT_STUDY_CHAT_MAX_TURNS
+
+
+def _athena_full_degraded_reasons(model_id: str) -> list[str]:
+    reasons: list[str] = []
+    ok, graph_reasons = graph_live_evidence_ready()
+    if not ok:
+        reasons.extend(graph_reasons)
+    if model_id in MOCK_STUDY_MODELS:
+        reasons.append(f"study chat model {model_id!r} is a mock, not live synthesis")
+    return reasons
+
+
+def _count_user_turns(participant_id: str, case_id: str) -> int:
+    total = 0
+    for session_id, meta in _STUDY_CHAT_SESSIONS.items():
+        if meta.participant_id != participant_id or meta.case_id != case_id:
+            continue
+        session = get_chat_session(session_id)
+        if session is None:
+            continue
+        total += sum(1 for msg in session.history if msg["role"] == "user")
+    return total
+
+
+def _study_chat_meta(session_id: str) -> StudyChatMeta | None:
+    return _STUDY_CHAT_SESSIONS.get(session_id)
+
+
+def _assert_study_session_access(
+    meta: StudyChatMeta,
+    participant: StudyParticipant | None,
+) -> None:
+    if not enrollment_required():
+        return
+    if participant is None:
+        raise HTTPException(status_code=401, detail="missing bearer token")
+    if meta.participant_id != participant.participant_id:
+        raise HTTPException(status_code=404, detail="no such study chat session")
+
+
+def _session_chat_mode(body: StudyChatSessionIn) -> str:
+    if enrollment_required():
+        return "athena_full"
+    if body.arm == "athena_full":
+        return "athena_full"
+    return "chat"
 
 
 def _find_case(loaded: LoadedCaseSet, case_id: str):
@@ -302,7 +441,9 @@ def _find_case(loaded: LoadedCaseSet, case_id: str):
 
 @router.post("/chat/sessions")
 def create_study_chat_session(
-    body: StudyChatSessionIn, loaded: LoadedCaseSet = Depends(get_case_set)
+    body: StudyChatSessionIn,
+    loaded: LoadedCaseSet = Depends(get_case_set),
+    participant: StudyParticipant | None = Depends(enrolled_participant_when_required),
 ) -> dict:
     """A chat session about one study case, opened with the shared findings.
 
@@ -310,8 +451,31 @@ def create_study_chat_session(
     chosen by the reviewer.
     """
     case = _find_case(loaded, body.case_id)
+    mode = _session_chat_mode(body)
+    owner_id: str | None = None
+    if enrollment_required():
+        if participant is None:
+            raise HTTPException(status_code=401, detail="missing bearer token")
+        owner_id = participant.participant_id
+        schedule = _schedule_for_participant(participant, loaded)
+        if mode == "athena_full" and not schedule_contains(
+            schedule, case_id=body.case_id, arm="athena_full"
+        ):
+            raise HTTPException(status_code=403, detail="case not in participant schedule")
+
+    model_id = os.environ.get(CHAT_MODEL_ENV) or DEFAULT_CHAT_MODEL
+    degraded: list[str] = []
+    if mode == "athena_full":
+        degraded = _athena_full_degraded_reasons(model_id)
+        if degraded and not study_chat_allows_degraded():
+            raise HTTPException(status_code=503, detail="; ".join(degraded))
+
+    context_id = gene_context_id(case) if mode == "athena_full" else None
+    attachment_ids = list(ATHENA_FULL_ATTACHMENTS) if mode == "athena_full" else []
     session = create_session(
-        model_id=os.environ.get(CHAT_MODEL_ENV) or DEFAULT_CHAT_MODEL, attachment_ids=[]
+        model_id=model_id,
+        attachment_ids=attachment_ids,
+        context_id=context_id,
     )
     session.add_message(
         "assistant",
@@ -323,16 +487,31 @@ def create_study_chat_session(
         context_lines=[],
         model_id=session.model_id,
     )
-    _STUDY_CHAT_SESSIONS[session.id] = case.case_id
-    return session.as_dict()
+    _STUDY_CHAT_SESSIONS[session.id] = StudyChatMeta(
+        case_id=case.case_id,
+        participant_id=owner_id,
+        mode=mode,
+    )
+    payload = session.as_dict()
+    payload["mode"] = mode
+    if degraded:
+        payload["degraded"] = degraded
+    return payload
 
 
 @router.get("/chat/sessions/{session_id}")
-def read_study_chat_session(session_id: str) -> dict:
+def read_study_chat_session(
+    session_id: str,
+    participant: StudyParticipant | None = Depends(enrolled_participant_when_required),
+) -> dict:
     session = get_chat_session(session_id)
-    if session is None or session_id not in _STUDY_CHAT_SESSIONS:
+    meta = _study_chat_meta(session_id)
+    if session is None or meta is None:
         raise HTTPException(status_code=404, detail="no such study chat session")
-    return session.as_dict()
+    _assert_study_session_access(meta, participant)
+    payload = session.as_dict()
+    payload["mode"] = meta.mode
+    return payload
 
 
 @router.post("/chat/sessions/{session_id}/turns")
@@ -340,20 +519,50 @@ def send_study_chat_turn(
     session_id: str,
     body: StudyChatTurnIn,
     loaded: LoadedCaseSet = Depends(get_case_set),
+    participant: StudyParticipant | None = Depends(enrolled_participant_when_required),
 ) -> dict:
     session = get_chat_session(session_id)
-    case_id = _STUDY_CHAT_SESSIONS.get(session_id)
-    if session is None or case_id is None:
+    meta = _study_chat_meta(session_id)
+    if session is None or meta is None:
         raise HTTPException(status_code=404, detail="no such study chat session")
-    case = _find_case(loaded, case_id)
-    user_msg = session.add_message("user", body.message)
-    result = run_turn(
-        body.message,
-        model_id=session.model_id,
-        attachment_ids=[],
-        sources_override=chat_sources(case),
-        extra_context_lines=chat_context_lines(case),
-    )
+    _assert_study_session_access(meta, participant)
+
+    message = body.message.strip()
+    if not message:
+        raise HTTPException(status_code=422, detail="message must not be empty")
+    if len(body.message) > 4000:
+        raise HTTPException(status_code=422, detail="message exceeds 4000 characters")
+
+    if meta.participant_id is not None:
+        if _count_user_turns(meta.participant_id, meta.case_id) >= _study_chat_max_turns():
+            raise HTTPException(
+                status_code=429,
+                detail="turn limit reached for this case",
+            )
+
+    case = _find_case(loaded, meta.case_id)
+    if meta.mode == "athena_full" and not study_chat_allows_degraded():
+        # Retrieval swallows graph errors and returns no sources, so a graph
+        # lost mid-case would silently turn this arm into an ungrounded chat.
+        if _athena_full_degraded_reasons(session.model_id):
+            raise HTTPException(status_code=503, detail="Athena evidence is not available")
+    user_msg = session.add_message("user", message)
+    if meta.mode == "athena_full":
+        result = run_turn(
+            message,
+            model_id=session.model_id,
+            attachment_ids=list(ATHENA_FULL_ATTACHMENTS),
+            context_id=session.context_id,
+            extra_context_lines=chat_context_lines(case),
+        )
+    else:
+        result = run_turn(
+            message,
+            model_id=session.model_id,
+            attachment_ids=[],
+            sources_override=chat_sources(case),
+            extra_context_lines=chat_context_lines(case),
+        )
     assistant_msg = session.add_message(
         "assistant",
         result.content,
@@ -373,8 +582,14 @@ def write_events(
     loaded: LoadedCaseSet = Depends(get_case_set),
     store: StudyEventStore = Depends(get_study_store),
     token_participant: str | None = Depends(active_enrolled_participant),
+    db: Session = Depends(get_session),
 ) -> StudyEventsAccepted:
     known = {c.case_id for c in loaded.case_set.cases}
+    schedule: list[tuple[str, str]] | None = None
+    if token_participant is not None:
+        participant = _participant_row(token_participant, db)
+        if participant is not None:
+            schedule = _schedule_for_participant(participant, loaded)
     for event in body.events:
         if event.case_id not in known:
             raise HTTPException(status_code=422, detail=f"unknown study case {event.case_id!r}")
@@ -383,6 +598,10 @@ def write_events(
                 status_code=403,
                 detail="participant_id does not match session token",
             )
+        if schedule is not None and not schedule_contains(
+            schedule, case_id=event.case_id, arm=event.arm
+        ):
+            raise HTTPException(status_code=403, detail="case not in participant schedule")
     try:
         accepted = store.append_many(
             [

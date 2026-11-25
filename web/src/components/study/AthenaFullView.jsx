@@ -15,17 +15,30 @@ export default function AthenaFullView({
   const [panel, setPanel] = useState('athena')
   const [chatSessionId, setChatSessionId] = useState(null)
   const [chatError, setChatError] = useState(null)
+  const [chatDegraded, setChatDegraded] = useState(null)
   const activePanel = forcedPanel ?? panel
 
   useEffect(() => {
     let cancelled = false
     studyChatApi
-      .createSession({ case_id: caseId })
+      .createSession({ case_id: caseId, arm: 'athena_full' })
       .then((s) => {
-        if (!cancelled) setChatSessionId(s.id)
+        if (!cancelled) {
+          setChatSessionId(s.id)
+          setChatDegraded(Array.isArray(s.degraded) && s.degraded.length ? s.degraded : null)
+        }
       })
       .catch((error) => {
-        if (!cancelled) setChatError(error)
+        if (!cancelled) {
+          const status = error?.status
+          if (status === 503) {
+            setChatError(new Error('Athena chat is unavailable: live graph evidence or model is not ready.'))
+          } else if (status === 429) {
+            setChatError(new Error('Turn limit reached for this case. No further chat messages can be sent.'))
+          } else {
+            setChatError(error)
+          }
+        }
       })
     return () => {
       cancelled = true
@@ -85,6 +98,8 @@ export default function AthenaFullView({
               studySessionId={chatSessionId}
               studyClient={studyChatApi}
               onStudyEvent={onStudyEvent}
+              studyDegraded={chatDegraded}
+              studyLiveEvidence
             />
           ) : (
             <p className="muted">Opening chat…</p>

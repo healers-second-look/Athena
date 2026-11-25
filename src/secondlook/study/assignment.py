@@ -2,10 +2,12 @@
 
 Arm order follows a 3x3 Latin square across reviewers (reviewer index mod 3),
 and each reviewer reads a contiguous, wrapping window of the case pool, so
-across reviewers every case is seen in every arm. No RNG is involved: the
-schedule is a pure function of (reviewer index, pool), so it can be committed
-and audited before the first session, which the protocol's freeze step
-requires.
+across reviewers every case is seen in every arm. The two-arm usual-care vs
+athena_full design pairs reviewers ``2k`` and ``2k+1``: they see the same cases
+in the same order with opposite arm order; the window advances every two
+reviewers. No RNG is involved: the schedule is a pure function of (reviewer
+index, pool), so it can be committed and audited before the first session,
+which the protocol's freeze step requires.
 
 Exact balance holds when the pool holds twice a reviewer's slots (a pool of 18
 with 9 slots) and the reviewer count is a multiple of 6; other geometries are
@@ -48,8 +50,12 @@ def build_schedule(
         raise ValueError(
             f"need at least {slots} cases for {cases_per_arm} per arm, pool has {pool}"
         )
-    order = arm_orders[reviewer_index % len(arm_orders)]
-    start = (reviewer_index * slots) % pool
+    if len(arm_orders) == 2 and len(arm_orders[0]) == 2:
+        order = arm_orders[reviewer_index % 2]
+        start = ((reviewer_index // 2) * slots) % pool
+    else:
+        order = arm_orders[reviewer_index % len(arm_orders)]
+        start = (reviewer_index * slots) % pool
     return [
         (case_ids[(start + slot) % pool], order[slot // cases_per_arm]) for slot in range(slots)
     ]

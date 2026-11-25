@@ -61,6 +61,8 @@ ORDER BY e.evidence_level ASC
 LIMIT $limit
 """
 
+_COUNT_EVIDENCE = "MATCH (e:EvidenceItem) RETURN count(e) AS n LIMIT 1"
+
 _EVIDENCE_FOR_CONTEXT = """
 MATCH (g:Gene {symbol: $symbol})-[:HAS_VARIANT]->(v:Variant)
 OPTIONAL MATCH (e:EvidenceItem)-[:SUPPORTS]->(v)
@@ -333,12 +335,29 @@ def retrieve_evidence_for_turn(
     return sources
 
 
+def graph_live_evidence_ready(*, graph=None) -> tuple[bool, list[str]]:
+    """Read-only health check: graph reachable and holds at least one EvidenceItem."""
+    reasons: list[str] = []
+    try:
+        handle = _graph(graph)
+        rows = _rows(handle, _COUNT_EVIDENCE)
+        count = int(rows[0][0]) if rows else 0
+        if count < 1:
+            reasons.append("knowledge graph has no evidence items")
+    except GraphUnavailable as exc:
+        reasons.append(str(exc))
+    except Exception as exc:  # noqa: BLE001
+        reasons.append(f"graph health check failed: {exc}")
+    return (not reasons, reasons)
+
+
 __all__ = [
     "GRAPH_NAME",
     "GraphContext",
     "GraphUnavailable",
     "describe_context",
     "fetch_subgraph",
+    "graph_live_evidence_ready",
     "list_contexts",
     "retrieve_evidence_for_turn",
 ]

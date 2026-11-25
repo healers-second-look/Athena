@@ -5,14 +5,15 @@ from __future__ import annotations
 import os
 import warnings
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from secondlook.api.auth import configure_auth
+from secondlook.api.auth import configure_auth, require_api_key
 from secondlook.api.routes import cases, findings
 from secondlook.api.routes import chat as chat_routes
 from secondlook.api.routes import study as study_routes
 from secondlook.api.routes import timeline as timeline_routes
+from secondlook.study.enrollment import enrollment_required
 
 DEFAULT_BIND_HOST = "127.0.0.1"
 
@@ -41,6 +42,7 @@ def _cors_origins() -> list[str]:
 
 def create_app() -> FastAPI:
     configure_auth()
+    locked = enrollment_required()
     app = FastAPI(
         title="Athena REST API",
         version="1.0.0",
@@ -48,7 +50,14 @@ def create_app() -> FastAPI:
             "System of record for case writes. Auth is an API key on POST routes; "
             "MCP remote bind uses a separate ATHENA_MCP_API_KEY bearer token."
         ),
+        docs_url=None if locked else "/docs",
+        redoc_url=None if locked else "/redoc",
+        openapi_url=None if locked else "/openapi.json",
     )
+
+    @app.get("/healthz")
+    def healthz() -> dict[str, str]:
+        return {"status": "ok"}
     # allow_methods includes PATCH/DELETE for the chat session endpoints
     # (routes/chat.py: PATCH /sessions/{id}, DELETE /sessions/{id}) --
     # the cases/findings routes only ever needed GET/POST, but a CORS
@@ -62,19 +71,21 @@ def create_app() -> FastAPI:
         allow_methods=["GET", "POST", "PATCH", "DELETE"],
         allow_headers=["Content-Type", "X-Athena-Api-Key", "Authorization"],
     )
-    app.include_router(cases.router)
-    app.include_router(findings.router)
-    app.include_router(chat_routes.router)
-    app.include_router(timeline_routes.router)
+    open_api_deps = [Depends(require_api_key)] if locked else []
+    app.include_router(cases.router, dependencies=open_api_deps)
+    app.include_router(findings.router, dependencies=open_api_deps)
+    app.include_router(chat_routes.router, dependencies=open_api_deps)
+    app.include_router(timeline_routes.router, dependencies=open_api_deps)
     if study_routes.study_enabled():
-        # Issue #136. Off by default: two study routes are reachable from a
-        # browser with no API key (see routes/study.py's docstring).
-        warnings.warn(
-            f"Study routes are enabled ({study_routes.ENABLED_ENV}=true): fetching a study "
-            "case and logging study events need no API key. Closed, supervised study "
-            "deployments on synthetic cases only -- do not expose this on a reachable network.",
-            stacklevel=2,
-        )
+        # Issue #136. Off by default: without enrollment, two study routes are
+        # reachable from a browser with no API key (see routes/study.py's docstring).
+        if not locked:
+            warnings.warn(
+                f"Study routes are enabled ({study_routes.ENABLED_ENV}=true): fetching a study "
+                "case and logging study events need no API key. Closed, supervised study "
+                "deployments on synthetic cases only -- do not expose this on a reachable network.",
+                stacklevel=2,
+            )
         from secondlook.api.routes import enroll as enroll_routes
 
         app.include_router(study_routes.router)

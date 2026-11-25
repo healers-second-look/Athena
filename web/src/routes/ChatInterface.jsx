@@ -22,6 +22,8 @@ export default function ChatInterface({
   studySessionId = null,
   studyClient = null,
   onStudyEvent = null,
+  studyDegraded = null,
+  studyLiveEvidence = false,
 }) {
   const params = useParams()
   const inStudy = Boolean(studySessionId)
@@ -142,7 +144,11 @@ export default function ChatInterface({
         ),
       })
     } catch (err) {
-      setError(err.message)
+      if (inStudy && err.status === 429) {
+        setError('Turn limit reached for this case. No further chat messages can be sent.')
+      } else {
+        setError(err.message)
+      }
       setSession((prev) => ({
         ...prev,
         history: prev.history.filter((m) => m.id !== 'temp'),
@@ -449,6 +455,22 @@ export default function ChatInterface({
 
         {/* Messages */}
         <div className="chat-messages">
+          {inStudy && studyDegraded?.length > 0 && (
+            <div
+              className="study-chat-degraded-banner"
+              role="alert"
+              style={{
+                margin: '8px 16px',
+                padding: '10px 12px',
+                background: 'var(--apricot-wash)',
+                color: '#5d412c',
+                borderRadius: 8,
+                fontSize: 13,
+              }}
+            >
+              Athena is running in a degraded mode: {studyDegraded.join('; ')}
+            </div>
+          )}
           {(!session?.history?.length) && (
             <div className="empty-state">
               <span className="material-symbols-outlined">forum</span>
@@ -548,7 +570,13 @@ export default function ChatInterface({
               </button>
             </div>
             <p className="chat-disclaimer">
-              Athena grounds synthesis in live CIViC and FalkorDB knowledge graph evidence.
+              {inStudy && studyLiveEvidence && !(studyDegraded?.length)
+                ? 'Athena grounds synthesis in live CIViC and FalkorDB knowledge graph evidence.'
+                : inStudy && studyLiveEvidence
+                  ? 'Live evidence is not fully available in this session.'
+                  : inStudy
+                  ? 'Study chat uses the case findings shown in this session, not live graph retrieval.'
+                  : 'Athena grounds synthesis in live CIViC and FalkorDB knowledge graph evidence.'}
             </p>
           </div>
         </div>
