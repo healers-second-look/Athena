@@ -6,13 +6,13 @@ Plaintext codes are printed only by ``create`` — nowhere else.
 from __future__ import annotations
 
 import argparse
-import os
 import sys
 from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import create_engine, select
 from sqlalchemy.orm import Session
 
+from secondlook.api.deps import database_url
 from secondlook.study.enrollment import (
     StudyInvite,
     generate_invite_code,
@@ -20,12 +20,9 @@ from secondlook.study.enrollment import (
     participant_id_for_index,
 )
 
-DEFAULT_DATABASE_URL = "postgresql+psycopg://athena:athena@localhost:5432/athena"
-
 
 def _engine():
-    url = os.environ.get("ATHENA_DATABASE_URL", DEFAULT_DATABASE_URL)
-    return create_engine(url)
+    return create_engine(database_url())
 
 
 def _next_free_indices(session: Session, count: int, start: int | None) -> list[int]:

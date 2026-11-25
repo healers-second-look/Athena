@@ -136,3 +136,14 @@ def test_participant_identity_tables_are_not_in_the_patient_schema():
     for table in ("study_invites", "study_participants", "study_consents"):
         assert table not in Base.metadata.tables
         assert table in EnrollmentBase.metadata.tables
+
+
+def test_invite_cli_accepts_a_hosted_postgres_url(monkeypatch):
+    """Railway hands out postgresql:// URLs; psycopg2 is not installed."""
+    from secondlook.api.deps import database_url
+
+    monkeypatch.setenv("ATHENA_DATABASE_URL", "postgresql://u:p@h:5432/d")
+    assert database_url() == "postgresql+psycopg://u:p@h:5432/d"
+    import secondlook.study.invites as invites
+
+    assert invites.database_url is database_url

@@ -51,6 +51,9 @@ ENV PATH="/venv/bin:$PATH"
 COPY src/ ./src/
 COPY migrations/ ./migrations/
 COPY alembic.ini ./
+# Seed files the Tier 1 loaders resolve relative to the repo root.
+COPY access_pathways/ ./access_pathways/
+COPY guideline_kb/ ./guideline_kb/
 
 # Runs as a non-root user -- this image has no reason to run as root, and
 # "no reason to" is the whole justification a container needs.
