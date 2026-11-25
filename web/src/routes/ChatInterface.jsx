@@ -460,9 +460,12 @@ export default function ChatInterface({
               className="study-chat-degraded-banner"
               role="alert"
               style={{
+                position: 'sticky',
+                top: 0,
+                zIndex: 1,
                 margin: '8px 16px',
                 padding: '10px 12px',
-                background: 'var(--apricot-wash)',
+                background: '#fbeee3',
                 color: '#5d412c',
                 borderRadius: 8,
                 fontSize: 13,
@@ -509,13 +512,14 @@ export default function ChatInterface({
                           <span
                             key={`${type}-${v}`}
                             className="msg-note entity"
-                            style={{ cursor: 'pointer' }}
+                            style={{ cursor: inStudy ? 'default' : 'pointer' }}
                             onClick={(e) => {
+                              if (inStudy) return // the graph viewer's routes are closed to study doctors
                               e.stopPropagation()
                               setActiveGraphContext(`gene:${v}`)
                             }}
                           >
-                            {type}: {v} (Inspect)
+                            {type}: {v}{inStudy ? '' : ' (Inspect)'}
                           </span>
                         ))
                       )}
@@ -603,11 +607,11 @@ export default function ChatInterface({
                         <div
                           key={`${type}-${v}`}
                           className="entity-row"
-                          style={{ cursor: 'pointer' }}
-                          onClick={() => setActiveGraphContext(`gene:${v}`)}
+                          style={{ cursor: inStudy ? 'default' : 'pointer' }}
+                          onClick={() => !inStudy && setActiveGraphContext(`gene:${v}`)}
                         >
                           <span className="entity-type">{type}</span>
-                          <span className="entity-value">{v} ↗</span>
+                          <span className="entity-value">{v}{inStudy ? '' : ' ↗'}</span>
                         </div>
                       ))
                     )}

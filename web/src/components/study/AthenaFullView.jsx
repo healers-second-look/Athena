@@ -74,7 +74,7 @@ export default function AthenaFullView({
             className={panel === 'chat' ? 'is-active' : undefined}
             onClick={() => setPanel('chat')}
           >
-            Study chat
+            Athena chat
           </button>
         </div>
       )}

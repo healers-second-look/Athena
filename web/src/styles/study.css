@@ -239,7 +239,13 @@
 .study-athena-panel--chat .chat-layout {
   height: calc(100vh - 8rem);
 }
-@media (min-width: 900px) {
+/* Review, chat, sources and tasks only fit side by side on very wide screens;
+   below that the review and the chat are tabs so the chat keeps a usable width. */
+.study-athena-panel--chat .chat-details {
+  width: 15rem;
+  min-width: 15rem;
+}
+@media (min-width: 1800px) {
   .study-athena-tabs {
     display: none;
   }
