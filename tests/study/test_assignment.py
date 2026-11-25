@@ -98,7 +98,9 @@ def test_two_arm_pairs_share_cases_with_opposite_arms(pool_size):
 @pytest.mark.parametrize("pool_size", [8, 10, 12, 14, 16])
 def test_two_arm_equal_counts_over_full_panel(pool_size):
     pool = [f"c-{i}" for i in range(pool_size)]
-    counts = arm_case_counts(2 * pool_size, pool, cases_per_arm=4, arm_orders=USUAL_VS_ATHENA_ORDERS)
+    counts = arm_case_counts(
+        2 * pool_size, pool, cases_per_arm=4, arm_orders=USUAL_VS_ATHENA_ORDERS
+    )
     per_case = {}
     for (case, arm), n in counts.items():
         per_case.setdefault(case, {})[arm] = n
@@ -109,7 +111,5 @@ def test_two_arm_equal_counts_over_full_panel(pool_size):
 def test_three_arm_default_schedule_unchanged():
     assert build_schedule(0, POOL) == [
         (f"case-{i:02d}", arm)
-        for i, arm in enumerate(
-            ["diff_first"] * 3 + ["dashboard"] * 3 + ["chat"] * 3
-        )
+        for i, arm in enumerate(["diff_first"] * 3 + ["dashboard"] * 3 + ["chat"] * 3)
     ]

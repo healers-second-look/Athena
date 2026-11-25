@@ -312,8 +312,7 @@ def _parse_trial_match(raw: Any, where: str) -> TrialMatchTask:
         region=str(d["region"]),
         snapshot_date=str(d["snapshot_date"]),
         eligible_trial_ids=tuple(
-            str(x)
-            for x in _seq(d["eligible_trial_ids"], f"{where}.eligible_trial_ids")
+            str(x) for x in _seq(d["eligible_trial_ids"], f"{where}.eligible_trial_ids")
         ),
         max_answers=max_answers,
     )
@@ -439,7 +438,9 @@ def _parse_case(raw: Any, where: str) -> StudyCase:
         recall_distractors=tuple(
             str(x) for x in _seq(d.get("recall_distractors"), f"{where}.recall_distractors")
         ),
-        tasks=_parse_case_tasks(d["tasks"], f"{where}.tasks") if d.get("tasks") is not None else None,
+        tasks=(
+            _parse_case_tasks(d["tasks"], f"{where}.tasks") if d.get("tasks") is not None else None
+        ),
     )
 
 
@@ -632,9 +633,7 @@ def validate_case(case: StudyCase) -> list[str]:
         if not tasks.trial_match.question.strip():
             errs.append(f"{tp}.trial_match: question must be non-empty")
         if tasks.trial_match.region not in TRIAL_MATCH_REGIONS:
-            errs.append(
-                f"{tp}.trial_match: region must be one of {sorted(TRIAL_MATCH_REGIONS)}"
-            )
+            errs.append(f"{tp}.trial_match: region must be one of {sorted(TRIAL_MATCH_REGIONS)}")
         if _parse_date(tasks.trial_match.snapshot_date) is None:
             errs.append(
                 f"{tp}.trial_match: snapshot_date {tasks.trial_match.snapshot_date!r} "

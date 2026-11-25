@@ -12,10 +12,9 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 from sqlalchemy.pool import StaticPool
 
-from secondlook.study.enrollment import EnrollmentBase
 from secondlook.study.enrollment import (
     CONSENT_FILENAME,
-    CONSENT_VERSION,
+    EnrollmentBase,
     InvalidToken,
     StudyConsent,
     StudyInvite,
@@ -100,7 +99,9 @@ def test_migration_and_model_columns_match():
 
 def test_served_consent_matches_docs_duplicate():
     docs = Path(__file__).parents[2] / "docs" / "research" / CONSENT_FILENAME
-    served = Path(__file__).parents[2] / "src" / "secondlook" / "study" / "consent" / CONSENT_FILENAME
+    served = (
+        Path(__file__).parents[2] / "src" / "secondlook" / "study" / "consent" / CONSENT_FILENAME
+    )
     assert docs.read_text(encoding="utf-8") == served.read_text(encoding="utf-8")
     assert consent_text_sha256()
 
@@ -119,13 +120,16 @@ def test_invite_usability(session):
     invite.revoked = True
     assert not invite_is_usable(invite)
 
+
 def test_packaged_consent_matches_docs_copy():
     """The API serves the packaged copy; it must not drift from the reviewed doc."""
     from pathlib import Path
 
     from secondlook.study.enrollment import consent_markdown_path
 
-    docs = Path(__file__).resolve().parents[2] / "docs/research/athena-vs-usual-care-consent-v0.1.md"
+    docs = (
+        Path(__file__).resolve().parents[2] / "docs/research/athena-vs-usual-care-consent-v0.1.md"
+    )
     assert consent_markdown_path().read_text() == docs.read_text()
 
 

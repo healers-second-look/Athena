@@ -59,14 +59,13 @@ from secondlook.study.events import (
     NewStudyEvent,
     StudyEventStore,
 )
+from secondlook.study.schedule import participant_case_schedule, schedule_contains
 from secondlook.study.views import (
     RecallOptionView,
     ReviewerCaseView,
     recall_options,
     reviewer_view,
 )
-
-from secondlook.study.schedule import participant_case_schedule, schedule_contains
 
 ENABLED_ENV = "ATHENA_STUDY_ENABLED"
 CASE_SET_ENV = "ATHENA_STUDY_CASE_SET"
@@ -354,6 +353,7 @@ def read_schedule(
 
 
 # --- chat arm (arm C) -----------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class StudyChatMeta:

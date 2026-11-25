@@ -72,8 +72,6 @@ def arm_case_counts(
     counts: Counter[tuple[str, str]] = Counter()
     for reviewer in range(reviewer_count):
         counts.update(
-            build_schedule(
-                reviewer, case_ids, cases_per_arm=cases_per_arm, arm_orders=arm_orders
-            )
+            build_schedule(reviewer, case_ids, cases_per_arm=cases_per_arm, arm_orders=arm_orders)
         )
     return counts

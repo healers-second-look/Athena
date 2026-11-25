@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from pathlib import Path
-
 import pytest
 
 from secondlook.study.cases import DEFAULT_CASE_SET_DIR, load_case_set

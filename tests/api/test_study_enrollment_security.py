@@ -6,9 +6,8 @@ import re
 
 import pytest
 
-from tests.api.test_enroll_routes import PROFILE, _answers, _make_client
 from secondlook.study.invites import create_invites
-
+from tests.api.test_enroll_routes import PROFILE, _answers, _make_client
 
 PUBLIC_EXACT = {
     ("GET", "/healthz"),
@@ -95,13 +94,10 @@ def test_participant_cannot_read_other_arm_or_unscheduled_case(locked_client):
         ).status_code
         == 403
     )
-    assert (
-        client.get(
-            "/api/study/cases/avu-999?arm=usual_care",
-            headers={"Authorization": f"Bearer {token}"},
-        ).status_code
-        in {403, 404}
-    )
+    assert client.get(
+        "/api/study/cases/avu-999?arm=usual_care",
+        headers={"Authorization": f"Bearer {token}"},
+    ).status_code in {403, 404}
 
 
 def test_study_chat_is_private_to_owner(locked_client, monkeypatch):

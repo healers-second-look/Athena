@@ -17,7 +17,7 @@ import secrets
 import time
 import uuid
 from dataclasses import dataclass
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -37,13 +37,16 @@ class EnrollmentBase(DeclarativeBase):
     pseudonymous participant id; nothing here may ever hold patient data.
     """
 
+
 CODE_PEPPER_ENV = "STUDY_CODE_PEPPER"
 SESSION_SECRET_ENV = "STUDY_SESSION_SECRET"
 REQUIRE_ENROLLMENT_ENV = "STUDY_REQUIRE_ENROLLMENT"
 CASES_PER_ARM_ENV = "STUDY_CASES_PER_ARM"
 
 INVITE_CODE_ALPHABET = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ"
-INVITE_CODE_PATTERN = re.compile(r"^ATH-[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{4}-[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{2}$")
+INVITE_CODE_PATTERN = re.compile(
+    r"^ATH-[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{4}-[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{2}$"
+)
 
 CONSENT_VERSION = "0.1"
 CONSENT_FILENAME = "athena-vs-usual-care-consent-v0.1.md"

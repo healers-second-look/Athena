@@ -203,7 +203,9 @@ def test_bad_code_generic_error(client, db_engine, mutate):
             invite = s.scalars(select(StudyInvite)).first()
             invite.revoked = True
             s.commit()
-    resp = client.post("/api/study/enroll/code", json={"code": bad if bad != "ATH-2345-AB" else "ATH-2345-AB"})
+    resp = client.post(
+        "/api/study/enroll/code", json={"code": bad if bad != "ATH-2345-AB" else "ATH-2345-AB"}
+    )
     if bad != "ATH-2345-AB":
         assert resp.status_code == 404
         assert resp.json()["detail"] == GENERIC_CODE_ERROR
@@ -325,7 +327,10 @@ def test_token_and_participant_enforcement(client, db_engine):
         ).status_code
         == 403
     )
-    assert client.get("/api/study/me", headers={"Authorization": "Bearer not.valid"}).status_code == 401
+    assert (
+        client.get("/api/study/me", headers={"Authorization": "Bearer not.valid"}).status_code
+        == 401
+    )
 
 
 def test_withdraw_blocks_events(client, db_engine):
@@ -345,7 +350,10 @@ def test_withdraw_blocks_events(client, db_engine):
     )
     out = client.post("/api/study/enroll/profile", json={"enrollment_token": tok, **PROFILE}).json()
     token = out["token"]
-    assert client.post("/api/study/withdraw", headers={"Authorization": f"Bearer {token}"}).status_code == 204
+    assert (
+        client.post("/api/study/withdraw", headers={"Authorization": f"Bearer {token}"}).status_code
+        == 204
+    )
     event = {
         "participant_id": out["participant_id"],
         "session_id": "S1",
@@ -417,9 +425,7 @@ def test_rate_limit_on_failed_attempts(client, db_engine):
 
 
 def test_schedule_locked_without_enrollment_flag(monkeypatch):
-    monkeypatch.setenv(
-        "ATHENA_STUDY_CASE_SET", str(DEFAULT_CASE_SET_DIR / "pilot_v0.yaml")
-    )
+    monkeypatch.setenv("ATHENA_STUDY_CASE_SET", str(DEFAULT_CASE_SET_DIR / "pilot_v0.yaml"))
     open_client, _ = _make_client(monkeypatch, require_enrollment=True)
     assert open_client.get("/api/study/schedule/0").status_code == 401
     assert (

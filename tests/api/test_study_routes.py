@@ -96,8 +96,7 @@ def test_content_is_matched_across_arms(client):
     """Same events and same findings in every arm; only the diff differs."""
     three_arm = ("diff_first", "dashboard", "chat")
     views = {
-        arm: client.get(f"/api/study/cases/pilot-002?arm={arm}").json()["case"]
-        for arm in three_arm
+        arm: client.get(f"/api/study/cases/pilot-002?arm={arm}").json()["case"] for arm in three_arm
     }
     for key in ("baseline_events", "update_events", "findings", "decision_options"):
         assert views["diff_first"][key] == views["dashboard"][key] == views["chat"][key]

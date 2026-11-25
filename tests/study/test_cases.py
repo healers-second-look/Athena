@@ -98,9 +98,7 @@ def test_content_hash_includes_tasks():
     assert first.tasks is not None
     tasks = replace(
         first.tasks,
-        evidence_lookup=replace(
-            first.tasks.evidence_lookup, gold_answer="different gold"
-        ),
+        evidence_lookup=replace(first.tasks.evidence_lookup, gold_answer="different gold"),
     )
     changed = replace(case_set, cases=(replace(first, tasks=tasks),) + case_set.cases[1:])
     assert content_hash(changed) != content_hash(case_set)

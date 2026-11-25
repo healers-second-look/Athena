@@ -58,6 +58,7 @@ def create_app() -> FastAPI:
     @app.get("/healthz")
     def healthz() -> dict[str, str]:
         return {"status": "ok"}
+
     # allow_methods includes PATCH/DELETE for the chat session endpoints
     # (routes/chat.py: PATCH /sessions/{id}, DELETE /sessions/{id}) --
     # the cases/findings routes only ever needed GET/POST, but a CORS

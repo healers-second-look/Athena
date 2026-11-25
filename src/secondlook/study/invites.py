@@ -67,9 +67,7 @@ def create_invites(
 
 
 def list_invites(session: Session) -> list[StudyInvite]:
-    return list(
-        session.scalars(select(StudyInvite).order_by(StudyInvite.reviewer_index)).all()
-    )
+    return list(session.scalars(select(StudyInvite).order_by(StudyInvite.reviewer_index)).all())
 
 
 def revoke_invite(session: Session, reviewer_index: int) -> bool:

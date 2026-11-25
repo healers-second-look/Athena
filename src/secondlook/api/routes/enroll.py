@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-import os
 import csv
 import io
+import os
 import uuid
 from datetime import UTC, datetime
 
@@ -27,6 +27,7 @@ from secondlook.study.enrollment import (
     SPECIALTIES,
     TOKEN_TYPE_ENROLL,
     TOKEN_TYPE_SESSION,
+    InvalidToken,
     StudyConsent,
     StudyInvite,
     StudyParticipant,
@@ -131,7 +132,7 @@ class MeScheduleOut(BaseModel):
 def _invite_id_from_enrollment_token(token: str) -> uuid.UUID:
     try:
         payload = verify_token(token, expected_type=TOKEN_TYPE_ENROLL)
-    except Exception:
+    except InvalidToken:
         raise HTTPException(status_code=401, detail="invalid or expired enrollment token") from None
     try:
         return uuid.UUID(str(payload["invite_id"]))
@@ -147,7 +148,7 @@ def require_participant_token(
     raw = authorization.split(" ", 1)[1].strip()
     try:
         payload = verify_token(raw, expected_type=TOKEN_TYPE_SESSION)
-    except Exception:
+    except InvalidToken:
         raise HTTPException(status_code=401, detail="invalid or expired token") from None
     participant_id = payload.get("participant_id")
     if not isinstance(participant_id, str) or not participant_id:
@@ -205,7 +206,9 @@ def enroll_consent(
         return {"status": "already_recorded"}
 
     if body.consent_version != CONSENT_VERSION or body.consent_sha256 != consent_text_sha256():
-        raise HTTPException(status_code=422, detail="consent document version mismatch; reload and try again")
+        raise HTTPException(
+            status_code=422, detail="consent document version mismatch; reload and try again"
+        )
 
     if not body.signed_name.strip():
         raise HTTPException(status_code=422, detail="signed_name is required")
@@ -215,7 +218,9 @@ def enroll_consent(
 
     for checkbox_id in REQUIRED_CHECKBOX_IDS:
         if not body.answers.get(checkbox_id):
-            raise HTTPException(status_code=422, detail=f"required consent not given: {checkbox_id}")
+            raise HTTPException(
+                status_code=422, detail=f"required consent not given: {checkbox_id}"
+            )
 
     session.add(
         StudyConsent(
@@ -256,7 +261,9 @@ def enroll_profile(
     if not EMAIL_RE.match(body.email):
         raise HTTPException(status_code=422, detail="invalid email address")
     if body.specialty not in SPECIALTIES:
-        raise HTTPException(status_code=422, detail=f"specialty must be one of {sorted(SPECIALTIES)}")
+        raise HTTPException(
+            status_code=422, detail=f"specialty must be one of {sorted(SPECIALTIES)}"
+        )
 
     participant_id = participant_id_for_index(invite.reviewer_index)
     now = datetime.now(UTC)

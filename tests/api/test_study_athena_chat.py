@@ -104,8 +104,9 @@ def test_athena_full_turn_uses_live_retrieval(enrolled_athena, monkeypatch):
 
     def fake_run_turn(message, **kwargs):
         captured.update(kwargs)
-        from secondlook.chat.engine import TurnResult
         import time
+
+        from secondlook.chat.engine import TurnResult
 
         return TurnResult(
             id="t1",
@@ -146,8 +147,9 @@ def test_turn_limit_across_sessions(enrolled_athena, monkeypatch):
     )
 
     def fake_run_turn(message, **kwargs):
-        from secondlook.chat.engine import TurnResult
         import time
+
+        from secondlook.chat.engine import TurnResult
 
         return TurnResult(
             id="t1",
