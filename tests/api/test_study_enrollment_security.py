@@ -7,7 +7,8 @@ import re
 import pytest
 
 from secondlook.study.invites import create_invites
-from tests.api.test_enroll_routes import PROFILE, _answers, _make_client
+
+from .test_enroll_routes import PROFILE, _answers, _make_client
 
 PUBLIC_EXACT = {
     ("GET", "/healthz"),

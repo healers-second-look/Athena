@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 from secondlook.study.enrollment import reset_rate_limits
-from tests.api.test_enroll_routes import _make_client
+
+from .test_enroll_routes import _make_client
 
 
 def test_spoofed_x_forwarded_for_does_not_bypass_rate_limit(monkeypatch):
