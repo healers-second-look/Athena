@@ -12,6 +12,7 @@ from alembic import context
 from sqlalchemy import engine_from_config, pool
 
 from secondlook.case.models import Base
+from secondlook.study.enrollment import EnrollmentBase
 
 config = context.config
 
@@ -19,9 +20,14 @@ if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
 DEFAULT_LOCAL_URL = "postgresql+psycopg://athena:athena@localhost:5432/athena"
-config.set_main_option("sqlalchemy.url", os.environ.get("ATHENA_DATABASE_URL", DEFAULT_LOCAL_URL))
+_url = os.environ.get("ATHENA_DATABASE_URL", DEFAULT_LOCAL_URL)
+for _prefix in ("postgres://", "postgresql://"):  # hosted-Postgres URLs; see api/deps.py
+    if _url.startswith(_prefix):
+        _url = "postgresql+psycopg://" + _url[len(_prefix) :]
+config.set_main_option("sqlalchemy.url", _url.replace("%", "%%"))
 
-target_metadata = Base.metadata
+# Clinician enrollment tables live on their own metadata (see EnrollmentBase).
+target_metadata = [Base.metadata, EnrollmentBase.metadata]
 
 
 def run_migrations_offline() -> None:

@@ -142,6 +142,38 @@ class ReferenceDecision:
     acceptable: tuple[str, ...] = ()
 
 
+TRIAL_MATCH_REGIONS: frozenset[str] = frozenset({"india", "us", "both"})
+
+
+@dataclass(frozen=True)
+class EvidenceLookupTask:
+    question: str
+    gold_answer: str
+    gold_sources: tuple[Citation, ...]
+    acceptable_answers: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
+class TrialMatchTask:
+    question: str
+    region: str
+    snapshot_date: str
+    eligible_trial_ids: tuple[str, ...]
+    max_answers: int = 3
+
+
+@dataclass(frozen=True)
+class DecisionRationaleTask:
+    prompt: str
+
+
+@dataclass(frozen=True)
+class CaseTasks:
+    evidence_lookup: EvidenceLookupTask
+    trial_match: TrialMatchTask
+    decision_rationale: DecisionRationaleTask | None = None
+
+
 @dataclass(frozen=True)
 class StudyCase:
     case_id: str
@@ -161,6 +193,7 @@ class StudyCase:
     # (protocol section 6, memory burden). Authored per case, like everything
     # else a reviewer sees.
     recall_distractors: tuple[str, ...] = ()
+    tasks: CaseTasks | None = None
 
 
 @dataclass(frozen=True)
@@ -222,8 +255,7 @@ def _parse_finding(raw: Any, where: str) -> StudyFinding:
     )
     citation = None
     if d.get("citation") is not None:
-        c = _take(d["citation"], f"{where}.citation", ("id", "url", "name"))
-        citation = Citation(id=str(c["id"]), url=str(c["url"]), name=str(c["name"]))
+        citation = _parse_citation(d["citation"], f"{where}.citation")
     if not isinstance(d["valid"], bool):
         raise CaseSetError(f"{where}.valid: must be a boolean")
     return StudyFinding(
@@ -236,6 +268,71 @@ def _parse_finding(raw: Any, where: str) -> StudyFinding:
         method=d.get("method"),
         invalidated_by=d.get("invalidated_by"),
         flaw=d.get("flaw"),
+    )
+
+
+def _parse_citation(raw: Any, where: str) -> Citation:
+    c = _take(raw, where, ("id", "url", "name"))
+    return Citation(id=str(c["id"]), url=str(c["url"]), name=str(c["name"]))
+
+
+def _parse_evidence_lookup(raw: Any, where: str) -> EvidenceLookupTask:
+    d = _take(
+        raw,
+        where,
+        ("question", "gold_answer", "gold_sources"),
+        ("acceptable_answers",),
+    )
+    sources = tuple(
+        _parse_citation(s, f"{where}.gold_sources[{i}]")
+        for i, s in enumerate(_seq(d["gold_sources"], f"{where}.gold_sources"))
+    )
+    return EvidenceLookupTask(
+        question=str(d["question"]),
+        gold_answer=str(d["gold_answer"]),
+        gold_sources=sources,
+        acceptable_answers=tuple(
+            str(x) for x in _seq(d.get("acceptable_answers"), f"{where}.acceptable_answers")
+        ),
+    )
+
+
+def _parse_trial_match(raw: Any, where: str) -> TrialMatchTask:
+    d = _take(
+        raw,
+        where,
+        ("question", "region", "snapshot_date", "eligible_trial_ids"),
+        ("max_answers",),
+    )
+    max_answers = d.get("max_answers", 3)
+    if not isinstance(max_answers, int) or isinstance(max_answers, bool):
+        raise CaseSetError(f"{where}.max_answers: must be an integer")
+    return TrialMatchTask(
+        question=str(d["question"]),
+        region=str(d["region"]),
+        snapshot_date=str(d["snapshot_date"]),
+        eligible_trial_ids=tuple(
+            str(x) for x in _seq(d["eligible_trial_ids"], f"{where}.eligible_trial_ids")
+        ),
+        max_answers=max_answers,
+    )
+
+
+def _parse_case_tasks(raw: Any, where: str) -> CaseTasks:
+    d = _take(
+        raw,
+        where,
+        ("evidence_lookup", "trial_match"),
+        ("decision_rationale",),
+    )
+    decision = None
+    if d.get("decision_rationale") is not None:
+        rd = _take(d["decision_rationale"], f"{where}.decision_rationale", ("prompt",))
+        decision = DecisionRationaleTask(prompt=str(rd["prompt"]))
+    return CaseTasks(
+        evidence_lookup=_parse_evidence_lookup(d["evidence_lookup"], f"{where}.evidence_lookup"),
+        trial_match=_parse_trial_match(d["trial_match"], f"{where}.trial_match"),
+        decision_rationale=decision,
     )
 
 
@@ -291,7 +388,7 @@ def _parse_case(raw: Any, where: str) -> StudyCase:
             "seeded_issues",
             "reference_decision",
         ),
-        ("age_years", "stage", "recall_distractors"),
+        ("age_years", "stage", "recall_distractors", "tasks"),
     )
     for flag in ("synthetic", "citations_verified"):
         if not isinstance(d[flag], bool):
@@ -340,6 +437,9 @@ def _parse_case(raw: Any, where: str) -> StudyCase:
         stage=d.get("stage"),
         recall_distractors=tuple(
             str(x) for x in _seq(d.get("recall_distractors"), f"{where}.recall_distractors")
+        ),
+        tasks=(
+            _parse_case_tasks(d["tasks"], f"{where}.tasks") if d.get("tasks") is not None else None
         ),
     )
 
@@ -520,6 +620,31 @@ def validate_case(case: StudyCase) -> list[str]:
             errs.append(f"{p}: reference decision names unknown option {oid!r}")
     if set(rd.concordant) & set(rd.acceptable):
         errs.append(f"{p}: an option cannot be both concordant and acceptable")
+
+    if case.tasks is not None:
+        tp = f"{p} tasks"
+        tasks = case.tasks
+        if not tasks.evidence_lookup.question.strip():
+            errs.append(f"{tp}.evidence_lookup: question must be non-empty")
+        if not tasks.evidence_lookup.gold_answer.strip():
+            errs.append(f"{tp}.evidence_lookup: gold_answer must be non-empty")
+        if not tasks.evidence_lookup.gold_sources:
+            errs.append(f"{tp}.evidence_lookup: gold_sources must be non-empty")
+        if not tasks.trial_match.question.strip():
+            errs.append(f"{tp}.trial_match: question must be non-empty")
+        if tasks.trial_match.region not in TRIAL_MATCH_REGIONS:
+            errs.append(f"{tp}.trial_match: region must be one of {sorted(TRIAL_MATCH_REGIONS)}")
+        if _parse_date(tasks.trial_match.snapshot_date) is None:
+            errs.append(
+                f"{tp}.trial_match: snapshot_date {tasks.trial_match.snapshot_date!r} "
+                "is not an ISO date"
+            )
+        if not tasks.trial_match.eligible_trial_ids:
+            errs.append(f"{tp}.trial_match: eligible_trial_ids must be non-empty")
+        if tasks.trial_match.max_answers < 1:
+            errs.append(f"{tp}.trial_match: max_answers must be >= 1")
+        if tasks.decision_rationale is not None and not tasks.decision_rationale.prompt.strip():
+            errs.append(f"{tp}.decision_rationale: prompt must be non-empty")
     return errs
 
 

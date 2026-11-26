@@ -96,9 +96,17 @@
 }
 .study-choice {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 0.5rem;
   margin: 0.3rem 0;
+}
+.study-choice input[type='checkbox'] {
+  flex-shrink: 0;
+  width: 1.25rem;
+  height: 1.25rem;
+  margin: 0;
+  min-width: 24px;
+  min-height: 24px;
 }
 .study-rationale {
   display: block;
@@ -135,4 +143,226 @@
   min-width: 2.5ch;
   text-align: right;
   font-variant-numeric: tabular-nums;
+}
+
+.study-enroll label {
+  display: block;
+  margin: 0.75rem 0;
+  font-size: 0.9rem;
+}
+.study-enroll input,
+.study-enroll select,
+.study-enroll textarea {
+  display: block;
+  width: 100%;
+  margin-top: 0.25rem;
+  font: inherit;
+}
+.study-button--ghost {
+  background: transparent;
+  color: var(--ink);
+  margin-left: 0.5rem;
+}
+.study-link-button {
+  display: inline-block;
+  text-decoration: none;
+  margin-right: 0.5rem;
+}
+.consent-scroll {
+  max-height: 50vh;
+  overflow: auto;
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+.consent-markdown h1,
+.consent-markdown h2,
+.consent-markdown h3 {
+  margin: 0.75rem 0 0.35rem;
+}
+.study-source-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: flex-end;
+  margin: 0.5rem 0 1rem;
+}
+.study-source-form label {
+  flex: 1 1 12rem;
+}
+.study-task-form label,
+.study-task-form textarea,
+.study-task-form input {
+  display: block;
+  width: 100%;
+  margin: 0.5rem 0;
+}
+.study-sus-item {
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  margin-bottom: 0.75rem;
+}
+.study-sus-scale {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.study-athena-tabs {
+  display: flex;
+  gap: 0.25rem;
+  padding: 0.5rem 1rem;
+  border-bottom: 1px solid var(--rule);
+}
+.study-athena-tabs button {
+  border: 1px solid var(--rule);
+  background: var(--paper);
+  padding: 0.35rem 0.75rem;
+  font: inherit;
+  cursor: pointer;
+  border-radius: 6px;
+}
+.study-athena-tabs button.is-active {
+  background: var(--ink);
+  color: var(--paper);
+}
+.study-athena-panels {
+  min-height: 50vh;
+}
+.study-athena-panel {
+  display: none;
+}
+.study-athena-panel.is-visible {
+  display: block;
+}
+.study-athena-panel--chat .chat-layout {
+  height: calc(100vh - 8rem);
+}
+/* Review, chat, sources and tasks only fit side by side on very wide screens;
+   below that the review and the chat are tabs so the chat keeps a usable width. */
+.study-athena-panel--chat .chat-details {
+  width: 15rem;
+  min-width: 15rem;
+}
+@media (min-width: 1800px) {
+  .study-athena-tabs {
+    display: none;
+  }
+  .study-athena-panels {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+    border-top: 1px solid var(--rule);
+  }
+  .study-athena-panel {
+    display: block;
+    overflow: auto;
+    max-height: calc(100vh - 7rem);
+    padding: 0 0.5rem;
+    border-right: 1px solid var(--rule);
+  }
+  .study-athena-panel[hidden] {
+    display: block;
+  }
+  .study-athena-panel--chat .chat-layout {
+    height: calc(100vh - 8rem);
+  }
+}
+
+.study-enrolled-layout {
+  min-height: calc(100vh - 56px);
+}
+@media (min-width: 900px) {
+  .study-enrolled-shell .study-enrolled-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(18rem, 28rem);
+    align-items: start;
+  }
+}
+.study-enrolled-case {
+  min-width: 0;
+}
+.study-enrolled-case-scroll {
+  max-height: calc(100vh - 56px);
+  overflow: auto;
+}
+.study-enrolled-shell .study-enrolled-case-scroll {
+  max-height: calc(100vh - 56px);
+}
+.study-enrolled-tasks {
+  border-left: 1px solid var(--rule);
+  padding: 0.75rem 1rem;
+  max-height: calc(100vh - 56px);
+  overflow: auto;
+}
+.study-enrolled-tasks--idle {
+  opacity: 0.85;
+}
+.study-enrolled-tasks-idle h2 {
+  margin-top: 0;
+}
+.study-bar-step {
+  font-variant-numeric: tabular-nums;
+}
+.study-enrolled-mobile-tabs {
+  position: sticky;
+  top: 56px;
+  z-index: 15;
+  display: flex;
+  gap: 0.25rem;
+  padding: 0.5rem 1rem;
+  background: var(--paper);
+  border-bottom: 1px solid var(--rule);
+}
+.study-enrolled-mobile-tabs button {
+  flex: 1;
+  border: 1px solid var(--rule);
+  background: var(--paper);
+  padding: 0.35rem 0.5rem;
+  font: inherit;
+  cursor: pointer;
+  border-radius: 6px;
+}
+.study-enrolled-mobile-tabs button.is-active {
+  background: var(--ink);
+  color: var(--paper);
+}
+@media (max-width: 899px) {
+  .study-enrolled-pane--hidden {
+    display: none;
+  }
+  .study-enrolled-tasks {
+    border-left: none;
+    border-top: 1px solid var(--rule);
+    max-height: none;
+  }
+  .study-enrolled-case-scroll {
+    max-height: none;
+  }
+}
+
+/* Inline checkbox rows inside the enrollment forms: the generic
+   .study-enroll label/input rules above would otherwise stack them. */
+.study-enroll .study-choice {
+  display: flex;
+  align-items: flex-start;
+}
+.study-enroll .study-choice input {
+  display: inline-block;
+  width: auto;
+  margin-top: 0.15rem;
+}
+.study-arm-tag {
+  margin-left: 0.75rem;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  border: 1px solid var(--rule);
+}
+.study-arm-tag--athena_full {
+  background: #eef3fb;
+}
+.study-arm-tag--usual_care {
+  background: #f4f1ea;
 }

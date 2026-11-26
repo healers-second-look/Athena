@@ -49,3 +49,27 @@ def test_bare_variant_with_no_gene_still_falls_back_to_variant_match(evidence_gr
     )
     assert sources, "expected the bare-variant fallback to still find TP53's own variant"
     assert all(s["gene"] == "TP53" for s in sources)
+
+
+class _FakeGraph:
+    def __init__(self, count: int) -> None:
+        self._count = count
+
+    def query(self, query: str, params: dict | None = None):
+        return type("_Result", (), {"result_set": [[self._count]]})()
+
+
+def test_graph_live_evidence_ready_ok():
+    from secondlook.chat.knowledge import graph_live_evidence_ready
+
+    ok, reasons = graph_live_evidence_ready(graph=_FakeGraph(2))
+    assert ok
+    assert reasons == []
+
+
+def test_graph_live_evidence_ready_empty_graph():
+    from secondlook.chat.knowledge import graph_live_evidence_ready
+
+    ok, reasons = graph_live_evidence_ready(graph=_FakeGraph(0))
+    assert not ok
+    assert "no evidence" in reasons[0]

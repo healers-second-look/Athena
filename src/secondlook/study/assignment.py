@@ -2,10 +2,12 @@
 
 Arm order follows a 3x3 Latin square across reviewers (reviewer index mod 3),
 and each reviewer reads a contiguous, wrapping window of the case pool, so
-across reviewers every case is seen in every arm. No RNG is involved: the
-schedule is a pure function of (reviewer index, pool), so it can be committed
-and audited before the first session, which the protocol's freeze step
-requires.
+across reviewers every case is seen in every arm. The two-arm usual-care vs
+athena_full design pairs reviewers ``2k`` and ``2k+1``: they see the same cases
+in the same order with opposite arm order; the window advances every two
+reviewers. No RNG is involved: the schedule is a pure function of (reviewer
+index, pool), so it can be committed and audited before the first session,
+which the protocol's freeze step requires.
 
 Exact balance holds when the pool holds twice a reviewer's slots (a pool of 18
 with 9 slots) and the reviewer count is a multiple of 6; other geometries are
@@ -22,16 +24,25 @@ ARM_ORDERS: tuple[tuple[str, str, str], ...] = (
     ("chat", "diff_first", "dashboard"),
 )
 
+USUAL_VS_ATHENA_ORDERS: tuple[tuple[str, str], ...] = (
+    ("usual_care", "athena_full"),
+    ("athena_full", "usual_care"),
+)
+
 
 def build_schedule(
-    reviewer_index: int, case_ids: list[str], *, cases_per_arm: int = 3
+    reviewer_index: int,
+    case_ids: list[str],
+    *,
+    cases_per_arm: int = 3,
+    arm_orders: tuple[tuple[str, ...], ...] = ARM_ORDERS,
 ) -> list[tuple[str, str]]:
     """Ordered (case_id, arm) pairs for one reviewer: block 1 in the first arm, etc."""
     if reviewer_index < 0:
         raise ValueError("reviewer_index must be >= 0")
     if cases_per_arm < 1:
         raise ValueError("cases_per_arm must be >= 1")
-    slots = cases_per_arm * len(ARM_ORDERS[0])
+    slots = cases_per_arm * len(arm_orders[0])
     pool = len(case_ids)
     if len(set(case_ids)) != pool:
         raise ValueError("case_ids must be unique")
@@ -39,18 +50,28 @@ def build_schedule(
         raise ValueError(
             f"need at least {slots} cases for {cases_per_arm} per arm, pool has {pool}"
         )
-    order = ARM_ORDERS[reviewer_index % len(ARM_ORDERS)]
-    start = (reviewer_index * slots) % pool
+    if len(arm_orders) == 2 and len(arm_orders[0]) == 2:
+        order = arm_orders[reviewer_index % 2]
+        start = ((reviewer_index // 2) * slots) % pool
+    else:
+        order = arm_orders[reviewer_index % len(arm_orders)]
+        start = (reviewer_index * slots) % pool
     return [
         (case_ids[(start + slot) % pool], order[slot // cases_per_arm]) for slot in range(slots)
     ]
 
 
 def arm_case_counts(
-    reviewer_count: int, case_ids: list[str], *, cases_per_arm: int = 3
+    reviewer_count: int,
+    case_ids: list[str],
+    *,
+    cases_per_arm: int = 3,
+    arm_orders: tuple[tuple[str, ...], ...] = ARM_ORDERS,
 ) -> Counter[tuple[str, str]]:
     """How often each (case, arm) pair occurs across reviewers 0..reviewer_count-1."""
     counts: Counter[tuple[str, str]] = Counter()
     for reviewer in range(reviewer_count):
-        counts.update(build_schedule(reviewer, case_ids, cases_per_arm=cases_per_arm))
+        counts.update(
+            build_schedule(reviewer, case_ids, cases_per_arm=cases_per_arm, arm_orders=arm_orders)
+        )
     return counts

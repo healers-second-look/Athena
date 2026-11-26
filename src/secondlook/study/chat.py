@@ -48,14 +48,47 @@ def chat_context_lines(case: StudyCase) -> list[str]:
     return [header] + [f"{e.occurred_on}: {e.summary}" for e in events]
 
 
-def briefing_text(case: StudyCase) -> str:
-    """The first assistant message: the same findings the other arms list."""
+def latest_gene_symbol(case: StudyCase) -> str | None:
+    """Gene symbol from the latest case event whose payload includes ``gene``."""
+    events = sorted(case.baseline_events + case.update_events, key=lambda e: e.occurred_on)
+    for event in reversed(events):
+        raw = event.payload.get("gene")
+        if raw is not None and str(raw).strip():
+            return str(raw).strip()
+    return None
+
+
+def gene_context_id(case: StudyCase) -> str | None:
+    symbol = latest_gene_symbol(case)
+    return f"gene:{symbol}" if symbol else None
+
+
+def briefing_text(case: StudyCase, *, show_supersessions: bool = False) -> str:
+    """The first assistant message: the same findings the other arms list.
+
+    With ``show_supersessions`` (the athena_full arm, whose review tab shows
+    Athena's change report), findings the system reports as superseded are
+    listed separately with the system's note instead of as current findings.
+    Only the system's reported supersessions are used, never ground truth.
+    """
+    superseded = (
+        {s.finding_id: s for s in case.system_output.reported_supersessions}
+        if show_supersessions
+        else {}
+    )
+    numbered = list(enumerate(case.system_output.findings, start=1))
+    current = [(i, f) for i, f in numbered if f.id not in superseded]
     lines = [f"## {case.label}", "", "I reviewed this case. My current findings:", ""]
     # Plain lines, not "- " bullets: the chat UI renders a bulleted line with its
     # own bullet, so a leading "- " would show up doubled.
-    lines += [
-        f"Finding {index}: {finding.claim} [{index}]"
-        for index, finding in enumerate(case.system_output.findings, start=1)
-    ]
+    lines += [f"Finding {index}: {finding.claim} [{index}]" for index, finding in current]
+    if superseded:
+        lines += ["", "No longer current (superseded since the last review):", ""]
+        lines += [
+            f"Finding {index} (superseded): {finding.claim} [{index}] -- "
+            f"{superseded[finding.id].note}"
+            for index, finding in numbered
+            if finding.id in superseded
+        ]
     lines += ["", "Ask me anything about the case."]
     return "\n".join(lines)

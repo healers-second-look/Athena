@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 import uuid
 from collections.abc import Iterator
+from functools import lru_cache
 
 from fastapi import Depends, HTTPException
 from sqlalchemy.orm import Session
@@ -15,11 +16,34 @@ from secondlook.signals.registry import dispatch
 DEFAULT_DATABASE_URL = "postgresql+psycopg://athena:athena@localhost:5432/athena"
 
 
-def get_session() -> Iterator[Session]:
+def database_url() -> str:
+    """ATHENA_DATABASE_URL, normalised to the psycopg (v3) driver.
+
+    Hosted Postgres (Railway, Neon, Render) hands out ``postgres://`` or
+    ``postgresql://`` URLs, which SQLAlchemy maps to psycopg2 -- not installed
+    here. Rewriting the scheme lets the platform's URL be pasted as-is.
+    """
+    url = os.environ.get("ATHENA_DATABASE_URL", DEFAULT_DATABASE_URL)
+    for prefix in ("postgres://", "postgresql://"):
+        if url.startswith(prefix):
+            return "postgresql+psycopg://" + url[len(prefix) :]
+    return url
+
+
+@lru_cache(maxsize=4)
+def _engine(url: str):
+    """One engine (and connection pool) per URL for the process lifetime.
+
+    Creating an engine per request opened a fresh pool every time, which a
+    hosted Postgres with a small connection cap runs out of quickly.
+    """
     from sqlalchemy import create_engine
 
-    url = os.environ.get("ATHENA_DATABASE_URL", DEFAULT_DATABASE_URL)
-    engine = create_engine(url)
+    return create_engine(url, pool_pre_ping=True)
+
+
+def get_session() -> Iterator[Session]:
+    engine = _engine(database_url())
     session = Session(engine)
     try:
         yield session

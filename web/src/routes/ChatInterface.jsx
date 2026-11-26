@@ -22,6 +22,8 @@ export default function ChatInterface({
   studySessionId = null,
   studyClient = null,
   onStudyEvent = null,
+  studyDegraded = null,
+  studyLiveEvidence = false,
 }) {
   const params = useParams()
   const inStudy = Boolean(studySessionId)
@@ -142,7 +144,11 @@ export default function ChatInterface({
         ),
       })
     } catch (err) {
-      setError(err.message)
+      if (inStudy && err.status === 429) {
+        setError('Turn limit reached for this case. No further chat messages can be sent.')
+      } else {
+        setError(err.message)
+      }
       setSession((prev) => ({
         ...prev,
         history: prev.history.filter((m) => m.id !== 'temp'),
@@ -447,13 +453,35 @@ export default function ChatInterface({
           </div>
         </header>
 
+        {/* Outside the scrolling list, so messages never slide under it. */}
+        {inStudy && studyDegraded?.length > 0 && (
+          <div
+            className="study-chat-degraded-banner"
+            role="alert"
+            style={{
+              flexShrink: 0,
+              margin: '8px 16px',
+              padding: '10px 12px',
+              background: '#fbeee3',
+              color: '#5d412c',
+              borderRadius: 8,
+              fontSize: 13,
+            }}
+          >
+            Athena is running in a degraded mode: {studyDegraded.join('; ')}
+          </div>
+        )}
         {/* Messages */}
         <div className="chat-messages">
           {(!session?.history?.length) && (
             <div className="empty-state">
               <span className="material-symbols-outlined">forum</span>
               <h2>Start a conversation</h2>
-              <p>Ask about clinical evidence (e.g. <code>EGFR T790M</code> or <code>ETV6::NTRK3</code>), drug responses, or pathways.</p>
+              {inStudy ? (
+                <p>Ask about this case, its findings, or the evidence behind them.</p>
+              ) : (
+                <p>Ask about clinical evidence (e.g. <code>EGFR T790M</code> or <code>ETV6::NTRK3</code>), drug responses, or pathways.</p>
+              )}
             </div>
           )}
 
@@ -487,13 +515,14 @@ export default function ChatInterface({
                           <span
                             key={`${type}-${v}`}
                             className="msg-note entity"
-                            style={{ cursor: 'pointer' }}
+                            style={{ cursor: inStudy ? 'default' : 'pointer' }}
                             onClick={(e) => {
+                              if (inStudy) return // the graph viewer's routes are closed to study doctors
                               e.stopPropagation()
                               setActiveGraphContext(`gene:${v}`)
                             }}
                           >
-                            {type}: {v} (Inspect)
+                            {type}: {v}{inStudy ? '' : ' (Inspect)'}
                           </span>
                         ))
                       )}
@@ -531,7 +560,11 @@ export default function ChatInterface({
               <textarea
                 ref={inputRef}
                 className="chat-input"
-                placeholder="Ask about clinical evidence (e.g. EGFR T790M or ETV6::NTRK3)..."
+                placeholder={
+                  inStudy
+                    ? 'Ask about this case, its findings, or the evidence behind them...'
+                    : 'Ask about clinical evidence (e.g. EGFR T790M or ETV6::NTRK3)...'
+                }
                 rows={1}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
@@ -548,7 +581,13 @@ export default function ChatInterface({
               </button>
             </div>
             <p className="chat-disclaimer">
-              Athena grounds synthesis in live CIViC and FalkorDB knowledge graph evidence.
+              {inStudy && studyLiveEvidence && !(studyDegraded?.length)
+                ? 'Athena grounds synthesis in live CIViC and FalkorDB knowledge graph evidence.'
+                : inStudy && studyLiveEvidence
+                  ? 'Live evidence is not fully available in this session.'
+                  : inStudy
+                  ? 'Study chat uses the case findings shown in this session, not live graph retrieval.'
+                  : 'Athena grounds synthesis in live CIViC and FalkorDB knowledge graph evidence.'}
             </p>
           </div>
         </div>
@@ -575,11 +614,11 @@ export default function ChatInterface({
                         <div
                           key={`${type}-${v}`}
                           className="entity-row"
-                          style={{ cursor: 'pointer' }}
-                          onClick={() => setActiveGraphContext(`gene:${v}`)}
+                          style={{ cursor: inStudy ? 'default' : 'pointer' }}
+                          onClick={() => !inStudy && setActiveGraphContext(`gene:${v}`)}
                         >
                           <span className="entity-type">{type}</span>
-                          <span className="entity-value">{v} ↗</span>
+                          <span className="entity-value">{v}{inStudy ? '' : ' ↗'}</span>
                         </div>
                       ))
                     )}
@@ -619,7 +658,7 @@ export default function ChatInterface({
                             })
                           }
                         >
-                          PMID {src.pmid} ↗
+                          {/^\d+$/.test(String(src.pmid)) ? `PMID ${src.pmid}` : String(src.pmid)} ↗
                         </a>
                       </div>
                     ))}

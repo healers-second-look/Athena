@@ -129,7 +129,30 @@ def test_vocabulary_covers_the_protocols_outcomes():
         "case_submitted",
     ):
         assert needed in STUDY_EVENT_TYPES
-    assert set(ARMS) == {"diff_first", "dashboard", "chat"}
+    assert set(ARMS) == {
+        "diff_first",
+        "dashboard",
+        "chat",
+        "usual_care",
+        "athena_full",
+    }
+
+
+@pytest.mark.parametrize("arm", ["usual_care", "athena_full"])
+def test_new_arms_are_accepted(session, arm):
+    StudyEventStore(session).append_many([_event(arm=arm)])
+
+
+@pytest.mark.parametrize(
+    "event_type,payload",
+    [
+        ("task_answer_submitted", {"task_id": "evidence_lookup", "answer": "text"}),
+        ("external_source_logged", {"url": "https://example.org/x", "kind": "guideline"}),
+        ("sus_submitted", {"items": [3] * 10}),
+    ],
+)
+def test_new_event_types_are_accepted(session, event_type, payload):
+    StudyEventStore(session).append_many([_event(event_type=event_type, payload=payload)])
 
 
 def test_table_is_registered_and_carries_no_phi_columns():
