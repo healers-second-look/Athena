@@ -50,7 +50,12 @@ export default function StudyHome() {
   }
 
   const doWithdraw = async () => {
-    if (!window.confirm('Withdraw from the study? You can close the browser at any time, but this marks your withdrawal for the study team.')) {
+    if (
+      !window.confirm(
+        'Withdraw from the study? This records your withdrawal and ends your access. ' +
+          'To have your identifying details deleted, contact the study team (see the consent form).',
+      )
+    ) {
       return
     }
     setWithdrawing(true)
@@ -80,6 +85,9 @@ export default function StudyHome() {
       {allDone ? (
         <>
           <p>Thank you. You have completed every case in your schedule.</p>
+          <button type="button" className="study-button study-button--ghost" onClick={doWithdraw} disabled={withdrawing}>
+            Withdraw
+          </button>
           <button type="button" className="study-button study-button--ghost" onClick={signOut}>
             Sign out
           </button>

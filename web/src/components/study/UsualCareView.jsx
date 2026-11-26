@@ -14,16 +14,17 @@ const SOURCE_TYPES = [
 
 export default function UsualCareView({ view, onFindingOpened, onCitationOpened, onEvent }) {
   const [url, setUrl] = useState('')
-  const [sourceType, setSourceType] = useState('guideline')
+  const [sourceType, setSourceType] = useState('')
   const [sources, setSources] = useState([])
 
   const addSource = (e) => {
     e.preventDefault()
     const trimmed = url.trim()
-    if (!trimmed) return
+    if (!trimmed || !sourceType) return
     onEvent('external_source_logged', { url: trimmed, type: sourceType })
     setSources((prev) => [...prev, { url: trimmed, type: sourceType }])
     setUrl('')
+    setSourceType('')
   }
 
   return (
@@ -54,6 +55,7 @@ export default function UsualCareView({ view, onFindingOpened, onCitationOpened,
           <label>
             Type
             <select value={sourceType} onChange={(e) => setSourceType(e.target.value)}>
+              <option value="">Choose…</option>
               {SOURCE_TYPES.map((t) => (
                 <option key={t} value={t}>
                   {t}
@@ -61,7 +63,7 @@ export default function UsualCareView({ view, onFindingOpened, onCitationOpened,
               ))}
             </select>
           </label>
-          <button type="submit" className="study-button" disabled={!url.trim()}>
+          <button type="submit" className="study-button" disabled={!url.trim() || !sourceType}>
             Log source
           </button>
         </form>

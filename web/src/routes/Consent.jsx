@@ -105,7 +105,7 @@ export default function Consent() {
             checked={screenRecording}
             onChange={(e) => setScreenRecording(e.target.checked)}
           />
-          <span>I agree to optional screen recording in the usual-care condition</span>
+          <span>I consent to optional screen recording during the study sessions (optional)</span>
         </label>
         <label htmlFor="consent-signed-name">
           Type your full name to sign

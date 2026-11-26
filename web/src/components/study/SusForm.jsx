@@ -1,22 +1,34 @@
 import { useState } from 'react'
 
-export const SUS_ITEMS = [
-  'I think that I would like to use this system frequently.',
-  'I found the system unnecessarily complex.',
-  'I thought the system was easy to use.',
-  'I think that I would need the support of a technical person to use this system.',
-  'I found the various functions in this system were well integrated.',
-  'I thought there was too much inconsistency in this system.',
-  'I would imagine that most people would learn to use this system very quickly.',
-  'I found the system very cumbersome to use.',
-  'I felt very confident using the system.',
-  'I needed to learn a lot of things before I could get going with this system.',
+// Standard SUS items with the rated thing named, the usual adaptation of SUS:
+// "this system" is ambiguous in the usual-care block, where there is no system.
+export const SUS_ITEM_TEMPLATES = [
+  'I think that I would like to use {it} frequently.',
+  'I found {it} unnecessarily complex.',
+  'I thought {it} {was} easy to use.',
+  'I think that I would need the support of a technical person to use {it}.',
+  'I found the various functions in {it} were well integrated.',
+  'I thought there was too much inconsistency in {it}.',
+  'I would imagine that most people would learn to use {it} very quickly.',
+  'I found {it} very cumbersome to use.',
+  'I felt very confident using {it}.',
+  'I needed to learn a lot of things before I could get going with {it}.',
 ]
 
-export default function SusForm({ armLabel, onSubmit, onEvent }) {
-  const [scores, setScores] = useState(() => Object.fromEntries(SUS_ITEMS.map((_, i) => [i, null])))
+export function susItems(armLabel) {
+  const usual = armLabel === 'usual_care'
+  const it = usual ? 'my usual tools' : 'Athena'
+  const was = usual ? 'were' : 'was'
+  return SUS_ITEM_TEMPLATES.map((t) => t.replace('{it}', it).replace('{was}', was))
+}
 
-  const complete = SUS_ITEMS.every((_, i) => scores[i] !== null)
+export const SUS_ITEMS = susItems('athena_full')
+
+export default function SusForm({ armLabel, onSubmit, onEvent }) {
+  const items = susItems(armLabel)
+  const [scores, setScores] = useState(() => Object.fromEntries(items.map((_, i) => [i, null])))
+
+  const complete = items.every((_, i) => scores[i] !== null)
 
   return (
     <form
@@ -24,17 +36,17 @@ export default function SusForm({ armLabel, onSubmit, onEvent }) {
       onSubmit={(e) => {
         e.preventDefault()
         if (!complete) return
-        const responses = SUS_ITEMS.map((text, i) => ({ item: i + 1, text, score: scores[i] }))
+        const responses = items.map((text, i) => ({ item: i + 1, text, score: scores[i] }))
         onEvent('sus_submitted', { arm: armLabel, responses })
         onSubmit({ responses })
       }}
     >
-      <h2>System usability (brief)</h2>
+      <h2>Usability</h2>
       <p className="small muted">
         For the {armLabel === 'usual_care' ? 'usual-care' : 'Athena'} block you just finished: rate each
         statement from 1 (strongly disagree) to 5 (strongly agree).
       </p>
-      {SUS_ITEMS.map((text, i) => (
+      {items.map((text, i) => (
         <fieldset key={i} className="study-sus-item">
           <legend>{text}</legend>
           <div className="study-sus-scale">

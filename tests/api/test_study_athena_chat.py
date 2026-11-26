@@ -204,3 +204,38 @@ def test_graph_lost_mid_case_is_an_error_not_an_ungrounded_answer(enrolled_athen
     monkeypatch.setattr(study_routes, "run_turn", lambda *a, **k: pytest.fail("model was called"))
     url = f"/api/study/chat/sessions/{session['id']}/turns"
     assert client.post(url, json={"message": "hi"}, headers=auth).status_code == 503
+
+
+def test_athena_full_briefing_separates_superseded_findings(enrolled_athena, monkeypatch):
+    from secondlook.study.cases import DEFAULT_CASE_SET_DIR, load_case_set
+
+    client, engine = enrolled_athena
+    monkeypatch.setenv("ATHENA_STUDY_CHAT_MODEL", "mock-outline")
+    monkeypatch.setattr(
+        "secondlook.api.routes.study.graph_live_evidence_ready",
+        lambda **_: (False, ["graph down"]),
+    )
+    token, case_id = _enrolled(client, engine, os.environ["STUDY_CODE_PEPPER"])
+    resp = client.post(
+        "/api/study/chat/sessions",
+        json={"case_id": case_id, "arm": "athena_full"},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert resp.status_code == 200
+    briefing = resp.json()["history"][0]["content"]
+    case = next(
+        c
+        for c in load_case_set(DEFAULT_CASE_SET_DIR / "athena_vs_usual_v1.yaml").cases
+        if c.case_id == case_id
+    )
+    current = briefing.split("My current findings:")[1].split("No longer current")[0]
+    superseded_ids = {s.finding_id for s in case.system_output.reported_supersessions}
+    for finding in case.system_output.findings:
+        if finding.id in superseded_ids:
+            assert finding.claim not in current
+            assert f"(superseded): {finding.claim}" in briefing
+        else:
+            assert finding.claim in current
+    assert (
+        superseded_ids
+    ), "this test needs the enrolled doctor's Athena case to report a supersession"

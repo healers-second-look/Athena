@@ -63,14 +63,32 @@ def gene_context_id(case: StudyCase) -> str | None:
     return f"gene:{symbol}" if symbol else None
 
 
-def briefing_text(case: StudyCase) -> str:
-    """The first assistant message: the same findings the other arms list."""
+def briefing_text(case: StudyCase, *, show_supersessions: bool = False) -> str:
+    """The first assistant message: the same findings the other arms list.
+
+    With ``show_supersessions`` (the athena_full arm, whose review tab shows
+    Athena's change report), findings the system reports as superseded are
+    listed separately with the system's note instead of as current findings.
+    Only the system's reported supersessions are used, never ground truth.
+    """
+    superseded = (
+        {s.finding_id: s for s in case.system_output.reported_supersessions}
+        if show_supersessions
+        else {}
+    )
+    numbered = list(enumerate(case.system_output.findings, start=1))
+    current = [(i, f) for i, f in numbered if f.id not in superseded]
     lines = [f"## {case.label}", "", "I reviewed this case. My current findings:", ""]
     # Plain lines, not "- " bullets: the chat UI renders a bulleted line with its
     # own bullet, so a leading "- " would show up doubled.
-    lines += [
-        f"Finding {index}: {finding.claim} [{index}]"
-        for index, finding in enumerate(case.system_output.findings, start=1)
-    ]
+    lines += [f"Finding {index}: {finding.claim} [{index}]" for index, finding in current]
+    if superseded:
+        lines += ["", "No longer current (superseded since the last review):", ""]
+        lines += [
+            f"Finding {index} (superseded): {finding.claim} [{index}] -- "
+            f"{superseded[finding.id].note}"
+            for index, finding in numbered
+            if finding.id in superseded
+        ]
     lines += ["", "Ask me anything about the case."]
     return "\n".join(lines)

@@ -293,6 +293,11 @@ export default function StudyCase({
         <header className="study-bar">
           <span>
             Case {position} of {total}
+            <span className={`study-arm-tag study-arm-tag--${item.arm}`}>
+              {item.arm === 'usual_care'
+                ? 'Usual tools: use your own resources, no Athena'
+                : 'With Athena: use the Athena review and chat'}
+            </span>
           </span>
           {phase === 'review' ? (
             <button type="button" className="study-button" onClick={startTasks}>

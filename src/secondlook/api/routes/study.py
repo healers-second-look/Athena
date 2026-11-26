@@ -479,7 +479,7 @@ def create_study_chat_session(
     )
     session.add_message(
         "assistant",
-        briefing_text(case),
+        briefing_text(case, show_supersessions=mode == "athena_full"),
         sources=chat_sources(case),
         sources_count=len(case.system_output.findings),
         entities={},

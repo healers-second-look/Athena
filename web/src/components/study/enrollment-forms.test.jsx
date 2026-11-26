@@ -2,7 +2,7 @@ import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import UsualCareView from './UsualCareView.jsx'
 import { EvidenceLookupForm } from './TaskForms.jsx'
-import SusForm, { SUS_ITEMS } from './SusForm.jsx'
+import SusForm, { SUS_ITEMS, susItems } from './SusForm.jsx'
 
 const baseView = {
   case_id: 'c1',
@@ -36,10 +36,15 @@ describe('UsualCareView', () => {
     expect(container.querySelector('.study-finding--superseded')).toBeNull()
 
     fireEvent.change(screen.getByLabelText(/^URL/i), { target: { value: 'https://pubmed.ncbi.nlm.nih.gov/1' } })
+    // No default type: a doctor who never touches the menu must not log a PubMed link as a guideline.
+    expect(screen.getByRole('button', { name: /log source/i })).toBeDisabled()
+    fireEvent.click(screen.getByRole('button', { name: /log source/i }))
+    expect(onEvent).not.toHaveBeenCalled()
+    fireEvent.change(screen.getByLabelText(/^Type/i), { target: { value: 'PubMed' } })
     fireEvent.click(screen.getByRole('button', { name: /log source/i }))
     expect(onEvent).toHaveBeenCalledWith('external_source_logged', {
       url: 'https://pubmed.ncbi.nlm.nih.gov/1',
-      type: 'guideline',
+      type: 'PubMed',
     })
   })
 })
@@ -76,5 +81,19 @@ describe('SusForm', () => {
     expect(submit).toBeEnabled()
     fireEvent.click(submit)
     expect(onEvent).toHaveBeenCalledWith('sus_submitted', expect.objectContaining({ arm: 'usual_care' }))
+    // The saved item text is the wording the doctor actually saw.
+    expect(onEvent.mock.calls[0][1].responses[0].text).toBe(
+      'I think that I would like to use my usual tools frequently.',
+    )
+  })
+
+  it('names what is being rated instead of "the system"', () => {
+    for (const arm of ['usual_care', 'athena_full']) {
+      const items = susItems(arm)
+      expect(items).toHaveLength(10)
+      for (const text of items) expect(text).not.toMatch(/system|\{/)
+    }
+    expect(susItems('usual_care').every((t) => t.includes('my usual tools'))).toBe(true)
+    expect(susItems('athena_full').every((t) => t.includes('Athena'))).toBe(true)
   })
 })

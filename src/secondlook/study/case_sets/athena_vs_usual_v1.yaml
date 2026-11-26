@@ -154,3 +154,5 @@ cases:
         eligible_trial_ids:
           - NCT00000010-SYN4
           - NCT00000011-SYN5
+      decision_rationale:
+        prompt: "Briefly explain your management choice in one or two sentences."

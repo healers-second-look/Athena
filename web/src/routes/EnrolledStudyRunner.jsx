@@ -10,6 +10,7 @@ export default function EnrolledStudyRunner() {
   const schedule = useAsync(() => getMe(), [])
   const [cursor, setCursor] = useState(0)
   const [pendingSus, setPendingSus] = useState(null)
+  const [blockBreak, setBlockBreak] = useState(false)
 
   const items = useMemo(() => {
     if (!schedule.data) return []
@@ -50,6 +51,8 @@ export default function EnrolledStudyRunner() {
             await susLogger.flush()
             setPendingSus(null)
             setCursor(pendingSus.nextIndex)
+            // Another block follows: stop here so the doctor can take a break.
+            setBlockBreak(pendingSus.nextIndex < items.length)
           }}
         />
       </div>
@@ -59,10 +62,33 @@ export default function EnrolledStudyRunner() {
   if (cursor >= items.length) {
     return (
       <div className="wrap">
-        <h1>Block complete</h1>
-        <p>Thank you. Return to study home when you are ready.</p>
+        <h1>Study complete</h1>
+        <p>Thank you. You have finished every case in your schedule, and your answers are saved.</p>
         <Link to="/study" className="study-button study-link-button">
           Study home
+        </Link>
+      </div>
+    )
+  }
+
+  if (blockBreak) {
+    const next = items[cursor]
+    return (
+      <div className="wrap">
+        <h1>First block complete</h1>
+        <p>Your answers are saved. You can take a break now and continue later from study home.</p>
+        <p>
+          Next block:{' '}
+          <strong>
+            {next.arm === 'usual_care' ? 'usual tools, without Athena' : 'with Athena (review and chat)'}
+          </strong>
+          .
+        </p>
+        <button type="button" className="study-button" onClick={() => setBlockBreak(false)}>
+          Start next block
+        </button>{' '}
+        <Link to="/study" className="study-button study-button--ghost study-link-button">
+          Take a break
         </Link>
       </div>
     )

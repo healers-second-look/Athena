@@ -453,32 +453,35 @@ export default function ChatInterface({
           </div>
         </header>
 
+        {/* Outside the scrolling list, so messages never slide under it. */}
+        {inStudy && studyDegraded?.length > 0 && (
+          <div
+            className="study-chat-degraded-banner"
+            role="alert"
+            style={{
+              flexShrink: 0,
+              margin: '8px 16px',
+              padding: '10px 12px',
+              background: '#fbeee3',
+              color: '#5d412c',
+              borderRadius: 8,
+              fontSize: 13,
+            }}
+          >
+            Athena is running in a degraded mode: {studyDegraded.join('; ')}
+          </div>
+        )}
         {/* Messages */}
         <div className="chat-messages">
-          {inStudy && studyDegraded?.length > 0 && (
-            <div
-              className="study-chat-degraded-banner"
-              role="alert"
-              style={{
-                position: 'sticky',
-                top: 0,
-                zIndex: 1,
-                margin: '8px 16px',
-                padding: '10px 12px',
-                background: '#fbeee3',
-                color: '#5d412c',
-                borderRadius: 8,
-                fontSize: 13,
-              }}
-            >
-              Athena is running in a degraded mode: {studyDegraded.join('; ')}
-            </div>
-          )}
           {(!session?.history?.length) && (
             <div className="empty-state">
               <span className="material-symbols-outlined">forum</span>
               <h2>Start a conversation</h2>
-              <p>Ask about clinical evidence (e.g. <code>EGFR T790M</code> or <code>ETV6::NTRK3</code>), drug responses, or pathways.</p>
+              {inStudy ? (
+                <p>Ask about this case, its findings, or the evidence behind them.</p>
+              ) : (
+                <p>Ask about clinical evidence (e.g. <code>EGFR T790M</code> or <code>ETV6::NTRK3</code>), drug responses, or pathways.</p>
+              )}
             </div>
           )}
 
@@ -557,7 +560,11 @@ export default function ChatInterface({
               <textarea
                 ref={inputRef}
                 className="chat-input"
-                placeholder="Ask about clinical evidence (e.g. EGFR T790M or ETV6::NTRK3)..."
+                placeholder={
+                  inStudy
+                    ? 'Ask about this case, its findings, or the evidence behind them...'
+                    : 'Ask about clinical evidence (e.g. EGFR T790M or ETV6::NTRK3)...'
+                }
                 rows={1}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
@@ -651,7 +658,7 @@ export default function ChatInterface({
                             })
                           }
                         >
-                          PMID {src.pmid} ↗
+                          {/^\d+$/.test(String(src.pmid)) ? `PMID ${src.pmid}` : String(src.pmid)} ↗
                         </a>
                       </div>
                     ))}

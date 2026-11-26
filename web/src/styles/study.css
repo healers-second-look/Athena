@@ -341,3 +341,28 @@
     max-height: none;
   }
 }
+
+/* Inline checkbox rows inside the enrollment forms: the generic
+   .study-enroll label/input rules above would otherwise stack them. */
+.study-enroll .study-choice {
+  display: flex;
+  align-items: flex-start;
+}
+.study-enroll .study-choice input {
+  display: inline-block;
+  width: auto;
+  margin-top: 0.15rem;
+}
+.study-arm-tag {
+  margin-left: 0.75rem;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  border: 1px solid var(--rule);
+}
+.study-arm-tag--athena_full {
+  background: #eef3fb;
+}
+.study-arm-tag--usual_care {
+  background: #f4f1ea;
+}

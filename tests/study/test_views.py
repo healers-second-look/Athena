@@ -49,3 +49,12 @@ def test_pilot_cases_without_tasks_have_no_tasks_field():
     pilot = load_case_set(DEFAULT_CASE_SET_DIR / "pilot_v0.yaml").cases[0]
     view = reviewer_view(pilot, "diff_first")
     assert view.tasks is None
+
+
+def test_every_athena_vs_usual_case_asks_the_same_four_tasks():
+    # A case missing a task asks one arm less than the other, which biases the
+    # per-arm comparison (avu-002 once lacked decision_rationale).
+    for case in load_case_set(ATHENA_VS).cases:
+        assert case.tasks is not None, case.case_id
+        assert case.tasks.decision_rationale is not None, case.case_id
+        assert case.reference_decision is not None, case.case_id

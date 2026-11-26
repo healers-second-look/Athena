@@ -50,6 +50,8 @@ export function EvidenceLookupForm({ question, onSubmit, onEvent }) {
   )
 }
 
+const REGION_LABELS = { india: 'India', us: 'United States', both: 'India and United States' }
+
 export function TrialMatchForm({ question, region, maxAnswers, onSubmit, onEvent }) {
   const [ids, setIds] = useState([''])
   const [pathway, setPathway] = useState('')
@@ -84,7 +86,7 @@ export function TrialMatchForm({ question, region, maxAnswers, onSubmit, onEvent
     >
       <h2>Trial matching</h2>
       <p className="claim">{question}</p>
-      <p className="small muted">Region: {region}. Up to {maxAnswers} trial ID(s).</p>
+      <p className="small muted">Region: {REGION_LABELS[region] ?? region}. Up to {maxAnswers} trial ID(s).</p>
       {ids.map((id, i) => (
         <label key={i}>
           Trial ID {i + 1}
